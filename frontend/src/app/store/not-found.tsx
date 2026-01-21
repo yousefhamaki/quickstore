@@ -17,13 +17,13 @@ export default function StoreNotFound() {
 
             <div className="mt-12 space-y-4 w-full max-w-xs">
                 <Link
-                    href="https://quickstore.com"
+                    href="https://quickstore.live"
                     className="w-full h-14 bg-black text-white rounded-full font-black text-sm uppercase tracking-widest flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
                 >
                     Create Your Own Store
                 </Link>
                 <Link
-                    href="https://quickstore.com"
+                    href="https://quickstore.live"
                     className="w-full h-14 bg-white border border-gray-200 text-gray-900 rounded-full font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-transform hover:scale-105 active:scale-95"
                 >
                     <ChevronLeft size={18} /> Back to Home

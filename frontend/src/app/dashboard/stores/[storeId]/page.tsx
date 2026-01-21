@@ -44,7 +44,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
     if (!store) return <div className="p-8 text-center">Store not found.</div>;
 
     const isDraft = store.status === 'draft';
-    const liveUrl = `https://${store.domain.subdomain}.quickstore.com`;
+    const liveUrl = `https://${store.domain.subdomain}.quickstore.live`;
 
     const missingSteps = checklist
         ? Object.entries(checklist.checklist)
@@ -61,7 +61,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                         <h1 className="text-3xl font-bold tracking-tight">{store.name}</h1>
                         <StatusBadge status={store.status} />
                     </div>
-                    <p className="text-muted-foreground font-mono text-sm">{store.domain.subdomain}.quickstore.com</p>
+                    <p className="text-muted-foreground font-mono text-sm">{store.domain.subdomain}.quickstore.live</p>
                 </div>
 
                 <div className="flex items-center gap-2">

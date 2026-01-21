@@ -25,7 +25,9 @@ export function middleware(request: NextRequest) {
         'localhost:3000',
         'quickstore.com',
         'www.quickstore.com',
-        'api.quickstore.com'
+        'api.quickstore.com',
+        'quickstore.live',
+        'www.quickstore.live'
     ];
 
     // Check if current hostname is a storefront subdomain

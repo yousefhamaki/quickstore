@@ -102,7 +102,7 @@ export default function MerchantDashboard() {
                 <div className="flex items-center space-x-4">
                     <div className="text-right">
                         <p className="text-sm font-bold">{store.name}</p>
-                        <p className="text-xs text-gray-400">quickstore.com/{store.slug}</p>
+                        <p className="text-xs text-gray-400">{store.slug}.quickstore.live</p>
                     </div>
                     <Link href={`/${store.slug}`} target="_blank">
                         <Button variant="outline" className="rounded-full">Visit Store</Button>

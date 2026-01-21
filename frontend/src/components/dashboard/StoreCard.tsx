@@ -24,7 +24,7 @@ interface StoreCardProps {
 export function StoreCard({ store }: StoreCardProps) {
     const pauseMutation = usePauseStore(store._id);
     const resumeMutation = useResumeStore(store._id);
-    const storeUrl = `https://${store.domain.subdomain}.quickstore.com`;
+    const storeUrl = `https://${store.domain.subdomain}.quickstore.live`;
 
     return (
         <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg border-2 hover:border-primary/20 group">
@@ -35,7 +35,7 @@ export function StoreCard({ store }: StoreCardProps) {
                             {store.name}
                         </h3>
                         <p className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
-                            {store.domain.subdomain}.quickstore.com
+                            {store.domain.subdomain}.quickstore.live
                         </p>
                     </div>
                     <StatusBadge status={store.status} />

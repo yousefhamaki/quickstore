@@ -65,15 +65,15 @@ export default function StoreSetupPage() {
                         <div className="space-y-2">
                             <Label htmlFor="store-slug" className="text-sm font-semibold">Store Subdomain / Path</Label>
                             <div className="flex items-center border rounded-md px-3 bg-gray-50 group focus-within:ring-2 focus-within:ring-blue-500">
-                                <span className="text-gray-400 group-focus-within:text-blue-500 font-medium">quickstore.com/</span>
                                 <input
                                     id="store-slug"
                                     placeholder="shop-name"
                                     value={slug}
                                     onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/ /g, '-'))}
                                     required
-                                    className="w-full h-12 bg-transparent border-none focus:ring-0 text-lg font-medium outline-none ml-1"
+                                    className="w-full h-12 bg-transparent border-none focus:ring-0 text-lg font-medium outline-none"
                                 />
+                                <span className="text-gray-400 group-focus-within:text-blue-500 font-medium">.quickstore.live</span>
                             </div>
                             <p className="text-xs text-gray-500">Your customers will visit this URL to buy your products.</p>
                         </div>

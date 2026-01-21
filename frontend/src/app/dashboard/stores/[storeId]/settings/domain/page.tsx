@@ -32,7 +32,7 @@ export default function DomainSettings({ params }: { params: Promise<{ storeId: 
     if (isLoading) return <div className="p-8"><Loader2 className="animate-spin text-primary" /></div>;
     if (!store) return <div className="p-8">Store not found</div>;
 
-    const fullDomain = `${store.domain.subdomain}.quickstore.com`;
+    const fullDomain = `${store.domain.subdomain}.quickstore.live`;
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(fullDomain);

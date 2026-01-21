@@ -1,8 +1,7 @@
 import api from './api';
-import { Store } from '@/types/store';
 
-export const getPublicStore = async (subdomain: string): Promise<Store> => {
-    const response = await api.get<Store>(`/public/stores/${subdomain}`);
+export const getPublicStore = async (subdomain: string) => {
+    const response = await api.get(`/public/stores/${subdomain}`);
     return response.data;
 };
 

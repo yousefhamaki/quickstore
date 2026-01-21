@@ -291,7 +291,7 @@ export default function NewStoreWizard() {
                                     <div className="flex items-center gap-2 p-4 rounded-xl bg-primary/5 border border-primary/20">
                                         <Globe className="w-4 h-4 text-primary" />
                                         <p className="text-sm font-medium">
-                                            Your store will be live at: <span className="font-bold text-primary">{subdomain || "..."}.quickstore.com</span>
+                                            Your store will be live at: <span className="font-bold text-primary">{subdomain || "..."}.quickstore.live</span>
                                         </p>
                                     </div>
                                 </div>

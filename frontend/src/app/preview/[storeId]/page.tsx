@@ -34,7 +34,7 @@ export default function StorePreview({ params }: { params: Promise<{ storeId: st
     if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
     if (!store) return <div className="p-12 text-center">Store not found.</div>;
 
-    const liveUrl = `https://${store.domain.subdomain}.quickstore.com`;
+    const liveUrl = `https://${store.domain.subdomain}.quickstore.live`;
 
     return (
         <div className="h-screen flex flex-col bg-muted/40 overflow-hidden">
@@ -50,7 +50,7 @@ export default function StorePreview({ params }: { params: Promise<{ storeId: st
                     <div className="h-8 w-px bg-muted" />
                     <div className="flex flex-col">
                         <h1 className="text-sm font-bold leading-none">{store.name}</h1>
-                        <p className="text-[10px] text-muted-foreground font-mono mt-1">{store.domain.subdomain}.quickstore.com</p>
+                        <p className="text-[10px] text-muted-foreground font-mono mt-1">{store.domain.subdomain}.quickstore.live</p>
                     </div>
                     <StatusBadge status={store.status} className="ml-2 scale-90" />
                 </div>
