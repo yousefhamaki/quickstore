@@ -6,7 +6,7 @@ import { generateToken, generateRefreshToken } from '../utils/auth';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { sendVerificationEmail } from '../utils/email';
-import { ensureWallet } from './billingController';
+import { ensureWallet, autoSubscribeRecord } from './billingController';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -14,7 +14,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = async (req: Request, res: Response) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, planId } = req.body;
 
     try {
         const userExists = await User.findOne({ email });
@@ -48,6 +48,18 @@ export const registerUser = async (req: Request, res: Response) => {
 
         if (user) {
             await ensureWallet(user._id.toString());
+
+            // If planId is provided, attempt to auto-subscribe/setup
+            if (planId) {
+                // We'll use a helper or the subscribe logic. 
+                // Note: subscribe controller requires AuthRequest, but we can call a core function.
+                try {
+                    await autoSubscribeRecord(user._id.toString(), planId);
+                } catch (subError) {
+                    console.error('Auto-subscription after signup failed:', subError);
+                }
+            }
+
             await sendVerificationEmail(user.email, verificationToken);
 
             res.status(201).json({

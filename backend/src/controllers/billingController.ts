@@ -26,6 +26,37 @@ export const ensureWallet = async (userId: string) => {
 };
 
 /**
+ * Helper to record a subscription intention (used in signup or direct billing)
+ */
+export const autoSubscribeRecord = async (userId: string, planId: string) => {
+    const plan = await Plan.findById(planId);
+    if (!plan) throw new Error('Plan not found');
+
+    const wallet = await Wallet.findOne({ userId });
+
+    // For paid plans, we start as inactive until payment is received or balance is sufficient
+    // Since this might be called during signup, balance is usually 0. 
+    // We let them create the record as 'inactive'.
+    const initialStatus = plan.type === 'free' ? 'active' : 'inactive';
+
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+    const subscription = await Subscription.findOneAndUpdate(
+        { userId },
+        {
+            planId: plan._id,
+            status: initialStatus,
+            expiresAt,
+            startedAt: new Date()
+        },
+        { upsert: true, new: true }
+    );
+
+    return subscription;
+};
+
+/**
  * @desc    Get billing overview (Plan, Wallet, Limits, Usage)
  * @route   GET /api/billing/overview
  */
@@ -167,41 +198,15 @@ export const getReceipts = async (req: AuthRequest, res: Response) => {
 export const subscribe = async (req: AuthRequest, res: Response) => {
     try {
         const { planId } = req.body;
+        const subscription = await autoSubscribeRecord(req.user._id.toString(), planId);
         const plan = await Plan.findById(planId);
-        if (!plan) return res.status(404).json({ message: 'Plan not found' });
-
-        const wallet = await Wallet.findOne({ userId: req.user._id });
-
-        // Security: Prevent switching to a paid plan if wallet has 0 or insufficient balance
-        if (plan.type === 'paid' && (!wallet || wallet.balance < plan.monthlyPrice)) {
-            return res.status(400).json({
-                message: `Insufficient wallet balance. You need ${plan.monthlyPrice} EGP to activate the ${plan.name} plan.`
-            });
-        }
-
-        const expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + 1);
-
-        // Security: Paid plans start as "inactive" (pending webhook confirmation)
-        const initialStatus = plan.type === 'free' ? 'active' : 'inactive';
-
-        const subscription = await Subscription.findOneAndUpdate(
-            { userId: req.user._id },
-            {
-                planId: plan._id,
-                status: initialStatus,
-                expiresAt,
-                startedAt: new Date()
-            },
-            { upsert: true, new: true }
-        );
 
         res.json({
-            message: plan.type === 'free' ? 'Plan updated successfully' : 'Subscription pending payment',
+            message: plan?.type === 'free' ? 'Plan updated successfully' : 'Subscription pending payment',
             subscription
         });
     } catch (error) {
-        res.status(500).json({ message: 'Subscription failed', error });
+        res.status(500).json({ message: 'Subscription failed', error: (error as any).message });
     }
 };
 

@@ -4,34 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, ShoppingCart, ShieldCheck, Zap, Globe, BarChart3 } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, Globe } from 'lucide-react';
+import { Navbar } from '@/components/landing/Navbar';
+import { Footer } from '@/components/landing/Footer';
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 glass border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-2">
-              <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <ShoppingCart className="text-white h-6 w-6" />
-              </div>
-              <span className="text-2xl font-black tracking-tighter text-gray-900">QUICKSTORE</span>
-            </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="#features" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">Features</Link>
-              <Link href="#pricing" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">Pricing</Link>
-              <Link href="/auth/login" className="text-sm font-bold text-gray-900">Sign In</Link>
-              <Link href="/auth/register">
-                <Button className="bg-blue-600 hover:bg-blue-700 rounded-full px-6 font-bold shadow-lg shadow-blue-200">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="relative pt-40 pb-20 overflow-hidden">
@@ -66,7 +46,6 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-10">Trusted by 500+ merchants in Egypt</p>
           <div className="flex flex-wrap justify-center items-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-            {/* Replace with real logos in production */}
             <span className="text-3xl font-black italic">CLOTHING CO</span>
             <span className="text-3xl font-black italic">TECH HUB</span>
             <span className="text-3xl font-black italic">VIBE STORE</span>
@@ -75,8 +54,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-32">
+      {/* Features Preview */}
+      <section className="py-32">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">Everything you need to succeed</h2>
@@ -98,64 +77,18 @@ export default function LandingPage() {
               title="Custom Domains"
               description="Connect your own .com or .shop domain to build your professional brand."
             />
-            <FeatureCard
-              icon={<BarChart3 className="h-10 w-10 text-purple-500" />}
-              title="Advanced Analytics"
-              description="Track sales, visitors, and conversion rates with detailed visual reports."
-            />
-            <FeatureCard
-              icon={<ShoppingCart className="h-10 w-10 text-orange-500" />}
-              title="Inventory Management"
-              description="Manage variants, stock levels, and get notified when you're running low."
-            />
-            <FeatureCard
-              icon={<ShieldCheck className="h-10 w-10 text-indigo-500" />}
-              title="Super Admin Control"
-              description="Our team manually reviews every subscription to ensure platform quality."
-            />
+          </div>
+          <div className="mt-16 text-center">
+            <Link href="/features">
+              <Button variant="outline" className="rounded-full px-8 font-bold border-2">
+                Explore All Features <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-20 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12 border-b border-gray-800 pb-20 mb-10">
-          <div className="space-y-6 md:col-span-2">
-            <div className="flex items-center space-x-2">
-              <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <ShoppingCart className="text-white h-6 w-6" />
-              </div>
-              <span className="text-2xl font-black tracking-tighter">QUICKSTORE</span>
-            </div>
-            <p className="text-gray-400 max-w-md font-medium">
-              Empowering the next generation of Egyptian entrepreneurs with professional, reliable, and accessible e-commerce technology.
-            </p>
-          </div>
-          <div className="space-y-4">
-            <h4 className="font-black uppercase text-xs tracking-widest text-blue-500">Platform</h4>
-            <ul className="space-y-2 text-gray-400 font-medium">
-              <li><Link href="#features">Features</Link></li>
-              <li><Link href="#pricing">Pricing</Link></li>
-              <li><Link href="/auth/register">Register</Link></li>
-            </ul>
-          </div>
-          <div className="space-y-4">
-            <h4 className="font-black uppercase text-xs tracking-widest text-blue-500">Company</h4>
-            <ul className="space-y-2 text-gray-400 font-medium">
-              <li><Link href="#">About Us</Link></li>
-              <li><Link href="#">Contact</Link></li>
-              <li><Link href="#">Support</Link></li>
-            </ul>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm font-bold">
-          <p>© 2026 QuickStore Inc. All rights reserved.</p>
-          <div className="flex space-x-8 mt-4 md:mt-0">
-            <Link href="#">Privacy Policy</Link>
-            <Link href="#">Terms of Service</Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

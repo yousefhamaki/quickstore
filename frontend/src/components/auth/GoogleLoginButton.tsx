@@ -42,10 +42,9 @@ export default function GoogleLoginButton() {
                 onError={() => {
                     toast.error('Google Login Failed');
                 }}
-                useOneTap
                 theme="outline"
                 size="large"
-                width="350px" // Explicit width or leave generic
+                width="350px"
                 text="continue_with"
                 shape="pill"
             />

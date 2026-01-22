@@ -9,8 +9,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
+import { useSearchParams } from 'next/navigation';
 
 export default function RegisterPage() {
+    const searchParams = useSearchParams();
+    const planId = searchParams.get('planId');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -27,7 +30,13 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/register', { name, email, password, role: 'merchant' });
+            const response = await api.post('/auth/register', {
+                name,
+                email,
+                password,
+                role: 'merchant',
+                planId
+            });
             // Do not login, show success message
             setSuccessMessage((response.data as any).message || 'Registration successful. Please check your email.');
             setName('');

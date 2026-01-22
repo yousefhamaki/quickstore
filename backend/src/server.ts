@@ -15,6 +15,7 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import storeRoutes from './routes/storeRoutes';
 import billingRoutes from './routes/billingRoutes';
 import publicRoutes from './routes/publicRoutes';
+import supportRoutes from './routes/supportRoutes';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
@@ -32,6 +33,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/support', supportRoutes);
 
 app.get('/', (req: Request, res: Response) => {
     res.send('QuickStore API is running...');

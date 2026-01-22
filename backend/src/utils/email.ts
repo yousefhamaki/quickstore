@@ -33,7 +33,30 @@ export const sendVerificationEmail = async (email: string, token: string) => {
         await transporter.sendMail(mailOptions);
     } catch (error) {
         console.error('Error sending email:', error);
-        // Don't throw logic error to prevent signup block if email fails, 
-        // but currently we need verification so maybe we SHOULD throw or at least log heavily.
+    }
+};
+
+export const sendSupportTicketEmail = async (email: string, firstName: string, ticketId: string) => {
+    const mailOptions = {
+        from: process.env.EMAIL_USER || 'noreply@quickstore.com',
+        to: email,
+        subject: `Support Ticket Received: ${ticketId}`,
+        html: `
+            <h1>Hello ${firstName},</h1>
+            <p>We've received your message and created a support ticket for you.</p>
+            <p><strong>Ticket ID:</strong> ${ticketId}</p>
+            <p>Our team is currently reviewing your request and will get back to you shortly.</p>
+            <p>Thank you for choosing QuickStore!</p>
+        `,
+    };
+
+    try {
+        if (process.env.NODE_ENV === 'test' || !process.env.EMAIL_USER) {
+            console.log(`Mock Support Email Sent to ${email} for ticket ${ticketId}`);
+            return;
+        }
+        await transporter.sendMail(mailOptions);
+    } catch (error) {
+        console.error('Error sending support email:', error);
     }
 };
