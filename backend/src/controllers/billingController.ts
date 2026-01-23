@@ -305,12 +305,19 @@ export const processOrderFee = async (userId: string, orderId: any, session?: mo
     if (!sub) throw new Error('Subscription not found');
 
     const plan = sub.planId as any;
-    const fee = plan.orderFee || 0.5;
+    let fee = 5; // Default fallback fee
+
+    if (plan && typeof plan === 'object') {
+        fee = typeof plan.orderFee === 'number' ? plan.orderFee : 5;
+    } else {
+        console.warn(`[processOrderFee] Plan is missing or invalid for subscription ${sub._id}. Using default fee of ${fee}.`);
+    }
 
     const wallet = await WalletModel.findOne({ userId });
 
     // SAFEGUARD: Free plan must have prepaid balance
-    if (plan.type === 'free' && (!wallet || wallet.balance < fee)) {
+    const isFreePlan = plan && typeof plan === 'object' && plan.type === 'free';
+    if (isFreePlan && (!wallet || wallet.balance < fee)) {
         throw new Error('Insufficient wallet balance (Free plan requires prepaid fees)');
     }
 

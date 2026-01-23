@@ -11,3 +11,8 @@ export const createSupportTicket = async (data: SupportTicketData) => {
     const response = await api.post('/support/ticket', data);
     return response.data;
 };
+
+export const getSupportTicketStatus = async (ticketId: string) => {
+    const response = await api.get(`/support/ticket/${ticketId}`);
+    return response.data;
+};

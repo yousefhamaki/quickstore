@@ -64,12 +64,20 @@ export default function ContactPage() {
                         <p className="text-gray-400 font-medium">
                             A confirmation email has been sent to <span className="text-gray-900">{formData.email}</span>.
                         </p>
-                        <Button
-                            onClick={() => setSubmitted(false)}
-                            className="h-14 px-10 rounded-xl bg-blue-600 font-black text-lg"
-                        >
-                            Send another message
-                        </Button>
+                        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                            <Button
+                                onClick={() => setSubmitted(false)}
+                                className="h-14 px-10 rounded-xl bg-gray-100 text-gray-900 border-none hover:bg-gray-200 font-black text-lg"
+                            >
+                                Send another
+                            </Button>
+                            <a
+                                href={`/support/status?id=${ticketId}`}
+                                className="h-14 px-10 rounded-xl bg-blue-600 text-white font-black text-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                            >
+                                Check Status
+                            </a>
+                        </div>
                     </div>
                 </main>
                 <Footer />

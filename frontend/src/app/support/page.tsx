@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { Search, BookOpen, MessageCircle, PlayCircle, HelpCircle, FileText } from 'lucide-react';
+import { Search, BookOpen, MessageCircle, PlayCircle, HelpCircle, FileText, Ticket } from 'lucide-react';
 
 export default function SupportPage() {
     return (
@@ -20,12 +20,21 @@ export default function SupportPage() {
                     <h1 className="text-5xl md:text-7xl font-black text-gray-900 mb-8">
                         How can we <span className="text-blue-600">help?</span>
                     </h1>
-                    <div className="max-w-2xl mx-auto relative group">
+                    <div className="max-w-2xl mx-auto relative group mb-8">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 h-6 w-6 group-focus-within:text-blue-600 transition-colors" />
                         <Input
                             placeholder="Search for articles, guides, and tutorials..."
                             className="h-18 pl-16 rounded-[2rem] border-2 border-gray-100 bg-gray-50 text-lg font-medium focus:bg-white transition-all shadow-sm focus:shadow-xl focus:border-blue-500"
                         />
+                    </div>
+                    <div className="flex justify-center">
+                        <a
+                            href="/support/status"
+                            className="inline-flex items-center gap-2 text-blue-600 font-black hover:bg-blue-50 px-6 py-3 rounded-2xl transition-all"
+                        >
+                            <Ticket className="h-5 w-5" />
+                            Already have a ticket? Check status
+                        </a>
                     </div>
                 </div>
 

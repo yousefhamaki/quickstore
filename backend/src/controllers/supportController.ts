@@ -38,3 +38,19 @@ export const createSupportTicket = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error creating support ticket', error });
     }
 };
+export const getSupportTicketStatus = async (req: Request, res: Response) => {
+    try {
+        const { ticketId } = req.params;
+
+        const ticket = await SupportTicket.findOne({ ticketId });
+
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+
+        res.status(200).json(ticket);
+    } catch (error) {
+        console.error('Get ticket status error:', error);
+        res.status(500).json({ message: 'Error fetching ticket status', error });
+    }
+};
