@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { Search, Loader2, Ticket, Clock, CheckCircle2, AlertCircle, Calendar, Mail, User } from 'lucide-react';
+import { Search, Loader2, Ticket, Clock, CheckCircle2, AlertCircle, Calendar, Mail, User, Copy } from 'lucide-react';
 import { getSupportTicketStatus } from '@/lib/api/support';
 import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
@@ -110,7 +110,19 @@ function TicketStatusContent() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-black text-gray-400 uppercase tracking-widest">Ticket ID</p>
-                                        <h2 className="text-2xl font-black text-gray-900">{ticket.ticketId}</h2>
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-2xl font-black text-gray-900">{ticket.ticketId}</h2>
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(ticket.ticketId);
+                                                    toast.success('Ticket ID copied!');
+                                                }}
+                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors group"
+                                                title="Copy Ticket ID"
+                                            >
+                                                <Copy className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <Badge className={`px-6 py-3 rounded-2xl text-base font-black border-2 flex items-center gap-2 ${getStatusColor(ticket.status)}`}>

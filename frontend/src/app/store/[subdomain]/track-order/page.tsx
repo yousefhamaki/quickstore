@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, use } from "react";
-import { Search, Loader2, Package, Truck, CheckCircle2, Clock, MapPin } from "lucide-react";
+import { Search, Loader2, Package, Truck, CheckCircle2, Clock, MapPin, Copy } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/services/api";
 import { useParams } from "next/navigation";
 import { usePublicStore } from "@/lib/hooks/usePublicStore";
@@ -96,7 +97,17 @@ export default function TrackOrderPage() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="space-y-1">
                             <h2 className="text-2xl font-black flex items-center gap-3">
-                                Order {order.orderNumber}
+                                <span>Order {order.orderNumber}</span>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(order.orderNumber);
+                                        toast.success('Order Number copied!');
+                                    }}
+                                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors border-2 border-transparent group"
+                                    title="Copy Order Number"
+                                >
+                                    <Copy className="h-4 w-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
+                                </button>
                                 <Badge className="rounded-full px-4 py-1 text-[10px] font-black uppercase tracking-widest" variant="secondary">
                                     {order.status}
                                 </Badge>

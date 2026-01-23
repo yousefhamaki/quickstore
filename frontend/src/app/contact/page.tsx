@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { Mail, MessageSquare, Phone, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, MessageSquare, Phone, MapPin, Loader2, CheckCircle2, Copy } from 'lucide-react';
 import { createSupportTicket } from '@/lib/api/support';
 import { toast } from 'sonner';
 
@@ -57,9 +57,21 @@ export default function ContactPage() {
                         <p className="text-xl text-gray-500 font-medium">
                             Thank you for reaching out. We have created a support ticket for you.
                         </p>
-                        <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center">
                             <p className="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Your Ticket ID</p>
-                            <p className="text-2xl font-black text-blue-600">{ticketId}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-2xl font-black text-blue-600">{ticketId}</p>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(ticketId);
+                                        toast.success('Ticket ID copied!');
+                                    }}
+                                    className="p-2 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-blue-100 group"
+                                    title="Copy Ticket ID"
+                                >
+                                    <Copy className="h-5 w-5 text-blue-400 group-hover:text-blue-600 transition-colors" />
+                                </button>
+                            </div>
                         </div>
                         <p className="text-gray-400 font-medium">
                             A confirmation email has been sent to <span className="text-gray-900">{formData.email}</span>.

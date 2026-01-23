@@ -304,20 +304,29 @@ export const processOrderFee = async (userId: string, orderId: any, session?: mo
     const sub = await SubscriptionModel.findOne({ userId }).populate('planId');
     if (!sub) throw new Error('Subscription not found');
 
-    const plan = sub.planId as any;
     let fee = 5; // Default fallback fee
+    let planType = 'unknown';
 
-    if (plan && typeof plan === 'object') {
-        fee = typeof plan.orderFee === 'number' ? plan.orderFee : 5;
-    } else {
-        console.warn(`[processOrderFee] Plan is missing or invalid for subscription ${sub._id}. Using default fee of ${fee}.`);
+    try {
+        const plan = sub.planId;
+        console.log(`[processOrderFee] userId: ${userId}, plan:`, plan ? "Exists" : "Null/Undefined");
+
+        if (plan && typeof plan === 'object') {
+            const anyPlan = plan as any;
+            fee = typeof anyPlan.orderFee === 'number' ? anyPlan.orderFee : 5;
+            planType = anyPlan.type || 'unknown';
+        } else {
+            console.warn(`[processOrderFee] Plan is missing or unpopulated for subscription ${sub._id}`);
+        }
+    } catch (innerError) {
+        console.error(`[processOrderFee] Crash while reading plan properties:`, innerError);
+        // We continue with fee = 5 as fallback
     }
 
     const wallet = await WalletModel.findOne({ userId });
 
     // SAFEGUARD: Free plan must have prepaid balance
-    const isFreePlan = plan && typeof plan === 'object' && plan.type === 'free';
-    if (isFreePlan && (!wallet || wallet.balance < fee)) {
+    if (planType === 'free' && (!wallet || wallet.balance < fee)) {
         throw new Error('Insufficient wallet balance (Free plan requires prepaid fees)');
     }
 

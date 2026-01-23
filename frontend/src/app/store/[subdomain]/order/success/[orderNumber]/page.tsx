@@ -1,8 +1,9 @@
 'use client';
 
 import { use } from "react";
-import { CheckCircle2, ChevronLeft, ShoppingBag } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ShoppingBag, Copy } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface PageProps {
     params: Promise<{
@@ -30,7 +31,19 @@ export default function OrderSuccessPage({ params }: PageProps) {
             <div className="bg-gray-50 rounded-[40px] p-8 max-w-md mx-auto border relative">
                 <div className="space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Order Number</p>
-                    <p className="text-xl font-mono font-black select-all">{orderNumber}</p>
+                    <div className="flex items-center justify-center gap-2">
+                        <p className="text-xl font-mono font-black select-all">{orderNumber}</p>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(orderNumber);
+                                toast.success('Order Number copied!');
+                            }}
+                            className="p-1.5 hover:bg-white/80 rounded-lg transition-colors border-2 border-transparent group"
+                            title="Copy Order Number"
+                        >
+                            <Copy className="h-4 w-4 text-gray-400 group-hover:text-black transition-colors" />
+                        </button>
+                    </div>
                 </div>
                 {/* Decorative cutouts for ticket look */}
                 <div className="absolute top-1/2 -left-3 w-6 h-6 bg-white rounded-full -translate-y-1/2" />
