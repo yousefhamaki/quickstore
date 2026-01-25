@@ -1,0 +1,61 @@
+{
+    "hero": {
+        "badge": "GET IN TOUCH",
+        "title": "We're Here to",
+        "titleHighlight": "Help You Succeed",
+        "subtitle": "Have questions? Need support? Want to share feedback? Our team is ready to assist you."
+    },
+    "form": {
+        "title": "Send Us a Message",
+        "subtitle": "Fill out the form below and we'll get back to you within 24 hours.",
+        "name": {
+            "label": "Full Name",
+            "placeholder": "Enter your full name"
+        },
+        "email": {
+            "label": "Email Address",
+            "placeholder": "your@email.com"
+        },
+        "subject": {
+            "label": "Subject",
+            "placeholder": "What is this regarding?"
+        },
+        "message": {
+            "label": "Message",
+            "placeholder": "Tell us how we can help you..."
+        },
+        "submit": "Send Message",
+        "sending": "Sending..."
+    },
+    "info": {
+        "title": "Contact Information",
+        "email": {
+            "label": "Email",
+            "value": "support@buildora.com"
+        },
+        "phone": {
+            "label": "Phone",
+            "value": "+20 123 456 7890"
+        },
+        "hours": {
+            "label": "Business Hours",
+            "value": "Sunday - Thursday: 9AM - 6PM"
+        }
+    },
+    "faq": {
+        "title": "Quick Answers",
+        "subtitle": "Common questions answered",
+        "q1": {
+            "question": "How quickly can I get started?",
+            "answer": "You can launch your store in under 2 minutes after signing up."
+        },
+        "q2": {
+            "question": "Do you offer customer support?",
+            "answer": "Yes! We provide email support and live chat during business hours."
+        },
+        "q3": {
+            "question": "Can I use my own domain?",
+            "answer": "Absolutely! You can connect your custom domain or use our free subdomain."
+        }
+    }
+}

@@ -1,0 +1,94 @@
+{
+    "brand": {
+        "name": "بيلدورا",
+        "tagline": "منصة متاجر إلكترونية متعددة",
+        "poweredBy": "مدعوم من QuickStore"
+    },
+    "nav": {
+        "home": "الرئيسية",
+        "features": "المميزات",
+        "pricing": "الأسعار",
+        "about": "من نحن",
+        "contact": "اتصل بنا",
+        "support": "الدعم",
+        "login": "تسجيل الدخول",
+        "getStarted": "ابدأ الآن",
+        "dashboard": "لوحة التحكم"
+    },
+    "actions": {
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "delete": "حذف",
+        "edit": "تعديل",
+        "create": "إنشاء",
+        "update": "تحديث",
+        "submit": "إرسال",
+        "close": "إغلاق",
+        "back": "رجوع",
+        "next": "التالي",
+        "previous": "السابق",
+        "confirm": "تأكيد",
+        "retry": "إعادة المحاولة",
+        "viewMore": "عرض المزيد",
+        "learnMore": "اعرف المزيد",
+        "copyLink": "نسخ الرابط",
+        "share": "مشاركة",
+        "download": "تحميل",
+        "upload": "رفع",
+        "search": "بحث",
+        "filter": "تصفية",
+        "sort": "ترتيب",
+        "refresh": "تحديث"
+    },
+    "status": {
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "pending": "قيد الانتظار",
+        "draft": "مسودة",
+        "published": "منشور",
+        "live": "مباشر",
+        "paused": "متوقف مؤقتاً",
+        "canceled": "ملغي",
+        "completed": "مكتمل",
+        "processing": "قيد المعالجة"
+    },
+    "time": {
+        "today": "اليوم",
+        "yesterday": "أمس",
+        "thisWeek": "هذا الأسبوع",
+        "thisMonth": "هذا الشهر",
+        "lastMonth": "الشهر الماضي",
+        "custom": "نطاق مخصص"
+    },
+    "errors": {
+        "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+        "network": "خطأ في الشبكة. يرجى التحقق من اتصالك.",
+        "notFound": "غير موجود",
+        "unauthorized": "غير مصرح لك بتنفيذ هذا الإجراء.",
+        "validation": "يرجى التحقق من المدخلات والمحاولة مرة أخرى.",
+        "required": "هذا الحقل مطلوب"
+    },
+    "success": {
+        "saved": "تم الحفظ بنجاح",
+        "updated": "تم التحديث بنجاح",
+        "deleted": "تم الحذف بنجاح",
+        "created": "تم الإنشاء بنجاح",
+        "copied": "تم النسخ إلى الحافظة"
+    },
+    "loading": {
+        "default": "جاري التحميل...",
+        "pleaseWait": "يرجى الانتظار..."
+    },
+    "empty": {
+        "noData": "لا توجد بيانات",
+        "noResults": "لا توجد نتائج"
+    },
+    "footer": {
+        "copyright": "© 2026 بيلدورا مدعوم من QuickStore. جميع الحقوق محفوظة.",
+        "product": "المنتج",
+        "company": "الشركة",
+        "legal": "قانوني",
+        "privacy": "سياسة الخصوصية",
+        "terms": "شروط الخدمة"
+    }
+}

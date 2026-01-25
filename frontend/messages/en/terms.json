@@ -1,0 +1,38 @@
+{
+    "hero": {
+        "badge": "LEGAL",
+        "title": "Terms of Service",
+        "lastUpdated": "Last updated: January 25, 2026"
+    },
+    "sections": [
+        {
+            "id": "acceptance",
+            "title": "1. Acceptance of Terms",
+            "content": "By accessing or using Buildora, you agree to be bound by these Terms of Service. If you do not agree, you may not use our platform."
+        },
+        {
+            "id": "description",
+            "title": "2. Description of Service",
+            "content": "Buildora provides a multi-tenant SaaS platform for merchants to create and manage online stores, specifically optimized for the Egyptian market."
+        },
+        {
+            "id": "responsibilities",
+            "title": "3. Merchant Responsibilities",
+            "content": "As a merchant, you are responsible for: providing accurate information during registration, maintaining the security of your account, complying with local laws and regulations, and verifying customer payments accurately."
+        },
+        {
+            "id": "payments",
+            "title": "4. Payments and Fees",
+            "content": "Subscription fees are billed monthly or annually. Buildora may also charge transaction fees per order as specified in your plan details."
+        },
+        {
+            "id": "liability",
+            "title": "5. Limitation of Liability",
+            "content": "Buildora is not liable for any disputes between merchants and their customers. We provide the tools, but the business transaction is between the merchant and the end-buyer."
+        }
+    ],
+    "footer": {
+        "contactText": "Have questions about our terms?",
+        "contactLink": "Contact legal support"
+    }
+}

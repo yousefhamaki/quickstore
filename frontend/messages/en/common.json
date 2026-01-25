@@ -1,0 +1,94 @@
+{
+  "brand": {
+    "name": "Buildora",
+    "tagline": "Multi-Store E-commerce Platform",
+    "poweredBy": "Powered by QuickStore"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "about": "About",
+    "contact": "Contact",
+    "support": "Support",
+    "login": "Login",
+    "getStarted": "Get Started",
+    "dashboard": "Dashboard"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "submit": "Submit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "viewMore": "View More",
+    "learnMore": "Learn More",
+    "copyLink": "Copy Link",
+    "share": "Share",
+    "download": "Download",
+    "upload": "Upload",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "refresh": "Refresh"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "draft": "Draft",
+    "published": "Published",
+    "live": "Live",
+    "paused": "Paused",
+    "canceled": "Canceled",
+    "completed": "Completed",
+    "processing": "Processing"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "custom": "Custom Range"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "notFound": "Not found",
+    "unauthorized": "You are not authorized to perform this action.",
+    "validation": "Please check your input and try again.",
+    "required": "This field is required"
+  },
+  "success": {
+    "saved": "Saved successfully",
+    "updated": "Updated successfully",
+    "deleted": "Deleted successfully",
+    "created": "Created successfully",
+    "copied": "Copied to clipboard"
+  },
+  "loading": {
+    "default": "Loading...",
+    "pleaseWait": "Please wait..."
+  },
+  "empty": {
+    "noData": "No data available",
+    "noResults": "No results found"
+  },
+  "footer": {
+    "copyright": "© 2026 Buildora powered by QuickStore. All rights reserved.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  }
+}

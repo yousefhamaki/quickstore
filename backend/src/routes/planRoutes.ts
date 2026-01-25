@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
     try {
-        const plans = await SubscriptionPlan.find();
+        const plans = await SubscriptionPlan.find({ isActive: true });
         res.json(plans);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });

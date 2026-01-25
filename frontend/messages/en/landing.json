@@ -1,0 +1,30 @@
+{
+    "hero": {
+        "badge": "NEXT-GEN E-COMMERCE",
+        "title": "Build Your Store in",
+        "titleHighlight": "Minutes.",
+        "subtitle": "The all-in-one multi-tenant SaaS platform for modern merchants in Egypt. Accept Instapay, VCash, and grow your brand effortlessly.",
+        "ctaPrimary": "Start Selling Now",
+        "ctaSecondary": "View Demo"
+    },
+    "social": {
+        "trusted": "Trusted by 500+ merchants in Egypt"
+    },
+    "features": {
+        "title": "Everything you need to succeed",
+        "subtitle": "Powerful features designed specifically for the Egyptian market.",
+        "instantSetup": {
+            "title": "Instant Setup",
+            "description": "Sign up and launch your store in under 2 minutes. No technical skills required."
+        },
+        "securePayments": {
+            "title": "Secure Local Payments",
+            "description": "Verify Instapay and VCash receipts with our specialized activation workflow."
+        },
+        "customDomains": {
+            "title": "Custom Domains",
+            "description": "Connect your own .com or .shop domain to build your professional brand."
+        },
+        "exploreAll": "Explore All Features"
+    }
+}

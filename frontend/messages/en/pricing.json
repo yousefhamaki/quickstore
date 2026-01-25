@@ -1,0 +1,77 @@
+{
+    "hero": {
+        "badge": "FLEXIBLE PLANS",
+        "title": "Pricing Built for Your",
+        "titleHighlight": "Growth",
+        "subtitle": "No hidden fees. No complicated contracts. Scale your business in Egypt with predictable pricing."
+    },
+    "plans": {
+        "starter": {
+            "name": "Starter",
+            "price": "EGP 0",
+            "period": "Forever",
+            "description": "Perfect for testing your idea and small creators starting out.",
+            "button": "Start for Free",
+            "features": [
+                "1 Online Store",
+                "Up to 10 Products",
+                "Community Support",
+                "Buildora Subdomain (.buildora.com)",
+                "Standard Themes"
+            ]
+        },
+        "professional": {
+            "name": "Professional",
+            "price": "EGP 499",
+            "period": "Per month",
+            "description": "Best for growing businesses needing custom branding and advanced tools.",
+            "button": "Get Started",
+            "popular": "MOST POPULAR",
+            "features": [
+                "Unlimited Stores",
+                "Unlimited Products",
+                "Priority Email Support",
+                "Custom Domain Support",
+                "Premium Themes & Builder",
+                "Instapay & VCash Integration",
+                "Advanced Analytics"
+            ]
+        },
+        "enterprise": {
+            "name": "Enterprise",
+            "price": "Custom",
+            "period": "Tailored",
+            "description": "For high-volume merchants needing dedicated resources and custom solutions.",
+            "button": "Talk to Sales",
+            "features": [
+                "Dedicated Account Manager",
+                "Custom Integration Support",
+                "SLA & Priority Chat Support",
+                "Advanced Security Features",
+                "Custom Feature Development",
+                "Highest Performance Servers"
+            ]
+        }
+    },
+    "faq": {
+        "title": "Pricing FAQ",
+        "subtitle": "Common questions about our billing",
+        "q1": {
+            "question": "Can I upgrade or downgrade anytime?",
+            "answer": "Yes, you can change your plan at any time from your dashboard. Changes apply immediately."
+        },
+        "q2": {
+            "question": "Are there transaction fees?",
+            "answer": "Buildora does not charge transaction fees. However, third-party payment providers might have their own fees."
+        },
+        "q3": {
+            "question": "Do I need a credit card to start?",
+            "answer": "No, you can start with the Starter plan without any credit card information."
+        }
+    },
+    "cta": {
+        "title": "Start Your Business Today",
+        "subtitle": "Join many Egyptian brands scaling with Buildora.",
+        "button": "Create Your Account"
+    }
+}

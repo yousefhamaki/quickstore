@@ -1,0 +1,38 @@
+{
+    "hero": {
+        "badge": "LEGAL",
+        "title": "Privacy Policy",
+        "lastUpdated": "Last updated: January 25, 2026"
+    },
+    "sections": [
+        {
+            "id": "collection",
+            "title": "1. Data Collection",
+            "content": "We collect personal information that you provide to us, such as your name, email address, and store details. We also collect device and usage data automatically when you interact with our platform."
+        },
+        {
+            "id": "usage",
+            "title": "2. How We Use Your Data",
+            "content": "Your data is used to provide and maintain the Buildora service, process your subscription payments, communicate with you regarding account updates, and improve our platform functionality."
+        },
+        {
+            "id": "customer-data",
+            "title": "3. Customer Data",
+            "content": "Buildora processes customer data on behalf of merchants. Merchants remain the data controllers for their own customer information. We do not sell customer data to third parties."
+        },
+        {
+            "id": "security",
+            "title": "4. Security",
+            "content": "We implement industry-standard security measures to protect your information. However, no method of transmission over the internet is 100% secure."
+        },
+        {
+            "id": "rights",
+            "title": "5. Your Rights",
+            "content": "You have the right to access, correct, or delete your personal information. Contact us at privacy@buildora.com for any data-related requests."
+        }
+    ],
+    "footer": {
+        "contactText": "Have questions about our privacy policy?",
+        "contactLink": "Contact our privacy team"
+    }
+}

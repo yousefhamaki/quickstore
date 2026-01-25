@@ -12,7 +12,7 @@ export interface ISubscription extends Document {
 
 const SubscriptionSchema: Schema = new Schema({
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    planId: { type: Schema.Types.ObjectId, ref: 'Plan', required: true },
+    planId: { type: Schema.Types.ObjectId, ref: 'SubscriptionPlan', required: true },
     status: {
         type: String,
         enum: ['inactive', 'active', 'past_due', 'canceled', 'expired'],

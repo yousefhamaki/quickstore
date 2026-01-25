@@ -1,0 +1,41 @@
+{
+    "hero": {
+        "badge": "OUR STORY",
+        "title": "Empowering the Next Generation of",
+        "titleHighlight": "Egyptian Merchants",
+        "subtitle": "Buildora is a localized multi-tenant SaaS platform built to solve the unique challenges of the Egyptian e-commerce market."
+    },
+    "mission": {
+        "title": "Our Mission",
+        "description": "To provide every entrepreneur in Egypt with the professional tools they need to launch, manage, and scale their business online without any technical complexity.",
+        "goal1": "Democratize E-commerce",
+        "goal2": "Support Local Payments",
+        "goal3": "Foster Growth"
+    },
+    "story": {
+        "title": "How it Started",
+        "p1": "Buildora began with a simple observation: Egyptian merchants were struggling to find e-commerce platforms that truly understood their local needs.",
+        "p2": "The challenges were clear: complex international payment setups, lack of localized support, and tools that didn't account for how business is actually done on the ground in Egypt.",
+        "p3": "We built Buildora (under the QuickStore engine) to bridge this gap. By focusing on local integrations like Instapay and VCash, we've enabled hundreds of merchants to transition from social media selling to professional store ownership."
+    },
+    "values": {
+        "title": "Our Values",
+        "innovation": {
+            "title": "Innovation",
+            "description": "We constanty adapt our technology to meet the evolving needs of the Egyptian market."
+        },
+        "accessibility": {
+            "title": "Accessibility",
+            "description": "We believe professional e-commerce should be accessible to everyone, regardless of technical skill."
+        },
+        "integrity": {
+            "title": "Integrity",
+            "description": "Transparent pricing and honest business practices are at the core of everything we do."
+        }
+    },
+    "cta": {
+        "title": "Join the Buildora Community",
+        "subtitle": "Be part of the revolution of Egyptian e-commerce.",
+        "button": "Start Your Journey"
+    }
+}

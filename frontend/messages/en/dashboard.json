@@ -1,0 +1,77 @@
+{
+    "sidebar": {
+        "merchantPanel": "Merchant Panel",
+        "dashboard": "Dashboard",
+        "products": "Products",
+        "orders": "Orders",
+        "themeBuilder": "Theme Builder",
+        "billing": "Billing & Wallet",
+        "upgradePlans": "Upgrade Plans",
+        "settings": "Settings",
+        "logout": "Logout",
+        "logoutConfirm": "Are you sure you want to logout?"
+    },
+    "stores": {
+        "title": "My Stores",
+        "createNew": "Create New Store",
+        "allStores": "All Stores",
+        "manage": "Manage",
+        "visitSite": "Visit Site",
+        "finishSetup": "Finish Setup",
+        "pauseStore": "Pause Store",
+        "resumeStore": "Resume Store",
+        "products": "Products",
+        "orders": "Orders",
+        "revenue": "Revenue"
+    },
+    "stats": {
+        "totalRevenue": "Total Revenue",
+        "totalOrders": "Total Orders",
+        "activeProducts": "Active Products",
+        "customers": "Customers",
+        "totalSales": "Total Sales",
+        "visitors": "Visitors",
+        "conversion": "Conversion"
+    },
+    "quickActions": {
+        "title": "Quick Actions",
+        "addProducts": "Add Products",
+        "listItems": "List items for sale",
+        "createCoupon": "Create Coupon",
+        "runPromotion": "Run a sales promotion",
+        "legalPolicies": "Legal Policies",
+        "termsPrivacy": "Terms, Privacy & Refunds"
+    },
+    "storeDetails": {
+        "title": "Store Details",
+        "plan": "Plan",
+        "currency": "Currency",
+        "subdomain": "Subdomain",
+        "editSettings": "Edit Store Settings"
+    },
+    "onboarding": {
+        "title": "Setup Checklist",
+        "progress": "Progress",
+        "complete": "Complete",
+        "addProduct": "Add your first product",
+        "setupPayment": "Setup payment methods",
+        "customizeBranding": "Customize branding",
+        "publishStore": "Publish your store"
+    },
+    "publish": {
+        "title": "Launch {storeName}",
+        "subtitle": "Ready to take your business live? Once published, customers can visit your store and place orders.",
+        "notReady": "Wait! Your store isn't quite ready yet:",
+        "allReady": "All systems go! Your store meets all requirements for launch.",
+        "previewUrl": "Preview URL",
+        "maybeLater": "Maybe Later",
+        "goLive": "Go Live Now",
+        "launching": "Launching...",
+        "success": "Your Store is Live!",
+        "successMessage": "Congratulations! {storeName} is officially open for business.",
+        "copyUrl": "Copy Store URL",
+        "shareStore": "Share Store",
+        "viewLive": "View Live Store",
+        "closeAndContinue": "Close and continue managing"
+    }
+}
