@@ -41,7 +41,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         fetchStore();
     }, [router, pathname, isStoreAgnosticPage]);
 
-    if (loading) return <div className="p-8 text-center text-xl font-medium text-blue-600 animate-pulse">Loading QuickStore...</div>;
+    if (loading) return <div className="p-8 text-center text-xl font-medium text-blue-600 animate-pulse">Loading Buildora...</div>;
 
     if (error) {
         return (

@@ -59,7 +59,7 @@ export function PublishModal({
             try {
                 await navigator.share({
                     title: storeName,
-                    text: `Check out my new store on QuickStore!`,
+                    text: `Check out my new store on Buildora!`,
                     url: storeUrl,
                 });
             } catch (err) {

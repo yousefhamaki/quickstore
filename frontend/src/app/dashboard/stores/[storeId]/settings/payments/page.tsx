@@ -210,7 +210,7 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
                 <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-start gap-3">
                     <Info className="w-5 h-5 text-primary mt-0.5" />
                     <p className="text-sm text-primary/80 leading-relaxed">
-                        Currently, QuickStore supports offline payment methods where you verify receipts manually.
+                        Currently, Buildora supports offline payment methods where you verify receipts manually.
                         Enable the methods you want to offer, and fill in the details so customers can pay you.
                     </p>
                 </div>

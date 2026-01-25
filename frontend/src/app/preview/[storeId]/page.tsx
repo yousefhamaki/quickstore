@@ -174,7 +174,7 @@ export default function StorePreview({ params }: { params: Promise<{ storeId: st
                         {/* Mock Footer */}
                         <footer className="mt-20 p-12 bg-muted/30 border-t text-center space-y-4" style={{ fontFamily: store.branding.fontFamily }}>
                             <h4 className="font-bold" style={{ color: store.branding.primaryColor }}>{store.name}</h4>
-                            <p className="text-xs text-muted-foreground">© 2026 {store.name}. Powered by QuickStore.</p>
+                            <p className="text-xs text-muted-foreground">© 2026 {store.name}. Powered by Buildora.</p>
                             <div className="flex justify-center gap-6">
                                 <div className="w-8 h-8 rounded-full bg-muted" />
                                 <div className="w-8 h-8 rounded-full bg-muted" />

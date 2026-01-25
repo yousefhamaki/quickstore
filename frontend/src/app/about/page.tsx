@@ -21,7 +21,7 @@ export default function AboutPage() {
                         <span className="text-blue-600">entrepreneurship.</span>
                     </h1>
                     <p className="text-xl text-gray-500 max-w-2xl mx-auto font-medium leading-relaxed">
-                        QuickStore was born from a simple observation: Egyptian merchants need better tools to sell online that understand local payment habits.
+                        Buildora was born from a simple observation: Egyptian merchants need better tools to sell online that understand local payment habits.
                     </p>
                 </div>
 
@@ -50,7 +50,7 @@ export default function AboutPage() {
                             <ShoppingCart className="text-blue-600" />
                         </div>
                         <div className="space-y-4">
-                            <h3 className="text-2xl font-black text-gray-900">Why QuickStore?</h3>
+                            <h3 className="text-2xl font-black text-gray-900">Why Buildora?</h3>
                             <p className="text-gray-500 text-lg font-medium leading-relaxed">
                                 Global platforms often ignore the nuances of the Egyptian market. We focus specifically on local payment methods like Instapay, VCash, and Fawry, and build workflows that actually match how business is done here.
                             </p>

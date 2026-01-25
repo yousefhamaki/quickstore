@@ -200,7 +200,7 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                     <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="space-y-1">
                             <p className="text-sm font-bold text-primary font-mono">{store.domain.subdomain}.quickstore.live</p>
-                            <p className="text-xs text-muted-foreground">This is your permanent QuickStore address.</p>
+                            <p className="text-xs text-muted-foreground">This is your permanent Buildora address.</p>
                         </div>
                         <Button variant="secondary" size="sm" asChild className="rounded-full">
                             <a href={`https://${store.domain.subdomain}.quickstore.live`} target="_blank" rel="noopener noreferrer">

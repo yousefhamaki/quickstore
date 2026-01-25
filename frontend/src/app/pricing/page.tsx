@@ -48,7 +48,7 @@ export default function PricingPage() {
                                     `${plan.storeLimit === -1 ? 'Unlimited' : plan.storeLimit} Store${plan.storeLimit !== 1 ? 's' : ''}`,
                                     `${plan.productLimit === -1 ? 'Unlimited' : plan.productLimit} Products`,
                                     "Unlimited Orders",
-                                    plan.features.customDomain ? "Custom Domain" : "QuickStore Subdomain",
+                                    plan.features.customDomain ? "Custom Domain" : "Buildora Subdomain",
                                     plan.features.dropshipping ? "Dropshipping Support" : "Standard Inventory",
                                     `${plan.orderFee} EGP Order Fee`
                                 ]}

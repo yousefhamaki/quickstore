@@ -16,9 +16,9 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     const mailOptions = {
         from: process.env.EMAIL_USER || 'noreply@quickstore.com',
         to: email,
-        subject: 'Verify your QuickStore Email',
+        subject: 'Verify your Buildora Email',
         html: `
-            <h1>Welcome to QuickStore!</h1>
+            <h1>Welcome to Buildora!</h1>
             <p>Please click the link below to verify your email address:</p>
             <a href="${verifyUrl}">${verifyUrl}</a>
             <p>This link expires in 24 hours.</p>
@@ -46,7 +46,7 @@ export const sendSupportTicketEmail = async (email: string, firstName: string, t
             <p>We've received your message and created a support ticket for you.</p>
             <p><strong>Ticket ID:</strong> ${ticketId}</p>
             <p>Our team is currently reviewing your request and will get back to you shortly.</p>
-            <p>Thank you for choosing QuickStore!</p>
+            <p>Thank you for choosing Buildora!</p>
         `,
     };
 

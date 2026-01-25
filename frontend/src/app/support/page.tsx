@@ -43,7 +43,7 @@ export default function SupportPage() {
                     <SupportCategoryCard
                         icon={<BookOpen className="h-10 w-10 text-blue-500" />}
                         title="Getting Started"
-                        description="New to QuickStore? Learn the basics of setting up your first store."
+                        description="New to Buildora? Learn the basics of setting up your first store."
                         linkCount={12}
                     />
                     <SupportCategoryCard

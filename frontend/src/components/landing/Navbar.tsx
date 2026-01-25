@@ -26,7 +26,7 @@ export function Navbar() {
                         <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
                             <ShoppingCart className="text-white h-6 w-6" />
                         </div>
-                        <span className="text-2xl font-black tracking-tighter text-gray-900">QUICKSTORE</span>
+                        <span className="text-2xl font-black tracking-tighter text-gray-900">BUILDORA</span>
                     </Link>
 
                     {/* Desktop Menu */}

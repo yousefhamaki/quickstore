@@ -13,7 +13,7 @@ export function Footer() {
                         <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center">
                             <ShoppingCart className="text-white h-6 w-6" />
                         </div>
-                        <span className="text-2xl font-black tracking-tighter">QUICKSTORE</span>
+                        <span className="text-2xl font-black tracking-tighter">BUILDORA</span>
                     </Link>
                     <p className="text-gray-400 max-w-md font-medium leading-relaxed">
                         Empowering the next generation of Egyptian entrepreneurs with professional, reliable, and accessible e-commerce technology.
@@ -39,7 +39,7 @@ export function Footer() {
                 </div>
             </div>
             <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm font-bold">
-                <p>© 2026 QuickStore Inc. All rights reserved.</p>
+                <p>© 2026 Buildora powered by QuickStore. All rights reserved.</p>
                 <div className="flex space-x-8 mt-4 md:mt-0">
                     <p>Made with ❤️ for merchants in Egypt</p>
                 </div>

@@ -7,7 +7,7 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "QuickStore - Multi-Store E-commerce Platform",
+  title: "Buildora - Multi-Store E-commerce Platform",
   description: "Create and manage multiple online stores from one dashboard",
 };
 

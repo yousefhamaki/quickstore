@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ subdomain
             }
         };
     } catch {
-        return { title: 'QuickStore' };
+        return { title: 'Buildora' };
     }
 }
 
@@ -110,7 +110,7 @@ export default async function StoreLayout({ children, params }: StoreLayoutProps
                         <div className="pt-4 space-y-2">
                             <p className="text-gray-400 text-[10px] font-medium uppercase tracking-widest">© 2026 {store.name}. All rights reserved.</p>
                             <div className="flex justify-center gap-4 text-gray-500">
-                                <span className="text-[10px] font-black opacity-50">POWERED BY QUICKSTORE</span>
+                                <span className="text-[10px] font-black opacity-50">POWERED BY BUILDORA</span>
                             </div>
                         </div>
                     </div>

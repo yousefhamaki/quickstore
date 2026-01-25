@@ -36,7 +36,7 @@ app.use('/api/public', publicRoutes);
 app.use('/api/support', supportRoutes);
 
 app.get('/', (req: Request, res: Response) => {
-    res.send('QuickStore API is running...');
+    res.send('Buildora API is running...');
 });
 
 const connectDB = async () => {

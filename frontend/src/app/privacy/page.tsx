@@ -30,7 +30,7 @@ export default function PrivacyPage() {
                                 Your data is used to:
                             </p>
                             <ul className="list-disc pl-6 space-y-2">
-                                <li>Provide and maintain the QuickStore service.</li>
+                                <li>Provide and maintain the Buildora service.</li>
                                 <li>Process your subscription payments.</li>
                                 <li>Communicate with you regarding account updates.</li>
                                 <li>Improve our platform functionality.</li>
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-black text-gray-900">3. Customer Data</h2>
                             <p>
-                                QuickStore processes customer data on behalf of merchants. Merchants remain the data controllers for their own customer information. We do not sell customer data to third parties.
+                                Buildora processes customer data on behalf of merchants. Merchants remain the data controllers for their own customer information. We do not sell customer data to third parties.
                             </p>
                         </section>
 

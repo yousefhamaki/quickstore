@@ -54,7 +54,7 @@ function RegisterForm() {
             <CardHeader className="space-y-1 text-center">
                 <CardTitle className="text-3xl font-bold tracking-tight text-gray-900">Create Account</CardTitle>
                 <CardDescription className="text-gray-500">
-                    Join QuickStore and start your e-commerce journey
+                    Join Buildora and start your e-commerce journey
                 </CardDescription>
             </CardHeader>
             <CardContent>

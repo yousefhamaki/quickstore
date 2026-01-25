@@ -85,7 +85,7 @@ export default function DomainSettings({ params }: { params: Promise<{ storeId: 
                             <div className="space-y-1">
                                 <p className="text-sm font-bold text-primary">SSL Certificate Included</p>
                                 <p className="text-xs text-primary/70 leading-relaxed">
-                                    All QuickStore subdomains come with automatic HTTPS/SSL protection to keep your customers' data safe.
+                                    All Buildora subdomains come with automatic HTTPS/SSL protection to keep your customers' data safe.
                                 </p>
                             </div>
                         </div>

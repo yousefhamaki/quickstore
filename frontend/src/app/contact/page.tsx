@@ -111,7 +111,7 @@ export default function ContactPage() {
                         <span className="text-blue-600">from you.</span>
                     </h1>
                     <p className="text-xl text-gray-500 max-w-2xl mx-auto font-medium">
-                        Have questions about QuickStore? Our team is here to help you get started.
+                        Have questions about Buildora? Our team is here to help you get started.
                     </p>
                 </div>
 

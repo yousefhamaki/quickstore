@@ -64,14 +64,14 @@ export function ReceiptModal({
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Settlement Type</p>
-                            <p className="font-bold text-sm">QuickStore Wallet</p>
+                            <p className="font-bold text-sm">Buildora Wallet</p>
                         </div>
                     </div>
 
                     <div className="border-t-2 border-dashed pt-8">
                         <div className="flex items-start gap-3 text-emerald-600 bg-emerald-50 p-5 rounded-2xl border border-emerald-100">
                             <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm font-black leading-relaxed">This receipt serves as a digital proof of transaction from your QuickStore Merchant Wallet and is valid for reconciliation.</p>
+                            <p className="text-sm font-black leading-relaxed">This receipt serves as a digital proof of transaction from your Buildora Merchant Wallet and is valid for reconciliation.</p>
                         </div>
                     </div>
 

@@ -136,7 +136,7 @@ export default function SubscribePage() {
             </div>
 
             <p className="text-center text-sm text-muted-foreground mt-8">
-                Secured by QuickStore Billing. 30-day money-back guarantee.
+                Secured by Buildora on QuickStore infrastructure. 30-day money-back guarantee.
             </p>
         </div>
     );

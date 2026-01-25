@@ -20,14 +20,14 @@ export default function TermsPage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-black text-gray-900">1. Acceptance of Terms</h2>
                             <p>
-                                By accessing or using QuickStore, you agree to be bound by these Terms of Service. If you do not agree, you may not use our platform.
+                                By accessing or using Buildora, you agree to be bound by these Terms of Service. If you do not agree, you may not use our platform.
                             </p>
                         </section>
 
                         <section className="space-y-4">
                             <h2 className="text-2xl font-black text-gray-900">2. Description of Service</h2>
                             <p>
-                                QuickStore provides a multi-tenant SaaS platform for merchants to create and manage online stores, specifically optimized for the Egyptian market.
+                                Buildora provides a multi-tenant SaaS platform for merchants to create and manage online stores, specifically optimized for the Egyptian market.
                             </p>
                         </section>
 
@@ -47,14 +47,14 @@ export default function TermsPage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-black text-gray-900">4. Payments and Fees</h2>
                             <p>
-                                Subscription fees are billed monthly or annually as per your chosen plan. QuickStore may also charge transaction fees per order as specified in your plan details.
+                                Subscription fees are billed monthly or annually as per your chosen plan. Buildora may also charge transaction fees per order as specified in your plan details.
                             </p>
                         </section>
 
                         <section className="space-y-4">
                             <h2 className="text-2xl font-black text-gray-900">5. Limitation of Liability</h2>
                             <p>
-                                QuickStore is not liable for any disputes between merchants and their customers. We provide the tools, but the business transaction is between the merchant and the end-buyer.
+                                Buildora is not liable for any disputes between merchants and their customers. We provide the tools, but the business transaction is between the merchant and the end-buyer.
                             </p>
                         </section>
                     </div>

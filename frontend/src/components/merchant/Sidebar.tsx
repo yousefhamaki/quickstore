@@ -30,7 +30,7 @@ export default function Sidebar() {
         <aside className="w-64 bg-white border-r hidden md:flex flex-col h-full sticky top-0">
             <div className="p-6 border-b">
                 <Link href="/merchant">
-                    <h2 className="text-2xl font-black text-blue-600 tracking-tighter cursor-pointer">QUICKSTORE</h2>
+                    <h2 className="text-2xl font-black text-blue-600 tracking-tighter cursor-pointer">BUILDORA</h2>
                 </Link>
                 <p className="text-xs text-gray-400 font-bold uppercase mt-1">Merchant Panel</p>
             </div>

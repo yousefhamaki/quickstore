@@ -32,7 +32,7 @@ export default function StoreNotFound() {
 
             <div className="mt-20">
                 <p className="text-[10px] font-black tracking-[0.2em] text-gray-300 uppercase">
-                    Powered by QuickStore SaaS
+                    Powered by Buildora
                 </p>
             </div>
 
