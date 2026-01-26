@@ -2,7 +2,8 @@ import express from 'express';
 import {
     getStoreBySubdomain,
     getStoreProducts,
-    getProductDetails
+    getProductDetails,
+    trackStoreVisit
 } from '../controllers/publicController';
 import {
     createPublicOrder,
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.get('/stores/:subdomain', getStoreBySubdomain);
 router.get('/stores/:storeId/products', getStoreProducts);
+router.post('/stores/:storeId/visit', trackStoreVisit);
 router.get('/products/:productId', getProductDetails);
 
 router.post('/orders', storefrontBillingContext, checkServiceAvailability, createPublicOrder);

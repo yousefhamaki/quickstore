@@ -8,20 +8,29 @@ import Product from '../models/Product';
 export const getStoreBySubdomain = async (req: Request, res: Response) => {
     try {
         const { subdomain } = req.params;
-        const store = await Store.findOneAndUpdate(
-            { 'domain.subdomain': subdomain, status: 'live' },
-            { $inc: { 'stats.totalVisitors': 1 } },
-            { new: true }
-        );
+        const store = await Store.findOne({ 'domain.subdomain': subdomain, status: 'live' });
 
         if (!store) {
-            // Check if it's a draft but being accessed with a preview token (token handling can be added later)
             return res.status(404).json({ message: 'Store not found or not published' });
         }
 
         res.json(store);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+/**
+ * @desc    Track store visit (Increment visitor count)
+ * @route   POST /api/public/stores/:storeId/visit
+ */
+export const trackStoreVisit = async (req: Request, res: Response) => {
+    try {
+        const { storeId } = req.params;
+        await Store.findByIdAndUpdate(storeId, { $inc: { 'stats.totalVisitors': 1 } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: 'Error tracking visit', error });
     }
 };
 
