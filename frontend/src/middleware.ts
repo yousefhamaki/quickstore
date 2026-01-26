@@ -36,8 +36,15 @@ export function middleware(request: NextRequest) {
     if (!isMainDomain) {
         const subdomain = hostname.split('.')[0];
         if (subdomain && subdomain !== 'www') {
+            const segments = pathname.split('/');
+            const isLocaleInPath = ['en', 'ar'].includes(segments[1]);
+            const locale = isLocaleInPath ? segments[1] : 'en';
+            const cleanPathname = isLocaleInPath
+                ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '/')
+                : pathname;
+
             return NextResponse.rewrite(
-                new URL(`/store/${subdomain}${pathname === '/' ? '' : pathname}`, request.url)
+                new URL(`/${locale}/store/${subdomain}${cleanPathname === '/' ? '' : cleanPathname}`, request.url)
             );
         }
     }

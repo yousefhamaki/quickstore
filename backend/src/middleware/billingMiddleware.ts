@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './authMiddleware';
 import Subscription from '../models/Subscription';
-import Plan from '../models/Plan';
+import Plan from '../models/SubscriptionPlan';
 import Wallet from '../models/Wallet';
 import mongoose from 'mongoose';
 

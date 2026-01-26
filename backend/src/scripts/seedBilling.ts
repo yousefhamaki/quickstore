@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Plan from '../models/Plan';
+import Plan from '../models/SubscriptionPlan';
 import Wallet from '../models/Wallet';
 import User from '../models/User';
 

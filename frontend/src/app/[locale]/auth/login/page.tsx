@@ -8,9 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import Image from 'next/image';
 import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
+import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function LoginPage() {
+    const t = useTranslations('auth');
+    const commonT = useTranslations('common');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -26,29 +31,47 @@ export default function LoginPage() {
             const response = await api.post('/auth/login', { email, password });
             login((response.data as any).token, response.data as any);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Login failed');
+            setError(err.response?.data?.message || t('errors.invalidCredentials'));
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="relative flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+            <div className="absolute top-4 right-4 rtl:right-auto rtl:left-4">
+                <LanguageSwitcher />
+            </div>
+
+            <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse group mb-8">
+                <div className="relative h-12 w-12 flex-shrink-0">
+                    <Image
+                        src="/logo.png"
+                        alt="Buildora Logo"
+                        width={120}
+                        height={120}
+                        className="object-contain group-hover:scale-110 transition-transform duration-300"
+                        priority
+                    />
+                </div>
+                <span className="text-3xl font-black tracking-tighter text-gray-900">{commonT('brand.name').toUpperCase()}</span>
+            </Link>
+
             <Card className="w-full max-w-md shadow-lg border-0 bg-white/80 backdrop-blur-md">
                 <CardHeader className="space-y-1 text-center">
-                    <CardTitle className="text-3xl font-bold tracking-tight text-gray-900">Welcome Back</CardTitle>
+                    <CardTitle className="text-3xl font-bold tracking-tight text-gray-900">{t('login.title')}</CardTitle>
                     <CardDescription className="text-gray-500">
-                        Enter your credentials to access your dashboard
+                        {t('login.subtitle')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email">{t('login.email')}</Label>
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="m@example.com"
+                                placeholder="name@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
@@ -56,7 +79,15 @@ export default function LoginPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="password">{t('login.password')}</Label>
+                                <Link
+                                    href="/auth/forgot-password"
+                                    className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                                >
+                                    {t('login.forgotPassword')}
+                                </Link>
+                            </div>
                             <Input
                                 id="password"
                                 type="password"
@@ -72,7 +103,7 @@ export default function LoginPage() {
                             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 transition-all duration-200"
                             disabled={loading}
                         >
-                            {loading ? 'Logging in...' : 'Sign In'}
+                            {loading ? t('login.loggingIn') : t('login.submit')}
                         </Button>
                     </form>
                     <div className="relative my-6">
@@ -80,17 +111,17 @@ export default function LoginPage() {
                             <span className="w-full border-t border-gray-200" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-gray-50 px-2 text-gray-500 font-medium pb-2">Or sign in with</span>
+                            <span className="bg-white px-2 text-gray-500 font-medium pb-1">{t('login.orContinueWith')}</span>
                         </div>
                     </div>
 
                     <GoogleLoginButton />
                 </CardContent>
-                <CardFooter className="flex flex-col space-y-4 text-center">
+                <CardFooter className="flex flex-col space-y-4 text-center border-t py-6 bg-gray-50/50 rounded-b-xl">
                     <p className="text-sm text-gray-600">
-                        Don't have an account?{' '}
+                        {t('login.noAccount')}{' '}
                         <Link href="/auth/register" className="text-blue-600 hover:underline font-semibold">
-                            Create an account
+                            {t('login.signUp')}
                         </Link>
                     </p>
                 </CardFooter>

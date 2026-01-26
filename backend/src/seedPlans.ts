@@ -12,9 +12,12 @@ const plans = [
         description_ar: 'مثالي لاختبار فكرتك وصناع المحتوى الصغار الذين يبدأون رحلتهم.',
         type: 'free',
         price: 0,
+        monthlyPrice: 0,
         currency: 'EGP',
         maxStores: 1,
+        storeLimit: 1,
         productLimit: 10,
+        orderFee: 5,
         duration: 3650, // 10 years for free plan
         features_en: [
             '1 Online Store',
@@ -39,9 +42,12 @@ const plans = [
         description_ar: 'الأفضل للشركات المتنامية التي تحتاج إلى علامة تجارية مخصصة وأدوات متقدمة.',
         type: 'paid',
         price: 499,
+        monthlyPrice: 499,
         currency: 'EGP',
         maxStores: 3,
+        storeLimit: 3,
         productLimit: -1, // Unlimited
+        orderFee: 0,
         duration: 30,
         features_en: [
             '3 Online Stores',
@@ -70,9 +76,12 @@ const plans = [
         description_ar: 'للتجار ذوي الحجم الكبير الذين يحتاجون إلى موارد مخصصة وحلول مخصصة.',
         type: 'paid',
         price: 1499,
+        monthlyPrice: 1499,
         currency: 'EGP',
         maxStores: 10,
+        storeLimit: 10,
         productLimit: -1, // Unlimited
+        orderFee: 0,
         duration: 30,
         features_en: [
             '10 Online Stores',

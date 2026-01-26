@@ -8,10 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import Image from 'next/image';
 import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 function RegisterForm() {
+    const t = useTranslations('auth');
     const searchParams = useSearchParams();
     const planId = searchParams.get('planId');
     const [name, setName] = useState('');
@@ -43,7 +47,7 @@ function RegisterForm() {
             setEmail('');
             setPassword('');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed');
+            setError(err.response?.data?.message || t('errors.registrationFailed') || 'Registration failed');
         } finally {
             setLoading(false);
         }
@@ -52,15 +56,15 @@ function RegisterForm() {
     return (
         <Card className="w-full max-w-md shadow-lg border-0 bg-white/80 backdrop-blur-md">
             <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-3xl font-bold tracking-tight text-gray-900">Create Account</CardTitle>
+                <CardTitle className="text-3xl font-bold tracking-tight text-gray-900">{t('register.title')}</CardTitle>
                 <CardDescription className="text-gray-500">
-                    Join Buildora and start your e-commerce journey
+                    {t('register.subtitle')}
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="name">{t('register.name')}</Label>
                         <Input
                             id="name"
                             placeholder="John Doe"
@@ -71,11 +75,11 @@ function RegisterForm() {
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t('register.email')}</Label>
                         <Input
                             id="email"
                             type="email"
-                            placeholder="m@example.com"
+                            placeholder="name@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -83,7 +87,7 @@ function RegisterForm() {
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">{t('register.password')}</Label>
                         <Input
                             id="password"
                             type="password"
@@ -100,7 +104,7 @@ function RegisterForm() {
                         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 transition-all duration-200"
                         disabled={loading}
                     >
-                        {loading ? 'Creating account...' : 'Sign Up'}
+                        {loading ? t('register.creatingAccount') : t('register.submit')}
                     </Button>
                 </form>
 
@@ -109,18 +113,18 @@ function RegisterForm() {
                         <span className="w-full border-t border-gray-200" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-gray-50 px-2 text-gray-500 font-medium pb-2">Or continue with</span>
+                        <span className="bg-white px-2 text-gray-500 font-medium pb-1">{t('register.orContinueWith')}</span>
                     </div>
                 </div>
 
                 <GoogleLoginButton />
 
             </CardContent>
-            <CardFooter className="flex flex-col space-y-4 text-center">
+            <CardFooter className="flex flex-col space-y-4 text-center border-t py-6 bg-gray-50/50 rounded-b-xl">
                 <p className="text-sm text-gray-600">
-                    Already have an account?{' '}
+                    {t('register.haveAccount')}{' '}
                     <Link href="/auth/login" className="text-blue-600 hover:underline font-semibold">
-                        Sign in
+                        {t('register.signIn')}
                     </Link>
                 </p>
             </CardFooter>
@@ -129,8 +133,28 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
+    const commonT = useTranslations('common');
+
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="relative flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+            <div className="absolute top-4 right-4 rtl:right-auto rtl:left-4">
+                <LanguageSwitcher />
+            </div>
+
+            <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse group mb-8">
+                <div className="relative h-12 w-12 flex-shrink-0">
+                    <Image
+                        src="/logo.png"
+                        alt="Buildora Logo"
+                        width={120}
+                        height={120}
+                        className="object-contain group-hover:scale-110 transition-transform duration-300"
+                        priority
+                    />
+                </div>
+                <span className="text-3xl font-black tracking-tighter text-gray-900">{commonT('brand.name').toUpperCase()}</span>
+            </Link>
+
             <Suspense fallback={
                 <Card className="w-full max-w-md shadow-lg border-0 bg-white/80 backdrop-blur-md">
                     <CardHeader className="space-y-1 text-center">

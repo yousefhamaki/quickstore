@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import Subscription from '../models/Subscription';
 import Wallet from '../models/Wallet';
 import WalletTransaction from '../models/WalletTransaction';
-import Plan from '../models/Plan';
+import Plan from '../models/SubscriptionPlan';
 import Receipt from '../models/Receipt';
 import BillingProfile from '../models/BillingProfile';
 import mongoose from 'mongoose';
