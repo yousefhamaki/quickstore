@@ -10,7 +10,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 // @access  Private/Merchant
 export const getOverview = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ merchantId: req.user._id });
+        const store = await Store.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -27,19 +27,40 @@ export const getOverview = async (req: AuthRequest, res: Response) => {
             createdAt: { $gte: startDate }
         });
 
-        // Total revenue
-        const revenueResult = await Order.aggregate([
-            { $match: { storeId: store._id, paymentStatus: 'paid' } },
-            { $group: { _id: null, total: { $sum: '$total' } } }
+        // Revenue breakdown
+        const revenueStats = await Order.aggregate([
+            {
+                $match: {
+                    storeId: store._id,
+                    status: { $nin: ['cancelled', 'refunded'] },
+                    paymentStatus: { $ne: 'failed' }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: '$total' },
+                    completed: {
+                        $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, '$total', 0] }
+                    },
+                    pending: {
+                        $sum: { $cond: [{ $ne: ['$status', 'delivered'] }, '$total', 0] }
+                    }
+                }
+            }
         ]);
-        const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+
+        const totalRevenue = revenueStats.length > 0 ? revenueStats[0].total : 0;
+        const completedRevenue = revenueStats.length > 0 ? revenueStats[0].completed : 0;
+        const pendingRevenue = revenueStats.length > 0 ? revenueStats[0].pending : 0;
 
         // Recent revenue
         const recentRevenueResult = await Order.aggregate([
             {
                 $match: {
                     storeId: store._id,
-                    paymentStatus: 'paid',
+                    status: { $nin: ['cancelled', 'refunded'] },
+                    paymentStatus: { $ne: 'failed' },
                     createdAt: { $gte: startDate }
                 }
             },
@@ -65,15 +86,22 @@ export const getOverview = async (req: AuthRequest, res: Response) => {
             $expr: { $lte: ['$inventory.quantity', '$inventory.lowStockThreshold'] }
         });
 
+        const totalVisitors = store.stats?.totalVisitors || 0;
+        const conversion = totalVisitors > 0 ? (totalOrders / totalVisitors) * 100 : 0;
+
         res.json({
             totalOrders,
             recentOrders,
             totalRevenue,
+            completedRevenue,
+            pendingRevenue,
             recentRevenue,
             totalCustomers,
             recentCustomers,
             totalProducts,
-            lowStockProducts
+            lowStockProducts,
+            totalVisitors,
+            conversion
         });
     } catch (error) {
         console.error('Analytics Overview Error:', error);
@@ -86,7 +114,7 @@ export const getOverview = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getRevenueChart = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ merchantId: req.user._id });
+        const store = await Store.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -148,7 +176,7 @@ export const getRevenueChart = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getTopProducts = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ merchantId: req.user._id });
+        const store = await Store.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -182,7 +210,7 @@ export const getTopProducts = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getRecentOrders = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ merchantId: req.user._id });
+        const store = await Store.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -206,7 +234,7 @@ export const getRecentOrders = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getCustomerStats = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ merchantId: req.user._id });
+        const store = await Store.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }

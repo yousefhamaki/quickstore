@@ -5,6 +5,7 @@ import {
     getPlans,
     getCurrentSubscription,
     subscribe,
+    paySubscriptionWithWallet,
     getBillingOverview,
     updateBillingProfile,
     rechargeWallet,
@@ -23,6 +24,7 @@ router.get('/plans', getPlans); // Public? Or protected? Let's keep public for m
 router.use(protect);
 router.get('/subscription', getCurrentSubscription);
 router.post('/subscribe', subscribe);
+router.post('/pay-with-wallet', paySubscriptionWithWallet);
 router.get('/overview', getBillingOverview);
 router.put('/profile', updateBillingProfile);
 router.post('/wallet/recharge', rechargeWallet);

@@ -175,7 +175,17 @@
       "customers": "العملاء",
       "totalSales": "إجمالي المبيعات",
       "visitors": "الزوار",
-      "conversion": "معدل التحويل"
+      "conversion": "معدل التحويل",
+      "completed": "مكتمل",
+      "waiting": "قيد الانتظار"
+    },
+    "banner": {
+      "unlock": "أطلق العنان لكامل إمكاناتك",
+      "upgradeSubtitle": "قم بالترقية إلى خطة اشتراك لبدء البيع والوصول إلى التحليلات وإزالة الحدود.",
+      "pending": "الاشتراك قيد الانتظار",
+      "pendingSubtitle": "لقد اخترت خطة {planName}. يرجى إكمال الدفع لتفعيل جميع الميزات.",
+      "choosePlan": "اختر الخطة",
+      "completePayment": "إكمال الدفع"
     },
     "quickActions": {
       "title": "إجراءات سريعة",

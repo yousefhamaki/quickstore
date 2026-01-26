@@ -31,7 +31,9 @@
         "customers": "Customers",
         "totalSales": "Total Sales",
         "visitors": "Visitors",
-        "conversion": "Conversion"
+        "conversion": "Conversion",
+        "completed": "Completed",
+        "waiting": "Waiting"
     },
     "quickActions": {
         "title": "Quick Actions",
@@ -73,5 +75,29 @@
         "shareStore": "Share Store",
         "viewLive": "View Live Store",
         "closeAndContinue": "Close and continue managing"
+    },
+    "banner": {
+        "unlock": "Unlock Full Potential",
+        "upgradeSubtitle": "Upgrade to a subscription plan to start selling, access analytics, and remove limits.",
+        "pending": "Subscription Pending",
+        "pendingSubtitle": "You have selected the {planName} plan. Please complete your payment to activate all features.",
+        "choosePlan": "Choose Plan",
+        "completePayment": "Complete Payment"
+    },
+    "home": {
+        "title": "Dashboard",
+        "subtitle": "Manage and grow your online business",
+        "visitStore": "Visit Store",
+        "recentOrders": "Recent Orders",
+        "recentOrdersSubtitle": "Latest transactions from your store",
+        "noOrders": "No orders yet. Start sharing your store link to get sales!",
+        "subscriptionInfo": "Subscription Info",
+        "status": "Status",
+        "plan": "Plan",
+        "renews": "Renews",
+        "quickLinks": "Quick Links",
+        "addProduct": "Add Product",
+        "manageSubscription": "Manage Subscription",
+        "upgradePlan": "Upgrade Plan"
     }
 }

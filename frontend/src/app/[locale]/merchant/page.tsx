@@ -10,6 +10,13 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Clock, AlertCircle, CheckCircle2, CreditCard } from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+
+import { useTranslations } from 'next-intl';
+
+import { usePayFromWallet } from '@/lib/hooks/useBilling';
+import { useAnalyticsOverview, useRecentOrdersAnalytics } from '@/lib/hooks/useAnalytics';
+import { toast } from 'sonner';
 
 export default function MerchantDashboard() {
     const [store, setStore] = useState<any>(null);
@@ -18,6 +25,14 @@ export default function MerchantDashboard() {
     const [error, setError] = useState<string | null>(null);
     const { user } = useAuth();
     const router = useRouter();
+    const t = useTranslations('dashboard.home');
+    const tCommon = useTranslations('common');
+    const tBanner = useTranslations('dashboard.banner');
+    const tStats = useTranslations('dashboard.stats');
+
+    const { data: analytics, isLoading: analyticsLoading } = useAnalyticsOverview();
+    const { data: recentOrders, isLoading: ordersLoading } = useRecentOrdersAnalytics(5);
+    const payFromWallet = usePayFromWallet();
 
     const fetchData = useCallback(async () => {
         try {
@@ -32,10 +47,7 @@ export default function MerchantDashboard() {
             setError(null);
         } catch (err: any) {
             console.error("Error fetching dashboard data:", err);
-            // Don't error out completely if store is missing but billing works, or vice versa if possible
-            // But strict error for now strictly if store setup fails check 404
             if (err.response?.status === 404) {
-                // Store not found is handled by UI
                 setStore(null);
             } else {
                 setError("Failed to load dashboard data. Please refresh.");
@@ -48,6 +60,15 @@ export default function MerchantDashboard() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    const handleWalletPayment = async () => {
+        try {
+            await payFromWallet.mutateAsync();
+            fetchData();
+        } catch (err) {
+            // Error is handled by hook toast
+        }
+    };
 
     if (loading) {
         return (
@@ -67,8 +88,6 @@ export default function MerchantDashboard() {
     }
 
     if (!store) return (
-        // Redirect to setup if no store found?
-        // For now just show message
         <div className="p-8 text-center">
             <p>Store not found directly via legacy endoint.</p>
             <Link href="/merchant/setup"><Button>Create Store</Button></Link>
@@ -76,7 +95,8 @@ export default function MerchantDashboard() {
     );
 
     const subscription = billing?.subscription;
-    const plan = subscription?.planId;
+    const plan = billing?.plan;
+    const wallet = billing?.wallet;
 
     const getStatusBadge = () => {
         if (!subscription) return <Badge variant="secondary">No Active Plan</Badge>;
@@ -86,26 +106,31 @@ export default function MerchantDashboard() {
             case 'trialing': return <Badge className="bg-blue-500 hover:bg-blue-600"><Clock className="w-3 h-3 mr-1" /> Trial</Badge>;
             case 'past_due': return <Badge className="bg-yellow-500 hover:bg-yellow-600"><AlertCircle className="w-3 h-3 mr-1" /> Past Due</Badge>;
             case 'canceled': return <Badge className="bg-red-500 hover:bg-red-600"><AlertCircle className="w-3 h-3 mr-1" /> Canceled</Badge>;
+            case 'inactive': return <Badge variant="secondary" className="bg-gray-400">Pending</Badge>;
             default: return <Badge variant="secondary">{subscription.status}</Badge>;
         }
     };
 
     const isPlanActive = subscription?.status === 'active' || subscription?.status === 'trialing';
+    // If they have a plan name and it's not "No Plan", they have a selected plan
+    const hasSelectedPlan = plan && plan.name !== 'No Plan';
+    const planPrice = plan?.monthlyPrice || 0;
+    const canPayWithWallet = hasSelectedPlan && wallet && wallet.balance >= planPrice && planPrice > 0;
 
     return (
         <div className="p-8">
             <header className="flex justify-between items-center mb-10">
                 <div>
-                    <h1 className="text-4xl font-black tracking-tight text-gray-900">Dashboard</h1>
-                    <p className="text-gray-500 font-medium mt-1">Manage and grow your online business</p>
+                    <h1 className="text-4xl font-black tracking-tight text-gray-900">{t('title')}</h1>
+                    <p className="text-gray-500 font-medium mt-1">{t('subtitle')}</p>
                 </div>
-                <div className="flex items-center space-x-4">
-                    <div className="text-right">
+                <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                    <div className="text-right rtl:text-left">
                         <p className="text-sm font-bold">{store.name}</p>
                         <p className="text-xs text-gray-400">{store.slug}.quickstore.live</p>
                     </div>
                     <Link href={`https://${store.slug}.quickstore.live`} target="_blank">
-                        <Button variant="outline" className="rounded-full">Visit Store</Button>
+                        <Button variant="outline" className="rounded-full">{t('visitStore')}</Button>
                     </Link>
                 </div>
             </header>
@@ -115,16 +140,27 @@ export default function MerchantDashboard() {
                     <CardContent className="p-8 flex flex-col md:flex-row justify-between items-center gap-6">
                         <div className="z-10">
                             <h2 className="text-2xl font-bold mb-2">
-                                Unlock Full Potential
+                                {subscription?.status === 'inactive' && hasSelectedPlan ? tBanner('pending') : tBanner('unlock')}
                             </h2>
                             <p className="text-blue-100 max-w-lg">
-                                Upgrade to a subscription plan to start selling, access analytics, and remove limits.
+                                {subscription?.status === 'inactive' && hasSelectedPlan
+                                    ? tBanner('pendingSubtitle', { planName: plan.name })
+                                    : tBanner('upgradeSubtitle')}
                             </p>
                         </div>
-                        <div className="z-10">
-                            <Link href="/merchant/subscribe">
+                        <div className="z-10 flex gap-4">
+                            {subscription?.status === 'inactive' && canPayWithWallet ? (
+                                <Button
+                                    onClick={handleWalletPayment}
+                                    disabled={payFromWallet.isPending}
+                                    className="bg-green-500 hover:bg-green-600 text-white font-bold px-8 h-12 rounded-full border-none shadow-lg"
+                                >
+                                    {payFromWallet.isPending ? 'Processing...' : 'Pay with Wallet'}
+                                </Button>
+                            ) : null}
+                            <Link href={subscription?.status === 'inactive' ? "/merchant/billing" : "/merchant/subscribe"}>
                                 <Button className="bg-white text-blue-600 hover:bg-blue-50 font-bold px-8 h-12 rounded-full border-none">
-                                    Choose Plan
+                                    {subscription?.status === 'inactive' && hasSelectedPlan ? tBanner('completePayment') : tBanner('choosePlan')}
                                 </Button>
                             </Link>
                         </div>
@@ -135,55 +171,118 @@ export default function MerchantDashboard() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <StatCard title="Total Sales" value="0.00 EGP" trend="+0%" />
-                <StatCard title="Total Orders" value="0" trend="+0%" />
-                <StatCard title="Visitors" value="12" trend="+100%" />
-                <StatCard title="Conversion" value="0%" trend="0%" />
+                <Card className="shadow-xl border-0 overflow-hidden glass hover:translate-y-[-4px] transition-transform duration-300">
+                    <CardContent className="p-6">
+                        <p className="text-sm text-gray-400 font-bold uppercase tracking-wider">{tStats('totalSales')}</p>
+                        <h3 className="text-2xl font-black text-gray-900 mt-2">{analytics?.totalRevenue?.toFixed(2) || '0.00'} EGP</h3>
+                        <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100/50">
+                            <div className="flex-1">
+                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">{tStats('completed')}</p>
+                                <p className="text-sm font-black text-green-600">{analytics?.completedRevenue?.toFixed(2) || '0.00'}</p>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">{tStats('waiting')}</p>
+                                <p className="text-sm font-black text-amber-500">{analytics?.pendingRevenue?.toFixed(2) || '0.00'}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <StatCard title={tStats('totalOrders')} value={analytics?.totalOrders?.toString() || '0'} trend="+0%" />
+                <StatCard title={tStats('visitors')} value={analytics?.totalVisitors?.toString() || '0'} trend="+0%" />
+                <StatCard title={tStats('conversion')} value={`${analytics?.conversion?.toFixed(2) || '0.00'}%`} trend="0%" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <Card className="lg:col-span-2 shadow-xl border-0 overflow-hidden glass">
                     <CardHeader className="bg-white/50 border-b">
-                        <CardTitle>Recent Orders</CardTitle>
-                        <CardDescription>Latest transactions from your store</CardDescription>
+                        <CardTitle>{t('recentOrders')}</CardTitle>
+                        <CardDescription>{t('recentOrdersSubtitle')}</CardDescription>
                     </CardHeader>
-                    <CardContent className="p-8 text-center text-gray-500 font-medium h-64 flex items-center justify-center">
-                        No orders yet. Start sharing your store link to get sales!
+                    <CardContent className="p-0">
+                        {ordersLoading ? (
+                            <div className="p-8 text-center text-gray-400">Loading...</div>
+                        ) : !recentOrders || recentOrders.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500 font-medium h-64 flex items-center justify-center">
+                                {t('noOrders')}
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left rtl:text-right">
+                                    <thead className="bg-gray-50/50 text-xs font-bold uppercase text-gray-400">
+                                        <tr>
+                                            <th className="px-6 py-4">Order</th>
+                                            <th className="px-6 py-4">Customer</th>
+                                            <th className="px-6 py-4">Status</th>
+                                            <th className="px-6 py-4 text-right">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {recentOrders.map((order: any) => (
+                                            <tr key={order._id} className="hover:bg-gray-50/50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <span className="font-bold text-gray-900">#{order.orderNumber}</span>
+                                                    <p className="text-[10px] text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="text-sm font-medium text-gray-700">
+                                                        {order.customerId?.firstName} {order.customerId?.lastName}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">{order.customerId?.email}</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Badge variant="outline" className={cn(
+                                                        "rounded-full text-[10px] font-black uppercase tracking-widest px-3 py-1",
+                                                        order.status === 'delivered' ? "bg-green-50 text-green-600 border-green-200" :
+                                                            order.status === 'processing' ? "bg-blue-50 text-blue-600 border-blue-200" :
+                                                                "bg-amber-50 text-amber-600 border-amber-200"
+                                                    )}>
+                                                        {order.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-black text-gray-900">
+                                                    {order.total.toFixed(2)} EGP
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
                 <Card className="shadow-xl border-0 overflow-hidden glass">
                     <CardHeader className="bg-white/50 border-b">
-                        <CardTitle>Subscription Info</CardTitle>
+                        <CardTitle>{t('subscriptionInfo')}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-8 space-y-6">
                         <div className="flex justify-between items-center">
-                            <span className="text-gray-500 font-medium">Status</span>
+                            <span className="text-gray-500 font-medium">{t('status')}</span>
                             {getStatusBadge()}
                         </div>
                         {plan && (
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-500 font-medium">Plan</span>
+                                <span className="text-gray-500 font-medium">{t('plan')}</span>
                                 <span className="font-bold text-blue-600">{plan.name}</span>
                             </div>
                         )}
-                        {subscription?.currentPeriodEnd && (
+                        {subscription?.expiresAt && (
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-500 font-medium">Renews</span>
-                                <span className="font-bold">{new Date(subscription.currentPeriodEnd).toLocaleDateString()}</span>
+                                <span className="text-gray-500 font-medium">{t('renews')}</span>
+                                <span className="font-bold">{new Date(subscription.expiresAt).toLocaleDateString()}</span>
                             </div>
                         )}
 
                         <div className="pt-4 border-t">
-                            <p className="text-xs text-gray-400 font-bold uppercase mb-4">Quick Links</p>
+                            <p className="text-xs text-gray-400 font-bold uppercase mb-4">{t('quickLinks')}</p>
                             <div className="space-y-3">
                                 <Link href="/merchant/products/new">
-                                    <Button variant="outline" className="w-full justify-start rounded-xl font-medium">Add Product</Button>
+                                    <Button variant="outline" className="w-full justify-start rounded-xl font-medium">{t('addProduct')}</Button>
                                 </Link>
-                                <Link href="/merchant/subscribe">
+                                <Link href="/merchant/billing">
                                     <Button variant="outline" className="w-full justify-start rounded-xl font-medium">
                                         <CreditCard className="w-4 h-4 mr-2" />
-                                        {isPlanActive ? 'Manage Subscription' : 'Upgrade Plan'}
+                                        {hasSelectedPlan ? t('manageSubscription') : t('upgradePlan')}
                                     </Button>
                                 </Link>
                             </div>

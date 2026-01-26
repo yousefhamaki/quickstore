@@ -175,7 +175,17 @@
       "customers": "Customers",
       "totalSales": "Total Sales",
       "visitors": "Visitors",
-      "conversion": "Conversion"
+      "conversion": "Conversion",
+      "completed": "Completed",
+      "waiting": "Waiting"
+    },
+    "banner": {
+      "unlock": "Unlock Full Potential",
+      "upgradeSubtitle": "Upgrade to a subscription plan to start selling, access analytics, and remove limits.",
+      "pending": "Subscription Pending",
+      "pendingSubtitle": "You have selected the {planName} plan. Please complete your payment to activate all features.",
+      "choosePlan": "Choose Plan",
+      "completePayment": "Complete Payment"
     },
     "quickActions": {
       "title": "Quick Actions",

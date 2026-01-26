@@ -57,6 +57,89 @@ export const autoSubscribeRecord = async (userId: string, planId: string) => {
 };
 
 /**
+ * Deducts plan price from wallet and activates subscription
+ */
+export const paySubscriptionWithWallet = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user._id;
+        const sub = await Subscription.findOne({ userId }).populate('planId');
+
+        if (!sub || !sub.planId) {
+            return res.status(404).json({ message: 'No pending subscription found' });
+        }
+
+        const plan = sub.planId as any;
+        if (sub.status === 'active') {
+            return res.status(400).json({ message: 'Subscription is already active' });
+        }
+
+        if (plan.type === 'free') {
+            sub.status = 'active';
+            await sub.save();
+            return res.json({ message: 'Free plan activated', subscription: sub });
+        }
+
+        const wallet = await ensureWallet(userId.toString());
+        const price = plan.monthlyPrice || plan.price;
+
+        if (wallet.balance < price) {
+            return res.status(400).json({
+                message: `Insufficient balance. Plan price is ${price} EGP, but your balance is ${wallet.balance} EGP.`,
+                required: price,
+                current: wallet.balance
+            });
+        }
+
+        // Transactional Update
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            // 1. Deduct from wallet
+            wallet.balance -= price;
+            await wallet.save({ session });
+
+            // 2. Create transaction record
+            await WalletTransaction.create([{
+                userId,
+                type: 'debit',
+                amount: price,
+                reason: 'plan_payment',
+                referenceId: sub._id
+            }], { session });
+
+            // 3. Activate subscription
+            sub.status = 'active';
+            sub.startedAt = new Date();
+            const expires = new Date();
+            expires.setMonth(expires.getMonth() + 1);
+            sub.expiresAt = expires;
+            await sub.save({ session });
+
+            // 4. Create receipt
+            await Receipt.create([{
+                userId,
+                referenceId: sub._id,
+                type: 'wallet_recharge', // Or a new type 'subscription'
+                amount: price,
+                currency: 'EGP'
+            }], { session });
+
+            await session.commitTransaction();
+            res.json({ message: 'Subscription paid successfully from wallet', subscription: sub });
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            session.endSession();
+        }
+
+    } catch (error) {
+        console.error('Wallet Payment Error:', error);
+        res.status(500).json({ message: 'Payment failed', error: (error as any).message });
+    }
+};
+
+/**
  * @desc    Get billing overview (Plan, Wallet, Limits, Usage)
  * @route   GET /api/billing/overview
  */
@@ -121,7 +204,7 @@ export const getBillingOverview = async (req: AuthRequest, res: Response) => {
             plan: {
                 name: plan.name,
                 type: plan.type,
-                monthlyPrice: plan.monthlyPrice,
+                monthlyPrice: plan.monthlyPrice || (plan as any).price || 0,
                 features: plan.features
             },
             subscription: {
@@ -198,12 +281,29 @@ export const getReceipts = async (req: AuthRequest, res: Response) => {
 export const subscribe = async (req: AuthRequest, res: Response) => {
     try {
         const { planId } = req.body;
-        const subscription = await autoSubscribeRecord(req.user._id.toString(), planId);
+        const userId = req.user._id;
         const plan = await Plan.findById(planId);
+        if (!plan) return res.status(404).json({ message: 'Plan not found' });
+
+        const subscription = await autoSubscribeRecord(userId.toString(), planId);
+
+        // If it's a paid plan and they have enough balance, maybe we can mention it
+        const wallet = await ensureWallet(userId.toString());
+        const price = plan.monthlyPrice || plan.price;
+
+        if (plan.type === 'paid' && wallet.balance >= price) {
+            return res.json({
+                message: 'Plan selected. You have sufficient balance to activate it immediately.',
+                subscription,
+                canPayWithWallet: true,
+                price
+            });
+        }
 
         res.json({
-            message: plan?.type === 'free' ? 'Plan updated successfully' : 'Subscription pending payment',
-            subscription
+            message: plan.type === 'free' ? 'Plan updated successfully' : 'Subscription pending payment',
+            subscription,
+            canPayWithWallet: false
         });
     } catch (error) {
         res.status(500).json({ message: 'Subscription failed', error: (error as any).message });

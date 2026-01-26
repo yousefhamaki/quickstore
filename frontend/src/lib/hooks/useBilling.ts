@@ -58,6 +58,20 @@ export const useTransactions = (page = 1, limit = 10) => {
     });
 };
 
+export const usePayFromWallet = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => billingApi.payFromWallet(),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['billingOverview'] });
+            toast.success(data.message || 'Subscription activated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Payment failed');
+        }
+    });
+};
+
 export const useReceipts = () => {
     return useQuery({
         queryKey: ['receipts'],

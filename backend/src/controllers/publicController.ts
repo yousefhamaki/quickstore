@@ -8,7 +8,11 @@ import Product from '../models/Product';
 export const getStoreBySubdomain = async (req: Request, res: Response) => {
     try {
         const { subdomain } = req.params;
-        const store = await Store.findOne({ 'domain.subdomain': subdomain, status: 'live' });
+        const store = await Store.findOneAndUpdate(
+            { 'domain.subdomain': subdomain, status: 'live' },
+            { $inc: { 'stats.totalVisitors': 1 } },
+            { new: true }
+        );
 
         if (!store) {
             // Check if it's a draft but being accessed with a preview token (token handling can be added later)

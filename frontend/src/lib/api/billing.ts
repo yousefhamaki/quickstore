@@ -110,6 +110,11 @@ export const getReceipts = async (): Promise<Receipt[]> => {
     return data as Receipt[];
 };
 
+export const payFromWallet = async (): Promise<any> => {
+    const { data } = await api.post('/billing/pay-with-wallet');
+    return data;
+};
+
 export const updateBillingProfile = async (formData: any) => {
     const { data } = await api.put('/billing/profile', formData);
     return data;

@@ -31,7 +31,9 @@
         "customers": "العملاء",
         "totalSales": "إجمالي المبيعات",
         "visitors": "الزوار",
-        "conversion": "معدل التحويل"
+        "conversion": "معدل التحويل",
+        "completed": "مكتمل",
+        "waiting": "قيد الانتظار"
     },
     "quickActions": {
         "title": "إجراءات سريعة",
@@ -73,5 +75,29 @@
         "shareStore": "مشاركة المتجر",
         "viewLive": "عرض المتجر المباشر",
         "closeAndContinue": "إغلاق ومتابعة الإدارة"
+    },
+    "banner": {
+        "unlock": "أطلق العنان لكامل إمكاناتك",
+        "upgradeSubtitle": "قم بالترقية إلى خطة اشتراك لبدء البيع والوصول إلى التحليلات وإزالة الحدود.",
+        "pending": "الاشتراك قيد الانتظار",
+        "pendingSubtitle": "لقد اخترت خطة {planName}. يرجى إكمال الدفع لتفعيل جميع الميزات.",
+        "choosePlan": "اختر الخطة",
+        "completePayment": "إكمال الدفع"
+    },
+    "home": {
+        "title": "لوحة التحكم",
+        "subtitle": "إدارة وتنمية عملك التجاري عبر الإنترنت",
+        "visitStore": "زيارة المتجر",
+        "recentOrders": "أحدث الطلبات",
+        "recentOrdersSubtitle": "أحدث المعاملات من متجرك",
+        "noOrders": "لا توجد طلبات بعد. ابدأ بمشاركة رابط متجرك للحصول على مبيعات!",
+        "subscriptionInfo": "معلومات الاشتراك",
+        "status": "الحالة",
+        "plan": "الخطة",
+        "renews": "يتجدد في",
+        "quickLinks": "روابط سريعة",
+        "addProduct": "إضافة منتج",
+        "manageSubscription": "إدارة الاشتراك",
+        "upgradePlan": "ترقية الخطة"
     }
 }

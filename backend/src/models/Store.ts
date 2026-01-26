@@ -84,6 +84,7 @@ export interface IStats {
     totalOrders: number;
     totalRevenue: number;
     totalCustomers: number;
+    totalVisitors: number;
 }
 
 export interface IStore extends Document {
@@ -234,7 +235,8 @@ const StoreSchema: Schema = new Schema(
             totalProducts: { type: Number, default: 0 },
             totalOrders: { type: Number, default: 0 },
             totalRevenue: { type: Number, default: 0 },
-            totalCustomers: { type: Number, default: 0 }
+            totalCustomers: { type: Number, default: 0 },
+            totalVisitors: { type: Number, default: 0 }
         }
     },
     { timestamps: true }
