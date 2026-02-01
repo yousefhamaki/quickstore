@@ -11,14 +11,34 @@ import mongoose from 'mongoose';
  */
 export const billingContext = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const now = new Date();
+        const userId = req.user._id;
 
         // 1. Fetch Subscription & Plan
-        const sub = await Subscription.findOne({ userId: req.user._id })
-            .populate('planId');
+        let sub = await Subscription.findOne({ userId }).populate('planId');
 
-        // 2. Fetch Wallet
-        const wallet = await Wallet.findOne({ userId: req.user._id });
+        // Fallback: Create Free subscription if missing
+        if (!sub) {
+            const freePlan = await Plan.findOne({ type: 'free' });
+            if (freePlan) {
+                sub = await Subscription.create({
+                    userId,
+                    planId: freePlan._id,
+                    status: 'active',
+                    expiresAt: new Date(Date.now() + 365 * 10 * 24 * 60 * 60 * 1000)
+                });
+                await sub.populate('planId');
+            }
+        }
+
+        // 2. Fetch/Initialize Wallet
+        let wallet = await Wallet.findOne({ userId });
+        if (!wallet) {
+            wallet = await Wallet.create({
+                userId,
+                balance: 0,
+                currency: 'EGP'
+            });
+        }
 
         req.subscription = sub;
         (req as any).wallet = wallet;
@@ -88,22 +108,27 @@ export const protectStorePublish = async (req: AuthRequest, res: Response, next:
     next();
 };
 
-/**
- * Guard: Strictly checks limits for creating new stores.
- */
 export const protectStoreLimit = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const sub = req.subscription;
     if (!sub || !sub.planId) return res.status(403).json({ message: 'No active plan' });
 
+    if (sub.status !== 'active') {
+        return res.status(403).json({
+            message: 'Active subscription required. Please complete your payment.',
+            code: 'SUBSCRIPTION_INACTIVE'
+        });
+    }
+
     const plan = sub.planId as any;
-    if (plan.storeLimit === -1) return next(); // Unlimited
+    const maxStores = plan.maxStores || plan.storeLimit || 0;
+    if (maxStores === -1) return next(); // Unlimited
 
     const Store = mongoose.model('Store');
     const storeCount = await Store.countDocuments({ ownerId: req.user._id });
 
-    if (storeCount >= plan.storeLimit) {
+    if (storeCount >= maxStores) {
         return res.status(403).json({
-            message: `Your ${plan.name} plan allows only ${plan.storeLimit} stores.`,
+            message: `Your ${plan.name_en || 'plan'} allows only ${maxStores} stores.`,
             code: 'STORE_LIMIT_REACHED'
         });
     }
@@ -117,6 +142,13 @@ export const protectStoreLimit = async (req: AuthRequest, res: Response, next: N
 export const protectProductLimit = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const sub = req.subscription;
     if (!sub || !sub.planId) return res.status(403).json({ message: 'No active plan' });
+
+    if (sub.status !== 'active') {
+        return res.status(403).json({
+            message: 'Active subscription required. Please complete your payment.',
+            code: 'SUBSCRIPTION_INACTIVE'
+        });
+    }
 
     const plan = sub.planId as any;
     if (plan.productLimit === -1) return next(); // Unlimited

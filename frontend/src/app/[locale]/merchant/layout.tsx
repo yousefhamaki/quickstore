@@ -31,6 +31,10 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                         router.push('/merchant/setup');
                     }
                     setStore(null);
+                } else if (err.response?.status === 401) {
+                    // Auth issues are handled by the API interceptor which clears tokens and redirects
+                    // but we can also trigger a router push here for a smoother experience
+                    router.push('/auth/login');
                 } else {
                     setError(err.response?.data?.message || "Failed to load store information.");
                 }

@@ -143,11 +143,25 @@
     }
   },
   "dashboard": {
+    "home": {
+      "title": "لوحة تحكم التاجر",
+      "subtitle": "نظرة عامة على أعمالك",
+      "visitStore": "زيارة المتجر",
+      "manageStores": "إدارة متاجرك",
+      "manageStoresSubtitle": "انتقل إلى لوحة التحكم الشاملة لإدارة المنتجات والطلبات والإعدادات لجميع متاجرك في مكان واحد.",
+      "viewAllStores": "عرض جميع المتاجر",
+      "subscriptionInfo": "معلومات الاشتراك",
+      "status": "الحالة",
+      "plan": "الخطة",
+      "renews": "يتجدد في",
+      "quickLinks": "روابط سريعة",
+      "manageSubscription": "إدارة الاشتراك",
+      "upgradePlan": "ترقية الخطة"
+    },
     "sidebar": {
       "merchantPanel": "لوحة التاجر",
       "dashboard": "لوحة التحكم",
-      "products": "المنتجات",
-      "orders": "الطلبات",
+      "myStores": "متاجري",
       "themeBuilder": "منشئ القالب",
       "billing": "الفواتير والمحفظة",
       "upgradePlans": "ترقية الخطة",

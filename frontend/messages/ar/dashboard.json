@@ -2,8 +2,7 @@
     "sidebar": {
         "merchantPanel": "لوحة التاجر",
         "dashboard": "لوحة التحكم",
-        "products": "المنتجات",
-        "orders": "الطلبات",
+        "myStores": "متاجري",
         "themeBuilder": "منشئ القالب",
         "billing": "الفواتير والمحفظة",
         "upgradePlans": "ترقية الخطة",
@@ -88,15 +87,14 @@
         "title": "لوحة التحكم",
         "subtitle": "إدارة وتنمية عملك التجاري عبر الإنترنت",
         "visitStore": "زيارة المتجر",
-        "recentOrders": "أحدث الطلبات",
-        "recentOrdersSubtitle": "أحدث المعاملات من متجرك",
-        "noOrders": "لا توجد طلبات بعد. ابدأ بمشاركة رابط متجرك للحصول على مبيعات!",
+        "manageStores": "إدارة متاجرك",
+        "manageStoresSubtitle": "انتقل إلى لوحة التحكم الشاملة لإدارة المنتجات والطلبات والإعدادات لجميع متاجرك في مكان واحد.",
+        "viewAllStores": "عرض جميع المتاجر",
         "subscriptionInfo": "معلومات الاشتراك",
         "status": "الحالة",
         "plan": "الخطة",
         "renews": "يتجدد في",
         "quickLinks": "روابط سريعة",
-        "addProduct": "إضافة منتج",
         "manageSubscription": "إدارة الاشتراك",
         "upgradePlan": "ترقية الخطة"
     }

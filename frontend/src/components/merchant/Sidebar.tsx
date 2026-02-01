@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, ShoppingBag, ShoppingCart, Settings, LayoutTemplate, Wallet, Zap } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ShoppingCart, Settings, LayoutTemplate, Wallet, Zap, Store } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export default function Sidebar() {
@@ -16,8 +16,7 @@ export default function Sidebar() {
 
     const navItems = [
         { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), href: "/merchant" },
-        { icon: <ShoppingBag size={20} />, label: t('sidebar.products'), href: "/merchant/products" },
-        { icon: <ShoppingCart size={20} />, label: t('sidebar.orders'), href: "/merchant/orders" },
+        { icon: <Store size={20} />, label: t('sidebar.myStores'), href: "/dashboard" },
         { icon: <LayoutTemplate size={20} />, label: t('sidebar.themeBuilder'), href: "/merchant/theme" },
         { icon: <Wallet size={20} />, label: t('sidebar.billing'), href: "/merchant/billing" },
         { icon: <Zap size={20} />, label: t('sidebar.upgradePlans'), href: "/merchant/plans" },

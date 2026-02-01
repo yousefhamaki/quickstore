@@ -5,9 +5,11 @@ import { upload } from '../config/cloudinary';
 
 import { checkVerification } from '../middleware/verificationMiddleware';
 
+import { billingContext, protectStoreLimit } from '../middleware/billingMiddleware';
+
 const router = express.Router();
 
-router.post('/store', protect, authorize('merchant'), checkVerification, setupStore);
+router.post('/store', protect, authorize('merchant'), checkVerification, billingContext, protectStoreLimit, setupStore);
 router.get('/store', protect, authorize('merchant'), getMyStore);
 router.post('/subscribe', protect, authorize('merchant'), upload.single('receipt'), submitSubscription);
 

@@ -8,7 +8,7 @@ import { getBillingOverview } from '@/lib/api/billing';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, AlertCircle, CheckCircle2, CreditCard } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, CreditCard, LayoutDashboard, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +16,9 @@ import { useTranslations } from 'next-intl';
 
 import { usePayFromWallet } from '@/lib/hooks/useBilling';
 import { useAnalyticsOverview, useRecentOrdersAnalytics } from '@/lib/hooks/useAnalytics';
+import { useStores } from '@/lib/hooks/useStores';
 import { toast } from 'sonner';
+import { Store } from 'lucide-react';
 
 export default function MerchantDashboard() {
     const [store, setStore] = useState<any>(null);
@@ -31,7 +33,7 @@ export default function MerchantDashboard() {
     const tStats = useTranslations('dashboard.stats');
 
     const { data: analytics, isLoading: analyticsLoading } = useAnalyticsOverview();
-    const { data: recentOrders, isLoading: ordersLoading } = useRecentOrdersAnalytics(5);
+    const { data: allStores, isLoading: storesLoading } = useStores();
     const payFromWallet = usePayFromWallet();
 
     const fetchData = useCallback(async () => {
@@ -194,60 +196,49 @@ export default function MerchantDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <Card className="lg:col-span-2 shadow-xl border-0 overflow-hidden glass">
-                    <CardHeader className="bg-white/50 border-b">
-                        <CardTitle>{t('recentOrders')}</CardTitle>
-                        <CardDescription>{t('recentOrdersSubtitle')}</CardDescription>
+                    <CardHeader className="bg-white/50 border-b flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>{t('manageStores')}</CardTitle>
+                            <CardDescription>{t('manageStoresSubtitle')}</CardDescription>
+                        </div>
+                        <Link href="/dashboard">
+                            <Button variant="outline" size="sm" className="rounded-full">{t('viewAllStores')}</Button>
+                        </Link>
                     </CardHeader>
-                    <CardContent className="p-0">
-                        {ordersLoading ? (
-                            <div className="p-8 text-center text-gray-400">Loading...</div>
-                        ) : !recentOrders || recentOrders.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500 font-medium h-64 flex items-center justify-center">
-                                {t('noOrders')}
+                    <CardContent className="p-8">
+                        <div className="flex flex-col md:flex-row items-center gap-8">
+                            <div className="w-full md:w-1/3 flex justify-center">
+                                <div className="relative">
+                                    <div className="w-32 h-32 rounded-3xl bg-blue-600/10 flex items-center justify-center text-blue-600">
+                                        <Store size={64} />
+                                    </div>
+                                    <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-blue-600 border border-blue-50">
+                                        <LayoutDashboard size={24} />
+                                    </div>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left rtl:text-right">
-                                    <thead className="bg-gray-50/50 text-xs font-bold uppercase text-gray-400">
-                                        <tr>
-                                            <th className="px-6 py-4">Order</th>
-                                            <th className="px-6 py-4">Customer</th>
-                                            <th className="px-6 py-4">Status</th>
-                                            <th className="px-6 py-4 text-right">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {recentOrders.map((order: any) => (
-                                            <tr key={order._id} className="hover:bg-gray-50/50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <span className="font-bold text-gray-900">#{order.orderNumber}</span>
-                                                    <p className="text-[10px] text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <p className="text-sm font-medium text-gray-700">
-                                                        {order.customerId?.firstName} {order.customerId?.lastName}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400">{order.customerId?.email}</p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <Badge variant="outline" className={cn(
-                                                        "rounded-full text-[10px] font-black uppercase tracking-widest px-3 py-1",
-                                                        order.status === 'delivered' ? "bg-green-50 text-green-600 border-green-200" :
-                                                            order.status === 'processing' ? "bg-blue-50 text-blue-600 border-blue-200" :
-                                                                "bg-amber-50 text-amber-600 border-amber-200"
-                                                    )}>
-                                                        {order.status}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-black text-gray-900">
-                                                    {order.total.toFixed(2)} EGP
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="flex-1 space-y-4">
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black text-gray-900 leading-tight">
+                                        Ready to manage your products and orders?
+                                    </h3>
+                                    <p className="text-gray-500 font-medium italic">
+                                        All store-specific management has been moved to the individual store dashboards for a cleaner experience.
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap gap-4 pt-2">
+                                    <div className="px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                                        <span className="text-sm font-bold">{allStores?.length || 0} Total Stores</span>
+                                    </div>
+                                </div>
+                                <Link href="/dashboard" className="block w-full">
+                                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black h-14 rounded-2xl shadow-xl shadow-blue-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                        Go to My Stores
+                                    </Button>
+                                </Link>
                             </div>
-                        )}
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -276,13 +267,16 @@ export default function MerchantDashboard() {
                         <div className="pt-4 border-t">
                             <p className="text-xs text-gray-400 font-bold uppercase mb-4">{t('quickLinks')}</p>
                             <div className="space-y-3">
-                                <Link href="/merchant/products/new">
-                                    <Button variant="outline" className="w-full justify-start rounded-xl font-medium">{t('addProduct')}</Button>
-                                </Link>
                                 <Link href="/merchant/billing">
                                     <Button variant="outline" className="w-full justify-start rounded-xl font-medium">
                                         <CreditCard className="w-4 h-4 mr-2" />
                                         {hasSelectedPlan ? t('manageSubscription') : t('upgradePlan')}
+                                    </Button>
+                                </Link>
+                                <Link href="/merchant/settings">
+                                    <Button variant="outline" className="w-full justify-start rounded-xl font-medium">
+                                        <Settings className="w-4 h-4 mr-2 text-gray-400" />
+                                        Merchant Settings
                                     </Button>
                                 </Link>
                             </div>

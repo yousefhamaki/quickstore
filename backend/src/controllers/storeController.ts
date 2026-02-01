@@ -44,27 +44,6 @@ export const getStore = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const createStore = async (req: AuthRequest, res: Response) => {
     try {
-        const user = await User.findById(req.user._id).populate('subscriptionPlan');
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Check subscription status
-        if (user.subscriptionStatus !== 'active') {
-            return res.status(403).json({
-                message: 'Active subscription required to create stores. Please subscribe first.'
-            });
-        }
-
-        // Check store limit
-        const plan = user.subscriptionPlan as any;
-        if (plan && user.stores.length >= plan.maxStores) {
-            return res.status(403).json({
-                message: `Store limit reached for your ${plan.name}. You can create maximum ${plan.maxStores} stores. Upgrade to create more.`
-            });
-        }
-
         const { name, description, category, contact, branding } = req.body;
 
         // Generate unique slug from name
@@ -89,7 +68,7 @@ export const createStore = async (req: AuthRequest, res: Response) => {
         }
 
         const store = await Store.create({
-            ownerId: user._id,
+            ownerId: req.user._id,
             name,
             slug: uniqueSlug,
             description,
@@ -106,8 +85,9 @@ export const createStore = async (req: AuthRequest, res: Response) => {
         });
 
         // Add store to user's stores array
-        user.stores.push(store._id);
-        await user.save();
+        await User.findByIdAndUpdate(req.user._id, {
+            $push: { stores: store._id }
+        });
 
         res.status(201).json(store);
     } catch (error) {

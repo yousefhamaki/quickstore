@@ -143,11 +143,25 @@
     }
   },
   "dashboard": {
+    "home": {
+      "title": "Merchant Dashboard",
+      "subtitle": "Overview of your business overview",
+      "visitStore": "Visit Store",
+      "manageStores": "Manage Your Stores",
+      "manageStoresSubtitle": "Navigate to your global store dashboard to manage products, orders, and settings for all your stores in one place.",
+      "viewAllStores": "View All Stores",
+      "subscriptionInfo": "Subscription Info",
+      "status": "Status",
+      "plan": "Plan",
+      "renews": "Renews",
+      "quickLinks": "Quick Links",
+      "manageSubscription": "Manage Subscription",
+      "upgradePlan": "Upgrade Plan"
+    },
     "sidebar": {
       "merchantPanel": "Merchant Panel",
       "dashboard": "Dashboard",
-      "products": "Products",
-      "orders": "Orders",
+      "myStores": "My Stores",
       "themeBuilder": "Theme Builder",
       "billing": "Billing & Wallet",
       "upgradePlans": "Upgrade Plans",
