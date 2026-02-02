@@ -24,8 +24,10 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export default function StoreDashboard({ params }: { params: Promise<{ storeId: string }> }) {
+    const t = useTranslations('merchant.storeDashboard');
     const { storeId } = use(params);
     const { data: store, isLoading } = useStore(storeId);
     const { data: checklist } = useStoreChecklist(storeId);
@@ -36,12 +38,12 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
         return (
             <div className="flex flex-col items-center justify-center min-h-[600px] gap-4">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <p className="text-muted-foreground font-medium animate-pulse">Loading amazing tools for {storeId}...</p>
+                <p className="text-muted-foreground font-medium animate-pulse">{t('loading', { name: storeId })}</p>
             </div>
         );
     }
 
-    if (!store) return <div className="p-8 text-center">Store not found.</div>;
+    if (!store) return <div className="p-8 text-center">{t('storeNotFound')}</div>;
 
     const isDraft = store.status === 'draft';
     const liveUrl = `https://${store.domain.subdomain}.quickstore.live`;
@@ -49,7 +51,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
     const missingSteps = checklist
         ? Object.entries(checklist.checklist)
             .filter(([_, value]) => !value.completed)
-            .map(([_, value]) => value.label)
+            .map(([key, value]) => t(`checklist.steps.${key}` as any))
         : [];
 
     return (
@@ -71,20 +73,20 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                             className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
                         >
                             <Rocket className="w-4 h-4 mr-2" />
-                            Launch Store
+                            {t('launchStore')}
                         </Button>
                     ) : (
                         <Button asChild variant="outline">
                             <a href={liveUrl} target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="w-4 h-4 mr-2" />
-                                View Live
+                                {t('viewLive')}
                             </a>
                         </Button>
                     )}
                     <Button asChild variant="secondary">
                         <Link href={`/dashboard/stores/${storeId}/settings/general`}>
                             <Settings className="w-4 h-4 mr-2" />
-                            Settings
+                            {t('settings')}
                         </Link>
                     </Button>
                 </div>
@@ -97,10 +99,9 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                         <AlertTriangle className="w-5 h-5 text-amber-600" />
                     </div>
                     <div className="space-y-1">
-                        <h4 className="font-bold text-amber-900">Your store is currently in draft mode</h4>
+                        <h4 className="font-bold text-amber-900">{t('statusDraftTitle')}</h4>
                         <p className="text-sm text-amber-800 leading-relaxed">
-                            Complete the setup checklist below to reveal your store to the world.
-                            Once published, your customers can browse products and checkout.
+                            {t('statusDraftDescription')}
                         </p>
                     </div>
                 </div>
@@ -109,24 +110,25 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
-                    title="Total Revenue"
-                    value={`${store.stats.totalRevenue.toLocaleString()} EGP`}
+                    title={t('stats.revenue')}
+                    value={`${store.stats.settledRevenue.toLocaleString()} EGP`}
+                    description={`${t('stats.grossRevenue')}: ${store.stats.totalRevenue.toLocaleString()} EGP`}
                     icon={DollarSign}
                     trend={{ value: 12, isUp: true }}
                 />
                 <StatsCard
-                    title="Total Orders"
+                    title={t('stats.orders')}
                     value={store.stats.totalOrders}
                     icon={ShoppingCart}
                     trend={{ value: 8, isUp: true }}
                 />
                 <StatsCard
-                    title="Active Products"
+                    title={t('stats.activeProducts')}
                     value={store.stats.totalProducts}
                     icon={Package}
                 />
                 <StatsCard
-                    title="Customers"
+                    title={t('stats.customers')}
                     value={store.stats.totalCustomers}
                     icon={Users}
                     trend={{ value: 24, isUp: true }}
@@ -144,7 +146,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                     {/* Quick Actions / Recent Activity Placeholder */}
                     <div className="bg-background border rounded-2xl overflow-hidden">
                         <div className="p-6 border-b flex items-center justify-between">
-                            <h3 className="font-bold text-lg">Quick Actions</h3>
+                            <h3 className="font-bold text-lg">{t('quickActions.title')}</h3>
                         </div>
                         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Link
@@ -156,8 +158,8 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                                         <Package className="w-5 h-5" />
                                     </div>
                                     <div className="text-left">
-                                        <p className="font-bold">Add Products</p>
-                                        <p className="text-xs text-muted-foreground">List items for sale</p>
+                                        <p className="font-bold">{t('quickActions.addProductsTitle')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('quickActions.addProductsDesc')}</p>
                                     </div>
                                 </div>
                                 <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -171,8 +173,8 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                                         <Rocket className="w-5 h-5" />
                                     </div>
                                     <div className="text-left">
-                                        <p className="font-bold">Create Coupon</p>
-                                        <p className="text-xs text-muted-foreground">Run a sales promotion</p>
+                                        <p className="font-bold">{t('quickActions.createCouponTitle')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('quickActions.createCouponDesc')}</p>
                                     </div>
                                 </div>
                                 <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -187,8 +189,8 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                                         <ShieldCheck className="w-5 h-5" />
                                     </div>
                                     <div className="text-left">
-                                        <p className="font-bold">Legal Policies</p>
-                                        <p className="text-xs text-muted-foreground">Terms, Privacy & Refunds</p>
+                                        <p className="font-bold">{t('quickActions.legalPoliciesTitle')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('quickActions.legalPoliciesDesc')}</p>
                                     </div>
                                 </div>
                                 <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -200,24 +202,24 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                 {/* Right Column: Recent Orders snippet / Store Info */}
                 <div className="space-y-6">
                     <div className="bg-background border rounded-2xl p-6 space-y-4">
-                        <h3 className="font-bold">Store Details</h3>
+                        <h3 className="font-bold">{t('details.title')}</h3>
                         <div className="space-y-4">
                             <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Plan</span>
+                                <span className="text-muted-foreground">{t('details.plan')}</span>
                                 <span className="font-bold">Pro Trial</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Currency</span>
+                                <span className="text-muted-foreground">{t('details.currency')}</span>
                                 <span className="font-bold">EGP</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Subdomain</span>
+                                <span className="text-muted-foreground">{t('details.subdomain')}</span>
                                 <span className="font-bold font-mono">{store.domain.subdomain}</span>
                             </div>
                         </div>
                         <Button asChild variant="outline" className="w-full h-11 rounded-xl">
                             <Link href={`/dashboard/stores/${storeId}/settings/general`}>
-                                Edit Store Settings
+                                {t('details.editBtn')}
                             </Link>
                         </Button>
                     </div>
@@ -226,12 +228,12 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                         <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto">
                             <Sparkles className="w-6 h-6 text-primary" />
                         </div>
-                        <h4 className="font-bold text-primary">Need Help?</h4>
+                        <h4 className="font-bold text-primary">{t('help.title')}</h4>
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                            Check out our tutorial on how to grow your sales or contact our support team.
+                            {t('help.description')}
                         </p>
                         <Button size="sm" variant="link" className="font-bold text-primary">
-                            View Guide →
+                            {t('help.guideBtn')}
                         </Button>
                     </div>
                 </div>

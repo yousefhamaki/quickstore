@@ -601,6 +601,97 @@
       "myStores": "متاجري الإلكترونية",
       "searchPlaceholder": "البحث باسم المتجر..."
     },
+    "storeDashboard": {
+      "loading": "جاري تحميل الأدوات الرائعة لـ {name}...",
+      "storeNotFound": "المتجر غير موجود.",
+      "launchStore": "إطلاق المتجر",
+      "viewLive": "عرض المتجر",
+      "settings": "الإعدادات",
+      "statusDraftTitle": "متجرك حالياً في وضع المسودة",
+      "statusDraftDescription": "أكمل قائمة التحقق من الإعداد أدناه للكشف عن متجرك للعالم. بمجرد نشره، سيتمكن عملاؤك من تصفح المنتجات وإجراء عمليات الشراء.",
+      "stats": {
+        "revenue": "الإيرادات",
+        "confirmedRevenue": "المحصلة (المدفوعة/المسلمة)",
+        "grossRevenue": "الإجمالي (الكلي)",
+        "orders": "إجمالي الطلبات",
+        "activeProducts": "المنتجات النشطة",
+        "customers": "العملاء"
+      },
+      "quickActions": {
+        "title": "إجراءات سريعة",
+        "addProductsTitle": "إضافة منتجات",
+        "addProductsDesc": "أدرج عناصر للبيع",
+        "createCouponTitle": "إنشاء كوبون",
+        "createCouponDesc": "قم بتشغيل عرض ترويجي للمبيعات",
+        "legalPoliciesTitle": "السياسات القانونية",
+        "legalPoliciesDesc": "الشروط، الخصوصية والاسترداد"
+      },
+      "details": {
+        "title": "تفاصيل المتجر",
+        "plan": "الخطة",
+        "currency": "العملة",
+        "subdomain": "النطاق الفرعي",
+        "editBtn": "تعديل إعدادات المتجر"
+      },
+      "help": {
+        "title": "هل تحتاج مساعدة؟",
+        "description": "اطلع على البرنامج التعليمي الخاص بنا حول كيفية زيادة مبيعاتك أو اتصل بفريق الدعم لدينا.",
+        "guideBtn": "عرض الدليل ←"
+      },
+      "nav": {
+        "mainMenu": "القائمة الرئيسية",
+        "storeSettings": "إعدادات المتجر",
+        "allDashboards": "كل لوحات التحكم",
+        "createNewStore": "إنشاء متجر جديد",
+        "storeManager": "مدير المتاجر",
+        "logout": "تسجيل الخروج",
+        "logoutConfirm": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
+        "items": {
+          "dashboard": "لوحة التحكم",
+          "products": "المنتجات",
+          "orders": "الطلبات",
+          "customers": "العملاء",
+          "marketing": "التسويق",
+          "analytics": "التحليلات",
+          "general": "عام",
+          "appearance": "المظهر",
+          "payments": "المدفوعات",
+          "shipping": "الشحن",
+          "domain": "النطاق",
+          "policies": "السياسات"
+        }
+      },
+      "checklist": {
+        "title": "تقدم إعداد المتجر",
+        "setupBtn": "إعداد",
+        "steps": {
+          "storeInfo": "معلومات المتجر",
+          "branding": "هوية العلامة التجارية",
+          "products": "إضافة منتجات ({current}/{target})",
+          "payment": "إعداد الدفع",
+          "shipping": "مناطق الشحن",
+          "policies": "السياسات القانونية"
+        }
+      },
+      "publishModal": {
+        "title": "إطلاق {name}",
+        "description": "هل أنت مستعد لبدء عملك؟ بمجرد النشر، يمكن للعملاء زيارة متجرك وطلبه المنتجات.",
+        "notReady": "انتظر! متجرك ليس جاهزاً تماماً بعد:",
+        "ready": "كل الأنظمة جاهزة! متجرك يستوفي جميع متطلبات الإطلاق.",
+        "previewUrl": "رابط المعاينة",
+        "maybeLater": "ربما لاحقاً",
+        "goLive": "انطلق الآن",
+        "launching": "جاري الإطلاق...",
+        "successTitle": "متجرك الآن مباشر!",
+        "successDesc": "تهانينا! {name} مفتوح الآن رسمياً للعمل.",
+        "copyUrl": "نسخ رابط المتجر",
+        "shareStore": "مشاركة المتجر",
+        "viewLiveBtn": "عرض المتجر المباشر",
+        "closeBtn": "إغلاق ومتابعة الإدارة",
+        "copied": "تم نسخ الرابط إلى الحافظة!",
+        "shareText": "تحقق من متجري الجديد على Buildora!"
+      }
+    },
     "billing": {
       "title": "الفواتير والمحفظة",
       "subtitle": "المصدر الوحيد للحقيقة لنشاطك المالي.",

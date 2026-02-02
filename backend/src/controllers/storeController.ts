@@ -2,6 +2,8 @@ import { Response } from 'express';
 import Store from '../models/Store';
 import User from '../models/User';
 import Product from '../models/Product';
+import Order from '../models/Order';
+import Customer from '../models/Customer';
 import { AuthRequest } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 
@@ -11,9 +13,51 @@ import crypto from 'crypto';
 export const getStores = async (req: AuthRequest, res: Response) => {
     try {
         const stores = await Store.find({ ownerId: req.user._id })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
-        res.json(stores);
+        const storesWithStats = await Promise.all(stores.map(async (store) => {
+            const [totalProducts, totalOrders, totalCustomers, revenueData] = await Promise.all([
+                Product.countDocuments({ storeId: store._id, status: 'active' }),
+                Order.countDocuments({ storeId: store._id }),
+                Customer.countDocuments({ storeId: store._id }),
+                Order.aggregate([
+                    { $match: { storeId: store._id, status: { $nin: ['cancelled', 'refunded'] } } },
+                    {
+                        $group: {
+                            _id: null,
+                            totalRevenue: { $sum: "$total" },
+                            settledRevenue: {
+                                $sum: {
+                                    $cond: [
+                                        { $or: [{ $eq: ["$status", "delivered"] }, { $eq: ["$paymentStatus", "paid"] }] },
+                                        "$total",
+                                        0
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ])
+            ]);
+
+            const totalRevenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
+            const settledRevenue = revenueData.length > 0 ? revenueData[0].settledRevenue : 0;
+
+            return {
+                ...store,
+                stats: {
+                    ...store.stats,
+                    totalProducts,
+                    totalOrders,
+                    totalCustomers,
+                    totalRevenue,
+                    settledRevenue
+                }
+            };
+        }));
+
+        res.json(storesWithStats);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
     }
@@ -27,14 +71,56 @@ export const getStore = async (req: AuthRequest, res: Response) => {
         const store = await Store.findOne({
             _id: req.params.id,
             ownerId: req.user._id
-        });
+        }).lean();
 
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
 
-        res.json(store);
+        // Calculate real-time stats
+        const [totalProducts, totalOrders, totalCustomers, revenueData] = await Promise.all([
+            Product.countDocuments({ storeId: store._id, status: 'active' }),
+            Order.countDocuments({ storeId: store._id }),
+            Customer.countDocuments({ storeId: store._id }),
+            Order.aggregate([
+                { $match: { storeId: store._id, status: { $nin: ['cancelled', 'refunded'] } } },
+                {
+                    $group: {
+                        _id: null,
+                        totalRevenue: { $sum: "$total" },
+                        settledRevenue: {
+                            $sum: {
+                                $cond: [
+                                    { $or: [{ $eq: ["$status", "delivered"] }, { $eq: ["$paymentStatus", "paid"] }] },
+                                    "$total",
+                                    0
+                                ]
+                            }
+                        }
+                    }
+                }
+            ])
+        ]);
+
+        const totalRevenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
+        const settledRevenue = revenueData.length > 0 ? revenueData[0].settledRevenue : 0;
+
+        // Merge stats into the response
+        const storeWithStats = {
+            ...store,
+            stats: {
+                ...store.stats,
+                totalProducts,
+                totalOrders,
+                totalCustomers,
+                totalRevenue,
+                settledRevenue
+            }
+        };
+
+        res.json(storeWithStats);
     } catch (error) {
+        console.error('Get Store Error:', error);
         res.status(500).json({ message: 'Server Error', error });
     }
 };

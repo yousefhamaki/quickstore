@@ -601,6 +601,97 @@
       "myStores": "My Online Stores",
       "searchPlaceholder": "Search by store name..."
     },
+    "storeDashboard": {
+      "loading": "Loading amazing tools for {name}...",
+      "storeNotFound": "Store not found.",
+      "launchStore": "Launch Store",
+      "viewLive": "View Live",
+      "settings": "Settings",
+      "statusDraftTitle": "Your store is currently in draft mode",
+      "statusDraftDescription": "Complete the setup checklist below to reveal your store to the world. Once published, your customers can browse products and checkout.",
+      "stats": {
+        "revenue": "Revenue",
+        "confirmedRevenue": "Confirmed (Paid/Delivered)",
+        "grossRevenue": "Gross Total",
+        "orders": "Total Orders",
+        "activeProducts": "Active Products",
+        "customers": "Customers"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "addProductsTitle": "Add Products",
+        "addProductsDesc": "List items for sale",
+        "createCouponTitle": "Create Coupon",
+        "createCouponDesc": "Run a sales promotion",
+        "legalPoliciesTitle": "Legal Policies",
+        "legalPoliciesDesc": "Terms, Privacy & Refunds"
+      },
+      "details": {
+        "title": "Store Details",
+        "plan": "Plan",
+        "currency": "Currency",
+        "subdomain": "Subdomain",
+        "editBtn": "Edit Store Settings"
+      },
+      "help": {
+        "title": "Need Help?",
+        "description": "Check out our tutorial on how to grow your sales or contact our support team.",
+        "guideBtn": "View Guide →"
+      },
+      "nav": {
+        "mainMenu": "Main Menu",
+        "storeSettings": "Store Settings",
+        "allDashboards": "All Dashboards",
+        "createNewStore": "Create New Store",
+        "storeManager": "Store Manager",
+        "logout": "Logout",
+        "logoutConfirm": "Are you sure you want to logout?",
+        "items": {
+          "dashboard": "Dashboard",
+          "products": "Products",
+          "orders": "Orders",
+          "customers": "Customers",
+          "marketing": "Marketing",
+          "analytics": "Analytics",
+          "general": "General",
+          "appearance": "Appearance",
+          "payments": "Payments",
+          "shipping": "Shipping",
+          "domain": "Domain",
+          "policies": "Policies"
+        }
+      },
+      "checklist": {
+        "title": "Store Setup Progress",
+        "setupBtn": "Setup",
+        "steps": {
+          "storeInfo": "Store Information",
+          "branding": "Brand Identity",
+          "products": "Add Products ({current}/{target})",
+          "payment": "Payment Setup",
+          "shipping": "Shipping Zones",
+          "policies": "Legal Policies"
+        }
+      },
+      "publishModal": {
+        "title": "Launch {name}",
+        "description": "Ready to take your business live? Once published, customers can visit your store and place orders.",
+        "notReady": "Wait! Your store isn't quite ready yet:",
+        "ready": "All systems go! Your store meets all requirements for launch.",
+        "previewUrl": "Preview URL",
+        "maybeLater": "Maybe Later",
+        "goLive": "Go Live Now",
+        "launching": "Launching...",
+        "successTitle": "Your Store is Live!",
+        "successDesc": "Congratulations! {name} is officially open for business.",
+        "copyUrl": "Copy Store URL",
+        "shareStore": "Share Store",
+        "viewLiveBtn": "View Live Store",
+        "closeBtn": "Close and continue managing",
+        "copied": "Link copied to clipboard!",
+        "shareText": "Check out my new store on Buildora!"
+      }
+    },
     "billing": {
       "title": "Billing & Wallet",
       "subtitle": "Single source of truth for your financial activity.",

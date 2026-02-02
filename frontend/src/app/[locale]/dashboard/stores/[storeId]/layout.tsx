@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 interface StoreLayoutProps {
     children: React.ReactNode;
@@ -46,6 +47,7 @@ interface StoreLayoutProps {
 }
 
 export default function StoreLayout({ children, params }: StoreLayoutProps) {
+    const t = useTranslations('merchant.storeDashboard.nav');
     const { storeId } = use(params);
     const pathname = usePathname();
     const router = useRouter();
@@ -61,21 +63,21 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
     if (!mounted) return null;
 
     const navigation = [
-        { name: 'Dashboard', href: `/dashboard/stores/${storeId}`, icon: LayoutDashboard },
-        { name: 'Products', href: `/dashboard/stores/${storeId}/products`, icon: Package },
-        { name: 'Orders', href: `/dashboard/stores/${storeId}/orders`, icon: ShoppingCart },
-        { name: 'Customers', href: `/dashboard/stores/${storeId}/customers`, icon: Users },
-        { name: 'Marketing', href: `/dashboard/stores/${storeId}/marketing`, icon: Megaphone },
-        { name: 'Analytics', href: `/dashboard/stores/${storeId}/analytics`, icon: BarChart2 },
+        { name: t('items.dashboard'), href: `/dashboard/stores/${storeId}`, icon: LayoutDashboard },
+        { name: t('items.products'), href: `/dashboard/stores/${storeId}/products`, icon: Package },
+        { name: t('items.orders'), href: `/dashboard/stores/${storeId}/orders`, icon: ShoppingCart },
+        { name: t('items.customers'), href: `/dashboard/stores/${storeId}/customers`, icon: Users },
+        { name: t('items.marketing'), href: `/dashboard/stores/${storeId}/marketing`, icon: Megaphone },
+        { name: t('items.analytics'), href: `/dashboard/stores/${storeId}/analytics`, icon: BarChart2 },
     ];
 
     const settingsLinks = [
-        { name: 'General', href: `/dashboard/stores/${storeId}/settings/general`, icon: Settings },
-        { name: 'Appearance', href: `/dashboard/stores/${storeId}/settings/theme`, icon: Palette },
-        { name: 'Payments', href: `/dashboard/stores/${storeId}/settings/payments`, icon: CreditCard },
-        { name: 'Shipping', href: `/dashboard/stores/${storeId}/settings/shipping`, icon: Truck },
-        { name: 'Domain', href: `/dashboard/stores/${storeId}/settings/domain`, icon: Globe },
-        { name: 'Policies', href: `/dashboard/stores/${storeId}/settings/policies`, icon: ShieldCheck },
+        { name: t('items.general'), href: `/dashboard/stores/${storeId}/settings/general`, icon: Settings },
+        { name: t('items.appearance'), href: `/dashboard/stores/${storeId}/settings/theme`, icon: Palette },
+        { name: t('items.payments'), href: `/dashboard/stores/${storeId}/settings/payments`, icon: CreditCard },
+        { name: t('items.shipping'), href: `/dashboard/stores/${storeId}/settings/shipping`, icon: Truck },
+        { name: t('items.domain'), href: `/dashboard/stores/${storeId}/settings/domain`, icon: Globe },
+        { name: t('items.policies'), href: `/dashboard/stores/${storeId}/settings/policies`, icon: ShieldCheck },
     ];
 
     const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
@@ -101,7 +103,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-56 rounded-xl shadow-2xl">
-                            <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-2">My Stores</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground py-2">{t('storeSettings')}</DropdownMenuLabel>
                             {stores?.map((s) => (
                                 <DropdownMenuItem
                                     key={s._id}
@@ -123,7 +125,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                 className="rounded-lg py-2 cursor-pointer text-primary font-bold"
                             >
                                 <Plus className="w-4 h-4 mr-2" />
-                                Create New Store
+                                {t('createNewStore')}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -131,7 +133,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                 className="rounded-lg py-2 cursor-pointer flex items-center text-muted-foreground"
                             >
                                 <ChevronLeft className="w-4 h-4 mr-2" />
-                                All Dashboards
+                                {t('allDashboards')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -139,7 +141,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
 
                 <div className="flex-1 p-4 space-y-8">
                     <nav className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">Main Menu</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">{t('mainMenu')}</p>
                         {navigation.map((item) => (
                             <Link
                                 key={item.name}
@@ -161,7 +163,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                     </nav>
 
                     <nav className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">Store Settings</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">{t('storeSettings')}</p>
                         {settingsLinks.map((item) => (
                             <Link
                                 key={item.name}
@@ -187,20 +189,20 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                     <Button variant="outline" className="w-full justify-start rounded-xl h-12" asChild>
                         <Link href="/dashboard">
                             <StoreIcon className="w-4 h-4 mr-2" />
-                            Store Manager
+                            {t('storeManager')}
                         </Link>
                     </Button>
                     <Button
                         variant="ghost"
                         className="w-full justify-start rounded-xl h-12 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         onClick={() => {
-                            if (confirm('Are you sure you want to logout?')) {
+                            if (confirm(t('logoutConfirm'))) {
                                 logout();
                             }
                         }}
                     >
                         <LogOut className="w-4 h-4 mr-2" />
-                        Logout
+                        {t('logout')}
                     </Button>
                 </div>
             </aside>

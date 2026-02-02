@@ -7,6 +7,7 @@ import { CheckCircle2, Circle, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 interface OnboardingChecklistProps {
     checklist: IChecklist;
@@ -14,41 +15,46 @@ interface OnboardingChecklistProps {
 }
 
 export function OnboardingChecklist({ checklist, storeId }: OnboardingChecklistProps) {
+    const t = useTranslations('merchant.storeDashboard.checklist');
+
     const steps = [
         {
             ...checklist.checklist.storeInfo,
             key: 'storeInfo',
-            label: 'Store Information',
+            label: t('steps.storeInfo'),
             href: `/dashboard/stores/${storeId}/settings/general`,
         },
         {
             ...checklist.checklist.branding,
             key: 'branding',
-            label: 'Brand Identity',
+            label: t('steps.branding'),
             href: `/dashboard/stores/${storeId}/settings/general`,
         },
         {
             ...checklist.checklist.products,
             key: 'products',
-            label: `Add Products (${checklist.checklist.products.current}/${checklist.checklist.products.target})`,
+            label: t('steps.products', {
+                current: checklist.checklist.products.current,
+                target: checklist.checklist.products.target
+            }),
             href: `/dashboard/stores/${storeId}/products/new`,
         },
         {
             ...checklist.checklist.payment,
             key: 'payment',
-            label: 'Payment Setup',
+            label: t('steps.payment'),
             href: `/dashboard/stores/${storeId}/settings/payments`,
         },
         {
             ...checklist.checklist.shipping,
             key: 'shipping',
-            label: 'Shipping Zones',
+            label: t('steps.shipping'),
             href: `/dashboard/stores/${storeId}/settings/shipping`,
         },
         {
             ...checklist.checklist.policies,
             key: 'policies',
-            label: 'Legal Policies',
+            label: t('steps.policies'),
             href: `/dashboard/stores/${storeId}/settings/policies`,
         },
     ];
@@ -59,7 +65,7 @@ export function OnboardingChecklist({ checklist, storeId }: OnboardingChecklistP
                 <div className="flex items-center justify-between mb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-primary" />
-                        Store Setup Progress
+                        {t('title')}
                     </CardTitle>
                     <span className="text-sm font-bold text-primary">
                         {checklist.progress.percentage}%
@@ -94,7 +100,7 @@ export function OnboardingChecklist({ checklist, storeId }: OnboardingChecklistP
                         {!step.completed && (
                             <Button asChild variant="ghost" size="sm" className="h-8 group">
                                 <Link href={step.href}>
-                                    Setup
+                                    {t('setupBtn')}
                                     <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
                                 </Link>
                             </Button>

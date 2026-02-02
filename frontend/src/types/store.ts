@@ -30,6 +30,7 @@ export interface StoreStats {
     totalProducts: number;
     totalOrders: number;
     totalRevenue: number;
+    settledRevenue: number;
     totalCustomers: number;
 }
 

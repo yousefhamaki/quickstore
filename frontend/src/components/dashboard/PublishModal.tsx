@@ -13,6 +13,7 @@ import { CheckCircle2, Rocket, Share2, Copy, ExternalLink, Loader2 } from "lucid
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface PublishModalProps {
     isOpen: boolean;
@@ -33,6 +34,7 @@ export function PublishModal({
     isReady,
     missingSteps = []
 }: PublishModalProps) {
+    const t = useTranslations('merchant.storeDashboard.publishModal');
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -42,7 +44,6 @@ export function PublishModal({
             await onConfirm();
             setIsSuccess(true);
         } catch (error) {
-            // Error handled by mutation usually, but we reset here
             setIsPublishing(false);
         } finally {
             setIsPublishing(false);
@@ -51,7 +52,7 @@ export function PublishModal({
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(storeUrl);
-        toast.success("Link copied to clipboard!");
+        toast.success(t('copied'));
     };
 
     const shareHandler = async () => {
@@ -59,7 +60,7 @@ export function PublishModal({
             try {
                 await navigator.share({
                     title: storeName,
-                    text: `Check out my new store on Buildora!`,
+                    text: t('shareText'),
                     url: storeUrl,
                 });
             } catch (err) {
@@ -82,9 +83,9 @@ export function PublishModal({
                             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                                 <Rocket className="w-6 h-6 text-primary" />
                             </div>
-                            <DialogTitle className="text-2xl font-bold">Launch {storeName}</DialogTitle>
+                            <DialogTitle className="text-2xl font-bold">{t('title', { name: storeName })}</DialogTitle>
                             <DialogDescription className="text-base pt-2">
-                                Ready to take your business live? Once published, customers can visit your store and place orders.
+                                {t('description')}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -92,7 +93,7 @@ export function PublishModal({
                             {!isReady ? (
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
                                     <p className="font-bold text-amber-800 text-sm flex items-center gap-2">
-                                        Wait! Your store isn't quite ready yet:
+                                        {t('notReady')}
                                     </p>
                                     <ul className="grid gap-2">
                                         {missingSteps.map((step, i) => (
@@ -106,19 +107,19 @@ export function PublishModal({
                             ) : (
                                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3 text-emerald-800">
                                     <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-500" />
-                                    <p className="text-sm font-medium">All systems go! Your store meets all requirements for launch.</p>
+                                    <p className="text-sm font-medium">{t('ready')}</p>
                                 </div>
                             )}
 
                             <div className="mt-4 p-4 border rounded-xl bg-muted/30">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Preview URL</p>
+                                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">{t('previewUrl')}</p>
                                 <p className="text-sm font-mono truncate text-primary">{storeUrl}</p>
                             </div>
                         </div>
 
                         <DialogFooter className="gap-2 sm:gap-0">
                             <Button variant="ghost" onClick={onClose} disabled={isPublishing}>
-                                Maybe Later
+                                {t('maybeLater')}
                             </Button>
                             <Button
                                 onClick={handlePublish}
@@ -128,12 +129,12 @@ export function PublishModal({
                                 {isPublishing ? (
                                     <>
                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        Launching...
+                                        {t('launching')}
                                     </>
                                 ) : (
                                     <>
                                         <Rocket className="w-4 h-4 mr-2" />
-                                        Go Live Now
+                                        {t('goLive')}
                                     </>
                                 )}
                             </Button>
@@ -146,31 +147,31 @@ export function PublishModal({
                         </div>
 
                         <div className="space-y-2">
-                            <h2 className="text-2xl font-bold">Your Store is Live!</h2>
+                            <h2 className="text-2xl font-bold">{t('successTitle')}</h2>
                             <p className="text-muted-foreground text-sm max-w-[280px]">
-                                Congratulations! {storeName} is officially open for business.
+                                {t('successDesc', { name: storeName })}
                             </p>
                         </div>
 
                         <div className="w-full space-y-2">
                             <Button onClick={copyToClipboard} variant="outline" className="w-full flex items-center justify-center gap-2 h-12">
                                 <Copy className="w-4 h-4" />
-                                Copy Store URL
+                                {t('copyUrl')}
                             </Button>
                             <Button onClick={shareHandler} className="w-full flex items-center justify-center gap-2 h-12">
                                 <Share2 className="w-4 h-4" />
-                                Share Store
+                                {t('shareStore')}
                             </Button>
                         </div>
 
                         <Button asChild variant="link" size="sm" className="font-bold text-primary">
                             <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                                View Live Store <ExternalLink className="w-3 h-3" />
+                                {t('viewLiveBtn')} <ExternalLink className="w-3 h-3" />
                             </a>
                         </Button>
 
                         <Button onClick={onClose} variant="ghost" className="text-xs text-muted-foreground">
-                            Close and continue managing
+                            {t('closeBtn')}
                         </Button>
                     </div>
                 )}
