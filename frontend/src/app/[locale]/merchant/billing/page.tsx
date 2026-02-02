@@ -26,8 +26,12 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ReceiptModal } from "@/components/merchant/ReceiptModal";
 import { Receipt } from "@/lib/api/billing";
+import { useTranslations, useLocale } from "next-intl";
 
 export default function MerchantBillingPage() {
+    const t = useTranslations('merchant.billing');
+    const tp = useTranslations('merchant.plans');
+    const locale = useLocale();
     const [page, setPage] = useState(1);
     const { data: billing, isLoading: overviewLoading } = useBillingOverview();
     const { data: transactionData, isLoading: transLoading } = useTransactions(page, 5);
@@ -49,14 +53,14 @@ export default function MerchantBillingPage() {
         <div className="container mx-auto p-6 max-w-7xl space-y-8 pb-20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight">Billing & Wallet</h1>
-                    <p className="text-muted-foreground font-medium">Single source of truth for your financial activity.</p>
+                    <h1 className="text-3xl font-black tracking-tight">{t('title')}</h1>
+                    <p className="text-muted-foreground font-medium">{t('subtitle')}</p>
                 </div>
                 <div className="flex gap-3">
                     <Button asChild variant="outline" className="rounded-xl font-bold border-2 h-11">
                         <Link href="/merchant/plans">
                             <Zap className="w-4 h-4 mr-2 text-amber-500 fill-amber-500" />
-                            Upgrade Plan
+                            {t('upgradePlan')}
                         </Link>
                     </Button>
                 </div>
@@ -71,16 +75,16 @@ export default function MerchantBillingPage() {
                     <AlertCircle className="w-6 h-6 flex-shrink-0" />
                     <div className="flex-1">
                         <p className="font-black text-sm uppercase tracking-widest">
-                            {billing.blockingReason === 'SUBSCRIPTION_EXPIRED' ? "Subscription Blocked" : "Low Wallet Balance"}
+                            {billing.blockingReason === 'SUBSCRIPTION_EXPIRED' ? t('blocking.expiredTitle') : t('blocking.lowBalanceTitle')}
                         </p>
                         <p className="text-sm font-medium opacity-80">
                             {billing.blockingReason === 'SUBSCRIPTION_EXPIRED'
-                                ? `Your subscription is expired or past due. Please renew to keep your store active.`
-                                : `Your balance is too low to maintain Free plan visibility. Minimum 250 EGP required.`}
+                                ? t('blocking.expiredSubtitle')
+                                : t('blocking.lowBalanceSubtitle')}
                         </p>
                     </div>
                     <Button size="sm" className={billing.blockingReason === 'SUBSCRIPTION_EXPIRED' ? "bg-red-600 hover:bg-red-700" : "bg-amber-600 hover:bg-amber-700"} asChild>
-                        <Link href={billing.blockingReason === 'SUBSCRIPTION_EXPIRED' ? "/merchant/plans" : "#recharge"}>Resolve Now</Link>
+                        <Link href={billing.blockingReason === 'SUBSCRIPTION_EXPIRED' ? "/merchant/plans" : "#recharge"}>{t('resolveNow')}</Link>
                     </Button>
                 </div>
             )}
@@ -89,7 +93,7 @@ export default function MerchantBillingPage() {
                 {/* Wallet Card */}
                 <Card id="recharge" className="rounded-[32px] border-2 shadow-xl bg-primary text-primary-foreground overflow-hidden relative group">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-black uppercase tracking-widest opacity-70">Available Balance</CardTitle>
+                        <CardTitle className="text-xs font-black uppercase tracking-widest opacity-70">{t('availableBalance')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="flex items-baseline gap-2">
@@ -104,17 +108,17 @@ export default function MerchantBillingPage() {
                                     value={rechargeAmount}
                                     onChange={(e) => setRechargeAmount(e.target.value)}
                                     className="bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-xl h-11"
-                                    placeholder="Amount"
+                                    placeholder={t('rechargePlaceholder')}
                                 />
                                 <Button
                                     onClick={handleRecharge}
                                     disabled={rechargeMutation.isPending}
                                     className="bg-white text-primary hover:bg-white/90 rounded-xl font-black h-11 px-6 transition-all active:scale-95 shadow-lg"
                                 >
-                                    {rechargeMutation.isPending ? <Clock className="w-4 h-4 animate-spin" /> : <><ArrowUpRight className="w-4 h-4 mr-2" /> Recharge</>}
+                                    {rechargeMutation.isPending ? <Clock className="w-4 h-4 animate-spin" /> : <><ArrowUpRight className="w-4 h-4 mr-2" /> {t('recharge')}</>}
                                 </Button>
                             </div>
-                            <p className="text-[10px] font-bold uppercase tracking-tighter opacity-50">Instant recharge via Paymob Secure Gateway</p>
+                            <p className="text-[10px] font-bold uppercase tracking-tighter opacity-50">{t('rechargeNote')}</p>
                         </div>
                     </CardContent>
                     <Wallet className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10 rotate-12 group-hover:rotate-0 transition-transform duration-500" />
@@ -125,8 +129,10 @@ export default function MerchantBillingPage() {
                     <CardHeader>
                         <div className="flex justify-between items-start">
                             <div>
-                                <CardTitle className="text-xl font-black tracking-tight">{billing.plan.name} Plan</CardTitle>
-                                <CardDescription className="font-medium">Active Status</CardDescription>
+                                <CardTitle className="text-xl font-black tracking-tight">
+                                    {t('planTitle', { name: locale === 'ar' ? (billing.plan as any).name_ar || billing.plan.name : (billing.plan as any).name_en || billing.plan.name })}
+                                </CardTitle>
+                                <CardDescription className="font-medium">{t('activeStatus')}</CardDescription>
                             </div>
                             <Badge className={cn(
                                 "rounded-lg px-3 py-1 font-black uppercase text-[10px] tracking-widest italic border-none",
@@ -140,14 +146,14 @@ export default function MerchantBillingPage() {
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                    <span>Stores Capacity</span>
+                                    <span>{t('storesCapacity')}</span>
                                     <span>{billing.usage.storesUsed} / {billing.usage.storeLimit === -1 ? '∞' : billing.usage.storeLimit}</span>
                                 </div>
                                 <Progress value={billing.usage.storeLimit === -1 ? 100 : (billing.usage.storesUsed / billing.usage.storeLimit) * 100} className="h-2" />
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                    <span>Products Active</span>
+                                    <span>{t('productsActive')}</span>
                                     <span>{billing.usage.productsUsed} / {billing.usage.productLimit === -1 ? '∞' : billing.usage.productLimit}</span>
                                 </div>
                                 <Progress value={billing.usage.productLimit === -1 ? 100 : (billing.usage.productsUsed / billing.usage.productLimit) * 100} className="h-2" />
@@ -159,21 +165,21 @@ export default function MerchantBillingPage() {
                 {/* Renewal Info */}
                 <Card className="rounded-[32px] border-2 shadow-md">
                     <CardHeader>
-                        <CardTitle className="text-xl font-black tracking-tight">Timeline</CardTitle>
-                        <CardDescription className="font-medium">Subscription milestones</CardDescription>
+                        <CardTitle className="text-xl font-black tracking-tight">{t('timeline')}</CardTitle>
+                        <CardDescription className="font-medium">{t('milestones')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center gap-4 p-3 bg-muted/40 rounded-2xl">
                             <div className="p-2 bg-white rounded-xl shadow-sm"><Clock className="w-4 h-4 text-primary" /></div>
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Next Renewal</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('nextRenewal')}</p>
                                 <p className="font-bold">{format(new Date(billing.subscription.expiresAt), 'MMMM dd, yyyy')}</p>
                             </div>
                         </div>
                         <div className="space-y-3 pt-2">
-                            <FeatureCheck label="Merchant Dashboard" enabled={true} />
-                            <FeatureCheck label="Dropshipping Tools" enabled={billing.plan.features.dropshipping} />
-                            <FeatureCheck label="Custom Domain" enabled={billing.plan.features.customDomain} />
+                            <FeatureCheck label={t('features.dashboard')} enabled={true} />
+                            <FeatureCheck label={tp('dropshipping')} enabled={billing.plan.features.dropshipping} />
+                            <FeatureCheck label={tp('customDomain')} enabled={billing.plan.features.customDomain} />
                         </div>
                     </CardContent>
                 </Card>
@@ -182,7 +188,7 @@ export default function MerchantBillingPage() {
             {/* Transaction Ledger */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-2">
-                    <h2 className="text-2xl font-black tracking-tight">Transaction History</h2>
+                    <h2 className="text-2xl font-black tracking-tight">{t('transactionHistory')}</h2>
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
@@ -211,11 +217,11 @@ export default function MerchantBillingPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="bg-muted/50 border-b">
-                                    <th className="px-6 py-4 text-left font-black uppercase tracking-widest text-[10px] text-muted-foreground">Date</th>
-                                    <th className="px-6 py-4 text-left font-black uppercase tracking-widest text-[10px] text-muted-foreground">Type</th>
-                                    <th className="px-6 py-4 text-left font-black uppercase tracking-widest text-[10px] text-muted-foreground">Reason</th>
-                                    <th className="px-6 py-4 text-right font-black uppercase tracking-widest text-[10px] text-muted-foreground">Amount</th>
-                                    <th className="px-6 py-4 text-right font-black uppercase tracking-widest text-[10px] text-muted-foreground">Receipt</th>
+                                    <th className="px-6 py-4 text-left font-black uppercase tracking-widest text-[10px] text-muted-foreground">{t('ledger.date')}</th>
+                                    <th className="px-6 py-4 text-left font-black uppercase tracking-widest text-[10px] text-muted-foreground">{t('ledger.type')}</th>
+                                    <th className="px-6 py-4 text-left font-black uppercase tracking-widest text-[10px] text-muted-foreground">{t('ledger.reason')}</th>
+                                    <th className="px-6 py-4 text-right font-black uppercase tracking-widest text-[10px] text-muted-foreground">{t('ledger.amount')}</th>
+                                    <th className="px-6 py-4 text-right font-black uppercase tracking-widest text-[10px] text-muted-foreground">{t('ledger.receipt')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
@@ -236,12 +242,12 @@ export default function MerchantBillingPage() {
                                                     ) : (
                                                         <div className="p-1.5 bg-red-100 text-red-600 rounded-lg"><ArrowUpRight className="w-4 h-4" /></div>
                                                     )}
-                                                    <span className="font-black uppercase text-[10px] tracking-widest">{tx.type}</span>
+                                                    <span className="font-black uppercase text-[10px] tracking-widest">{t(`ledger.${tx.type}`)}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5">
                                                 <Badge variant="outline" className="rounded-lg font-bold border-2 px-3">
-                                                    {tx.reason.replace('_', ' ')}
+                                                    {t.has(`reasons.${tx.reason}`) ? t(`reasons.${tx.reason}`) : tx.reason.replace('_', ' ')}
                                                 </Badge>
                                             </td>
                                             <td className={cn(
@@ -272,7 +278,7 @@ export default function MerchantBillingPage() {
                                 {transactionData?.transactions?.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="p-20 text-center text-muted-foreground italic font-medium">
-                                            No financial activity recorded yet.
+                                            {t('ledger.noActivity')}
                                         </td>
                                     </tr>
                                 )}

@@ -566,5 +566,121 @@
       "subtitle": "إذا لم تجد ما تبحث عنه، فلا تتردد في التواصل معنا.",
       "button": "تواصل مع فريقنا"
     }
+  },
+  "merchant": {
+    "plans": {
+      "badge": "فئات ساس المميزة",
+      "title": "توسع بثقة",
+      "subtitle": "اختر الخطة التي تناسب حجم أعمالك. تطبق رسوم معاملة على كل طلب حسب خطتك.",
+      "currency": "ج.م/شهرياً",
+      "bestValue": "الأفضل قيمة",
+      "currentTier": "الفئة الحالية",
+      "switchToFree": "التحويل للمجانية",
+      "upgradeNow": "ترقية الآن",
+      "insufficientBalance": "رصيد المحفظة غير كافٍ",
+      "enterpriseTitle": "حل للمؤسسات؟",
+      "enterpriseSubtitle": "لشبكات البائعين المتعددين التي تزيد عن 50 متجراً، نقدم بنية تحتية مخصصة ومديري حسابات مخصصين.",
+      "talkToSales": "تحدث إلى المبيعات",
+      "managedStores": "{count} متجر مدار",
+      "unlimitedManagedStores": "متاجر مدارة غير محدودة",
+      "globalProducts": "{count} منتج عالمي",
+      "unlimitedGlobalProducts": "منتجات عالمية غير محدودة",
+      "secureWallet": "تكامل محفظة آمن",
+      "customDomain": "دعم الدومين المخصص",
+      "dropshipping": "نظام الدروبشيبينغ",
+      "orderFee": "{amount} ج.م رسوم للطلب"
+    },
+    "dashboard": {
+      "welcome": "مرحباً بعودتك، {name}!",
+      "subtitle": "أدر إمبراطورية التجارة الإلكترونية الخاصة بك من لوحة تحكم واحدة.",
+      "billingAndPlans": "الفواتير والخطط",
+      "createNewStore": "إنشاء متجر جديد",
+      "logout": "تسجيل الخروج",
+      "logoutConfirm": "هل أنت متأكد من رغبتك في تسجيل الخروج؟",
+      "activeStores": "المتاجر النشطة",
+      "myStores": "متاجري الإلكترونية",
+      "searchPlaceholder": "البحث باسم المتجر..."
+    },
+    "billing": {
+      "title": "الفواتير والمحفظة",
+      "subtitle": "المصدر الوحيد للحقيقة لنشاطك المالي.",
+      "upgradePlan": "ترقية الخطة",
+      "resolveNow": "حل المشكلة الآن",
+      "availableBalance": "الرصيد المتاح",
+      "recharge": "شحن الرصيد",
+      "rechargePlaceholder": "المبلغ",
+      "rechargeNote": "شحن فوري عبر بوابة Paymob المؤمنة",
+      "planTitle": "خطة {name}",
+      "activeStatus": "حالة النشاط",
+      "storesCapacity": "سعة المتاجر",
+      "productsActive": "المنتجات النشطة",
+      "timeline": "الجدول الزمني",
+      "milestones": "أحداث الاشتراك الهامة",
+      "nextRenewal": "التجديد القادم",
+      "transactionHistory": "سجل المعاملات",
+      "features": {
+        "dashboard": "لوحة تحكم التاجر"
+      },
+      "ledger": {
+        "date": "التاريخ",
+        "type": "النوع",
+        "reason": "السبب",
+        "amount": "المبلغ",
+        "receipt": "الإيصال",
+        "noActivity": "لم يتم تسجيل أي نشاط مالي بعد.",
+        "credit": "إيداع",
+        "debit": "سحب"
+      },
+      "blocking": {
+        "expiredTitle": "الاشتراك محظور",
+        "expiredSubtitle": "اشتراكك منتهي أو متأخر السداد. يرجى التجديد للحفاظ على متجرك نشطاً.",
+        "lowBalanceTitle": "رصيد المحفظة منخفض",
+        "lowBalanceSubtitle": "رصيدك منخفض جداً للحفاظ على ظهور الخطة المجانية. الحد الأدنى المطلوب 250 ج.م."
+      },
+      "reasons": {
+        "recharge": "شحن المحفظة",
+        "subscription_payment": "دفع الاشتراك",
+        "order_fee": "رسوم معاملة الطلب",
+        "refund": "استرداد الأموال",
+        "manual_adjustment": "تعديل يدوي"
+      }
+    },
+    "settings": {
+      "title": "إعدادات الحساب",
+      "tabs": {
+        "billing": "معلومات الفوترة",
+        "subscription": "الاشتراك"
+      },
+      "billing": {
+        "title": "معلومات الفوترة",
+        "description": "العنوان والرقم الضريبي المستخدم في الفواتير.",
+        "form": {
+          "fullName": "الاسم الكامل / اسم الشركة",
+          "billingEmail": "بريد الفوترة الإلكتروني",
+          "addressLine1": "عنوان السطر 1",
+          "city": "المدينة",
+          "state": "المنطقة / المحافظة",
+          "postalCode": "الرمز البريدي",
+          "taxId": "الرقم الضريبي (اختياري)",
+          "save": "حفظ التغييرات",
+          "saving": "جاري الحفظ..."
+        },
+        "messages": {
+          "success": "تم تحديث ملف الفوترة بنجاح",
+          "error": "فشل تحديث الملف الشخصي",
+          "loadError": "فشل تحميل الإعدادات"
+        }
+      },
+      "subscription": {
+        "title": "الاشتراك الحالي",
+        "description": "إدارة خطتك وطرق الدفع.",
+        "renewsOn": "يتجدد في {date}",
+        "expiresOn": "ينتهي في {date}",
+        "manage": "إدارة الخطة",
+        "status": "الحالة",
+        "noActive": "ليس لديك اشتراك نشط.",
+        "subscribeNow": "اشترك الآن"
+      }
+    }
   }
 }

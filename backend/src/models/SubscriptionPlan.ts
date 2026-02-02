@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISubscriptionPlan extends Document {
+    name: string;
     name_en: string;
     name_ar: string;
     description_en: string;
@@ -24,12 +25,13 @@ export interface ISubscriptionPlan extends Document {
 }
 
 const SubscriptionPlanSchema: Schema = new Schema({
-    name_en: { type: String, required: true },
-    name_ar: { type: String, required: true },
+    name: { type: String, required: true },
+    name_en: { type: String },
+    name_ar: { type: String },
     description_en: { type: String },
     description_ar: { type: String },
-    price: { type: Number, required: true },
-    monthlyPrice: { type: Number }, // To be synced with price in pre-save or just used directly
+    price: { type: Number },
+    monthlyPrice: { type: Number },
     currency: { type: String, default: 'EGP' },
     features_en: [{ type: String }],
     features_ar: [{ type: String }],
@@ -38,8 +40,8 @@ const SubscriptionPlanSchema: Schema = new Schema({
         customDomain: { type: Boolean, default: false }
     },
     duration: { type: Number, required: true, default: 30 },
-    maxStores: { type: Number, required: true, default: 1 },
-    storeLimit: { type: Number }, // To be synced with maxStores
+    maxStores: { type: Number, default: 1 },
+    storeLimit: { type: Number },
     productLimit: { type: Number, required: true }, // -1 for unlimited
     orderFee: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
@@ -48,8 +50,11 @@ const SubscriptionPlanSchema: Schema = new Schema({
 
 // Sync aliases
 SubscriptionPlanSchema.pre<ISubscriptionPlan>('save', function () {
-    if (this.price !== undefined) (this as any).monthlyPrice = this.price;
-    if (this.maxStores !== undefined) (this as any).storeLimit = this.maxStores;
+    if (this.price !== undefined && this.monthlyPrice === undefined) this.monthlyPrice = this.price;
+    if (this.monthlyPrice !== undefined && this.price === undefined) this.price = this.monthlyPrice;
+
+    if (this.maxStores !== undefined && this.storeLimit === undefined) this.storeLimit = this.maxStores;
+    if (this.storeLimit !== undefined && this.maxStores === undefined) this.maxStores = this.storeLimit;
 });
 
 export default mongoose.model<ISubscriptionPlan>('SubscriptionPlan', SubscriptionPlanSchema);

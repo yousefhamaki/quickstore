@@ -168,14 +168,27 @@ export const getBillingOverview = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        const plan = (subscription?.planId as any) || {
-            name: 'No Plan',
-            type: 'free',
-            monthlyPrice: 0,
-            storeLimit: 0,
-            productLimit: 0,
-            features: { dropshipping: false, customDomain: false }
-        };
+        // Handle case where subscription exists but planId is null (e.g. after re-seeding)
+        let plan = subscription?.planId as any;
+        if (subscription && !plan) {
+            const freePlan = await Plan.findOne({ type: 'free' });
+            if (freePlan) {
+                subscription.planId = freePlan._id as any;
+                await subscription.save();
+                plan = freePlan;
+            }
+        }
+
+        if (!plan) {
+            plan = {
+                name: 'No Plan',
+                type: 'free',
+                monthlyPrice: 0,
+                storeLimit: 0,
+                productLimit: 0,
+                features: { dropshipping: false, customDomain: false }
+            };
+        }
 
         // 3. Usage Stats
         const Store = mongoose.model('Store');
@@ -195,6 +208,9 @@ export const getBillingOverview = async (req: AuthRequest, res: Response) => {
         } else if (subscription?.status === 'past_due' || subscription?.status === 'expired') {
             blockingReason = "SUBSCRIPTION_EXPIRED";
         }
+
+        // 5. Billing Profile
+        const profile = await BillingProfile.findOne({ userId });
 
         res.json({
             wallet: {
@@ -221,7 +237,8 @@ export const getBillingOverview = async (req: AuthRequest, res: Response) => {
                 productsUsed: productCount,
                 productLimit: plan.productLimit
             },
-            blockingReason
+            blockingReason,
+            profile // Added profile here
         });
     } catch (error) {
         console.error('Overview Error:', error);

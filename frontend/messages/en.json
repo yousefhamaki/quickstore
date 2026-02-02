@@ -566,5 +566,121 @@
       "subtitle": "If you couldn't find what you were looking for, don't hesitate to reach out.",
       "button": "Contact Our Team"
     }
+  },
+  "merchant": {
+    "plans": {
+      "badge": "Premium SaaS Tiers",
+      "title": "Scale with Confidence",
+      "subtitle": "Select a plan that fits your volume. Transaction fees apply per order depending on your plan.",
+      "currency": "EGP/mo",
+      "bestValue": "Best Value",
+      "currentTier": "Current Tier",
+      "switchToFree": "Switch to Free",
+      "upgradeNow": "Upgrade Now",
+      "insufficientBalance": "Insufficient wallet balance",
+      "enterpriseTitle": "Enterprise Solution?",
+      "enterpriseSubtitle": "For multiseller networks with 50+ stores, we offer custom infrastructure and dedicated account managers.",
+      "talkToSales": "Talk to sales",
+      "managedStores": "{count} Managed Store(s)",
+      "unlimitedManagedStores": "Unlimited Managed Stores",
+      "globalProducts": "{count} Global Products",
+      "unlimitedGlobalProducts": "Unlimited Global Products",
+      "secureWallet": "Secure Wallet Integration",
+      "customDomain": "Custom Domain Support",
+      "dropshipping": "Dropshipping Ecosystem",
+      "orderFee": "{amount} EGP fee per order"
+    },
+    "dashboard": {
+      "welcome": "Welcome back, {name}!",
+      "subtitle": "Manage your e-commerce empire from a single dashboard.",
+      "billingAndPlans": "Billing & Plans",
+      "createNewStore": "Create New Store",
+      "logout": "Logout",
+      "logoutConfirm": "Are you sure you want to logout?",
+      "activeStores": "Active Stores",
+      "myStores": "My Online Stores",
+      "searchPlaceholder": "Search by store name..."
+    },
+    "billing": {
+      "title": "Billing & Wallet",
+      "subtitle": "Single source of truth for your financial activity.",
+      "upgradePlan": "Upgrade Plan",
+      "resolveNow": "Resolve Now",
+      "availableBalance": "Available Balance",
+      "recharge": "Recharge",
+      "rechargePlaceholder": "Amount",
+      "rechargeNote": "Instant recharge via Paymob Secure Gateway",
+      "planTitle": "{name} Plan",
+      "activeStatus": "Active Status",
+      "storesCapacity": "Stores Capacity",
+      "productsActive": "Products Active",
+      "timeline": "Timeline",
+      "milestones": "Subscription milestones",
+      "nextRenewal": "Next Renewal",
+      "transactionHistory": "Transaction History",
+      "features": {
+        "dashboard": "Merchant Dashboard"
+      },
+      "ledger": {
+        "date": "Date",
+        "type": "Type",
+        "reason": "Reason",
+        "amount": "Amount",
+        "receipt": "Receipt",
+        "noActivity": "No financial activity recorded yet.",
+        "credit": "Credit",
+        "debit": "Debit"
+      },
+      "blocking": {
+        "expiredTitle": "Subscription Blocked",
+        "expiredSubtitle": "Your subscription is expired or past due. Please renew to keep your store active.",
+        "lowBalanceTitle": "Low Wallet Balance",
+        "lowBalanceSubtitle": "Your balance is too low to maintain Free plan visibility. Minimum 250 EGP required."
+      },
+      "reasons": {
+        "recharge": "Wallet Recharge",
+        "subscription_payment": "Subscription Payment",
+        "order_fee": "Order Transaction Fee",
+        "refund": "Refund",
+        "manual_adjustment": "Manual Adjustment"
+      }
+    },
+    "settings": {
+      "title": "Account Settings",
+      "tabs": {
+        "billing": "Billing Info",
+        "subscription": "Subscription"
+      },
+      "billing": {
+        "title": "Billing Information",
+        "description": "Address and Tax ID used for invoices.",
+        "form": {
+          "fullName": "Full Name / Company Name",
+          "billingEmail": "Billing Email",
+          "addressLine1": "Address Line 1",
+          "city": "City",
+          "state": "State / Province",
+          "postalCode": "Postal Code",
+          "taxId": "Tax ID (Optional)",
+          "save": "Save Changes",
+          "saving": "Saving..."
+        },
+        "messages": {
+          "success": "Billing profile updated",
+          "error": "Failed to update profile",
+          "loadError": "Failed to load settings"
+        }
+      },
+      "subscription": {
+        "title": "Current Subscription",
+        "description": "Manage your plan and payment methods.",
+        "renewsOn": "Renews on {date}",
+        "expiresOn": "Expires on {date}",
+        "manage": "Manage Plan",
+        "status": "Status",
+        "noActive": "You have no active subscription.",
+        "subscribeNow": "Subscribe Now"
+      }
+    }
   }
 }

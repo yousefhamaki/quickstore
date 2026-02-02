@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslations, useLocale } from 'next-intl';
 
 const billingSchema = z.object({
     customerName: z.string().min(2, 'Name is required'),
@@ -31,6 +32,8 @@ const billingSchema = z.object({
 type BillingFormValues = z.infer<typeof billingSchema>;
 
 export default function MerchantSettingsPage() {
+    const t = useTranslations('merchant.settings');
+    const locale = useLocale();
     const [isLoading, setIsLoading] = useState(true);
     const [overview, setOverview] = useState<any>(null);
 
@@ -58,34 +61,34 @@ export default function MerchantSettingsPage() {
                 setOverview(data);
                 if (data.profile) {
                     form.reset({
-                        customerName: data.profile.customerName,
-                        billingEmail: data.profile.billingEmail,
+                        customerName: data.profile.customerName || '',
+                        billingEmail: data.profile.billingEmail || '',
                         taxId: data.profile.taxId || '',
                         address: {
-                            line1: data.profile.address.line1,
-                            line2: data.profile.address.line2 || '',
-                            city: data.profile.address.city,
-                            state: data.profile.address.state,
-                            postalCode: data.profile.address.postalCode,
-                            country: data.profile.address.country || 'Egypt',
+                            line1: data.profile.address?.line1 || '',
+                            line2: data.profile.address?.line2 || '',
+                            city: data.profile.address?.city || '',
+                            state: data.profile.address?.state || '',
+                            postalCode: data.profile.address?.postalCode || '',
+                            country: data.profile.address?.country || 'Egypt',
                         }
                     });
                 }
             } catch (error) {
-                toast.error('Failed to load settings');
+                toast.error(t('billing.messages.loadError'));
             } finally {
                 setIsLoading(false);
             }
         };
         loadData();
-    }, [form]);
+    }, [form, t]);
 
     const onSubmit = async (values: BillingFormValues) => {
         try {
             await updateBillingProfile(values);
-            toast.success('Billing profile updated');
+            toast.success(t('billing.messages.success'));
         } catch (error) {
-            toast.error('Failed to update profile');
+            toast.error(t('billing.messages.error'));
         }
     };
 
@@ -95,20 +98,19 @@ export default function MerchantSettingsPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-8">
-            <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
+            <h1 className="text-3xl font-bold mb-8">{t('title')}</h1>
 
             <Tabs defaultValue="billing" className="space-y-6">
                 <TabsList>
-                    <TabsTrigger value="billing">Billing Info</TabsTrigger>
-                    <TabsTrigger value="subscription">Subscription</TabsTrigger>
-                    {/* Add General/Profile tabs later */}
+                    <TabsTrigger value="billing">{t('tabs.billing')}</TabsTrigger>
+                    <TabsTrigger value="subscription">{t('tabs.subscription')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="billing">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Billing Information</CardTitle>
-                            <CardDescription>Address and Tax ID used for invoices.</CardDescription>
+                            <CardTitle>{t('billing.title')}</CardTitle>
+                            <CardDescription>{t('billing.description')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Form {...form}>
@@ -119,7 +121,7 @@ export default function MerchantSettingsPage() {
                                             name="customerName"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Full Name / Company Name</FormLabel>
+                                                    <FormLabel>{t('billing.form.fullName')}</FormLabel>
                                                     <FormControl><Input {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -130,7 +132,7 @@ export default function MerchantSettingsPage() {
                                             name="billingEmail"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Billing Email</FormLabel>
+                                                    <FormLabel>{t('billing.form.billingEmail')}</FormLabel>
                                                     <FormControl><Input {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -143,7 +145,7 @@ export default function MerchantSettingsPage() {
                                         name="address.line1"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Address Line 1</FormLabel>
+                                                <FormLabel>{t('billing.form.addressLine1')}</FormLabel>
                                                 <FormControl><Input {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -156,7 +158,7 @@ export default function MerchantSettingsPage() {
                                             name="address.city"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>City</FormLabel>
+                                                    <FormLabel>{t('billing.form.city')}</FormLabel>
                                                     <FormControl><Input {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -167,7 +169,7 @@ export default function MerchantSettingsPage() {
                                             name="address.state"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>State / Province</FormLabel>
+                                                    <FormLabel>{t('billing.form.state')}</FormLabel>
                                                     <FormControl><Input {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -181,7 +183,7 @@ export default function MerchantSettingsPage() {
                                             name="address.postalCode"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Postal Code</FormLabel>
+                                                    <FormLabel>{t('billing.form.postalCode')}</FormLabel>
                                                     <FormControl><Input {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -192,7 +194,7 @@ export default function MerchantSettingsPage() {
                                             name="taxId"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Tax ID (Optional)</FormLabel>
+                                                    <FormLabel>{t('billing.form.taxId')}</FormLabel>
                                                     <FormControl><Input {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -201,7 +203,7 @@ export default function MerchantSettingsPage() {
                                     </div>
 
                                     <Button type="submit" disabled={form.formState.isSubmitting}>
-                                        {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+                                        {form.formState.isSubmitting ? t('billing.form.saving') : t('billing.form.save')}
                                     </Button>
                                 </form>
                             </Form>
@@ -212,32 +214,37 @@ export default function MerchantSettingsPage() {
                 <TabsContent value="subscription">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Current Subscription</CardTitle>
-                            <CardDescription>Manage your plan and payment methods.</CardDescription>
+                            <CardTitle>{t('subscription.title')}</CardTitle>
+                            <CardDescription>{t('subscription.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {overview?.subscription ? (
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
                                         <div>
-                                            <p className="font-bold text-lg">{overview?.plan?.name}</p>
+                                            <p className="font-bold text-lg">
+                                                {locale === 'ar' ? (overview.plan as any).name_ar || overview.plan.name : (overview.plan as any).name_en || overview.plan.name}
+                                            </p>
                                             <p className="text-sm text-muted-foreground">
-                                                {overview?.subscription?.status === 'active' ? 'Renews' : 'Expires'} on {overview?.subscription?.expiresAt ? new Date(overview.subscription.expiresAt).toLocaleDateString() : 'N/A'}
+                                                {overview?.subscription?.status === 'active'
+                                                    ? t('subscription.renewsOn', { date: overview?.subscription?.expiresAt ? new Date(overview.subscription.expiresAt).toLocaleDateString(locale) : 'N/A' })
+                                                    : t('subscription.expiresOn', { date: overview?.subscription?.expiresAt ? new Date(overview.subscription.expiresAt).toLocaleDateString(locale) : 'N/A' })
+                                                }
                                             </p>
                                         </div>
                                         <Button asChild variant="outline">
-                                            <Link href="/merchant/plans">Manage Plan</Link>
+                                            <Link href="/merchant/plans">{t('subscription.manage')}</Link>
                                         </Button>
                                     </div>
                                     <div className="text-sm text-gray-500">
-                                        <p>Status: <span className="uppercase font-bold">{overview.subscription.status}</span></p>
+                                        <p>{t('subscription.status')}: <span className="uppercase font-bold">{overview.subscription.status}</span></p>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="text-center py-6">
-                                    <p className="mb-4">You have no active subscription.</p>
+                                    <p className="mb-4">{t('subscription.noActive')}</p>
                                     <Button asChild>
-                                        <Link href="/merchant/subscribe">Subscribe Now</Link>
+                                        <Link href="/merchant/subscribe">{t('subscription.subscribeNow')}</Link>
                                     </Button>
                                 </div>
                             )}

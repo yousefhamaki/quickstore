@@ -17,20 +17,22 @@ export function middleware(request: NextRequest) {
     }
 
     const token = request.cookies.get('token')?.value;
-    const hostname = request.headers.get('host') || '';
+    const host = request.headers.get('host') || '';
+    const hostname = host.split(':')[0]; // Normalize by removing port
 
     // Define main domains
     const mainDomains = [
-        'localhost:3000',
-        'localhost:3001',
+        'localhost',
         'quickstore.com',
-        'www.quickstore.com',
-        'api.quickstore.com',
         'quickstore.live',
-        'www.quickstore.live'
+        'www.quickstore.com',
+        'www.quickstore.live',
+        'api.quickstore.com',
+        'buildora.live',
+        'www.buildora.live'
     ];
 
-    const isMainDomain = mainDomains.includes(hostname);
+    const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
 
     // Handle subdomain routing (storefront)
     if (!isMainDomain) {
@@ -38,14 +40,22 @@ export function middleware(request: NextRequest) {
         if (subdomain && subdomain !== 'www') {
             const segments = pathname.split('/');
             const isLocaleInPath = ['en', 'ar'].includes(segments[1]);
-            const locale = isLocaleInPath ? segments[1] : 'en';
-            const cleanPathname = isLocaleInPath
-                ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '/')
-                : pathname;
 
-            return NextResponse.rewrite(
-                new URL(`/${locale}/store/${subdomain}${cleanPathname === '/' ? '' : cleanPathname}`, request.url)
-            );
+            // Check if we are already in the store path or a system path
+            const pathToCheck = isLocaleInPath ? '/' + segments.slice(2).join('/') : pathname;
+            const isSystemPath = ['/auth', '/merchant', '/dashboard', '/admin', '/api', '/_next'].some(p => pathToCheck.startsWith(p));
+            const isAlreadyStorePath = isLocaleInPath ? segments[2] === 'store' : segments[1] === 'store';
+
+            if (!isAlreadyStorePath && !isSystemPath) {
+                const locale = isLocaleInPath ? segments[1] : 'en';
+                const cleanPathname = isLocaleInPath
+                    ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '/')
+                    : pathname;
+
+                return NextResponse.rewrite(
+                    new URL(`/${locale}/store/${subdomain}${cleanPathname === '/' ? '' : cleanPathname}`, request.url)
+                );
+            }
         }
     }
 
@@ -54,15 +64,17 @@ export function middleware(request: NextRequest) {
     const isLocaleInPath = ['en', 'ar'].includes(pathnameLocale);
 
     // Auth redirects - check paths without locale prefix
-    const pathWithoutLocale = isLocaleInPath ? pathname.substring(3) : pathname;
+    const pathWithoutLocale = isLocaleInPath ? (pathname.substring(3) || '/') : pathname;
 
     const isMerchantPath = pathWithoutLocale.startsWith('/merchant');
     const isDashboardPath = pathWithoutLocale.startsWith('/dashboard');
     const isAdminPath = pathWithoutLocale.startsWith('/admin');
     const isAuthPath = pathWithoutLocale.startsWith('/auth');
+    const isStorePath = pathWithoutLocale.startsWith('/store');
 
     // Redirect unauthenticated users to login
-    if ((isMerchantPath || isDashboardPath || isAdminPath) && !token) {
+    // CRITICAL: Ensure store paths NEVER trigger this
+    if ((isMerchantPath || isDashboardPath || isAdminPath) && !isStorePath && !token) {
         const locale = isLocaleInPath ? pathnameLocale : 'en';
         return NextResponse.redirect(new URL(`/${locale}/auth/login`, request.url));
     }

@@ -7,8 +7,11 @@ import { Check, Zap, Rocket, Star, ShieldCheck, Loader2, AlertCircle } from "luc
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { useTranslations, useLocale } from "next-intl";
 
 export default function PlansPage() {
+    const t = useTranslations('merchant.plans');
+    const locale = useLocale();
     const { data: plans, isLoading: plansLoading } = usePlans();
     const { data: billing, isLoading: billingLoading } = useBillingOverview();
     const subscribeMutation = useSubscribe();
@@ -21,14 +24,16 @@ export default function PlansPage() {
         <div className="container mx-auto p-6 max-w-7xl space-y-16 pb-20">
             <div className="text-center space-y-6 max-w-3xl mx-auto">
                 <Badge variant="outline" className="rounded-full px-6 py-1 font-black uppercase text-[10px] tracking-widest border-2 border-primary/20 text-primary">
-                    Premium SaaS Tiers
+                    {t('badge')}
                 </Badge>
                 <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight">
-                    Scale with <br />
-                    <span className="text-primary italic">Confidence.</span>
+                    {t.rich('title', {
+                        br: () => <br />,
+                        span: (chunks) => <span className="text-primary italic">{chunks}</span>
+                    })}
                 </h1>
                 <p className="text-xl text-muted-foreground font-medium">
-                    Select a plan that fits your volume. All plans include a standard 0.50 EGP per order transaction fee.
+                    {t('subtitle')}
                 </p>
             </div>
 
@@ -37,6 +42,9 @@ export default function PlansPage() {
                     const isCurrent = currentPlanName === plan.name;
                     const isPopular = plan.name === 'Pro';
                     const isInsufficient = plan.type === 'paid' && billing && billing.wallet.balance < plan.monthlyPrice;
+
+                    // Support localized names/descriptions if available in the database
+                    const localizedName = locale === 'ar' ? (plan as any).name_ar || plan.name : (plan as any).name_en || plan.name;
 
                     return (
                         <Card
@@ -49,7 +57,7 @@ export default function PlansPage() {
                         >
                             {isPopular && (
                                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-1.5 rounded-full shadow-lg">
-                                    Best Value
+                                    {t('bestValue')}
                                 </div>
                             )}
 
@@ -57,20 +65,27 @@ export default function PlansPage() {
                                 <div className="p-4 bg-muted rounded-[24px] w-fit mb-6">
                                     {getPlanIcon(plan.name)}
                                 </div>
-                                <CardTitle className="text-3xl font-black tracking-tight">{plan.name}</CardTitle>
+                                <CardTitle className="text-3xl font-black tracking-tight">{localizedName}</CardTitle>
                                 <div className="flex items-baseline gap-1 mt-4">
                                     <span className="text-5xl font-black">{plan.monthlyPrice}</span>
-                                    <span className="text-muted-foreground font-bold tracking-tight">EGP/mo</span>
+                                    <span className="text-muted-foreground font-bold tracking-tight">{t('currency')}</span>
                                 </div>
                             </CardHeader>
 
                             <CardContent className="p-10 pt-4 flex-1 space-y-6">
                                 <div className="space-y-4">
-                                    <FeatureItem icon={Check} label={`${plan.storeLimit === -1 ? 'Unlimited' : plan.storeLimit} Managed Store(s)`} />
-                                    <FeatureItem icon={Check} label={`${plan.productLimit === -1 ? 'Unlimited' : plan.productLimit} Global Products`} />
-                                    <FeatureItem icon={ShieldCheck} label="Secure Wallet Integration" />
-                                    <FeatureItem icon={plan.features.customDomain ? Check : Star} label="Custom Domain Support" enabled={plan.features.customDomain} />
-                                    <FeatureItem icon={plan.features.dropshipping ? Check : Rocket} label="Dropshipping Ecosystem" enabled={plan.features.dropshipping} />
+                                    <FeatureItem
+                                        icon={Check}
+                                        label={plan.storeLimit === -1 ? t('unlimitedManagedStores') : t('managedStores', { count: plan.storeLimit })}
+                                    />
+                                    <FeatureItem
+                                        icon={Check}
+                                        label={plan.productLimit === -1 ? t('unlimitedGlobalProducts') : t('globalProducts', { count: plan.productLimit })}
+                                    />
+                                    <FeatureItem icon={Zap} label={t('orderFee', { amount: plan.orderFee.toFixed(2) })} />
+                                    <FeatureItem icon={ShieldCheck} label={t('secureWallet')} />
+                                    <FeatureItem icon={plan.features.customDomain ? Check : Star} label={t('customDomain')} enabled={plan.features.customDomain} />
+                                    <FeatureItem icon={plan.features.dropshipping ? Check : Rocket} label={t('dropshipping')} enabled={plan.features.dropshipping} />
                                 </div>
                             </CardContent>
 
@@ -88,13 +103,13 @@ export default function PlansPage() {
                                         {subscribeMutation.isPending && subscribeMutation.variables === plan._id ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
-                                            isCurrent ? 'Current Tier' : (plan.type === 'free' ? 'Switch to Free' : 'Upgrade Now')
+                                            isCurrent ? t('currentTier') : (plan.type === 'free' ? t('switchToFree') : t('upgradeNow'))
                                         )}
                                     </Button>
                                     {isInsufficient && !isCurrent && (
                                         <div className="flex items-center gap-2 text-amber-600 font-bold text-[10px] uppercase tracking-widest px-2">
                                             <AlertCircle className="w-3 h-3" />
-                                            Insufficient wallet balance
+                                            {t('insufficientBalance')}
                                         </div>
                                     )}
                                 </div>
@@ -106,12 +121,14 @@ export default function PlansPage() {
 
             <div className="bg-primary/5 p-16 rounded-[64px] border-2 border-dashed border-primary/20 flex flex-col md:flex-row items-center justify-between gap-12 max-w-5xl mx-auto shadow-inner">
                 <div className="space-y-4 max-w-md">
-                    <h3 className="text-3xl font-black tracking-tight">Enterprise Solution?</h3>
+                    <h3 className="text-3xl font-black tracking-tight">{t('enterpriseTitle')}</h3>
                     <p className="text-muted-foreground font-medium text-lg leading-relaxed">
-                        For multiseller networks with 50+ stores, we offer custom infrastructure and dedicated account managers.
+                        {t('enterpriseSubtitle')}
                     </p>
                 </div>
-                <Button variant="default" className="h-16 px-12 rounded-[24px] font-black uppercase tracking-widest shadow-2xl transition-transform hover:scale-105">Talk to sales</Button>
+                <Button variant="default" className="h-16 px-12 rounded-[24px] font-black uppercase tracking-widest shadow-2xl transition-transform hover:scale-105">
+                    {t('talkToSales')}
+                </Button>
             </div>
         </div>
     );

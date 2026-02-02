@@ -6,6 +6,7 @@ dotenv.config();
 
 const plans = [
     {
+        name: 'Free',
         name_en: 'Starter',
         name_ar: 'البداية',
         description_en: 'Perfect for testing your idea and small creators starting out.',
@@ -36,6 +37,7 @@ const plans = [
         isActive: true
     },
     {
+        name: 'Basic',
         name_en: 'Professional',
         name_ar: 'الاحترافي',
         description_en: 'Best for growing businesses needing custom branding and advanced tools.',
@@ -70,13 +72,14 @@ const plans = [
         isActive: true
     },
     {
-        name_en: 'Enterprise',
-        name_ar: 'المؤسسات',
-        description_en: 'For high-volume merchants needing dedicated resources and custom solutions.',
-        description_ar: 'للتجار ذوي الحجم الكبير الذين يحتاجون إلى موارد مخصصة وحلول مخصصة.',
+        name: 'Pro',
+        name_en: 'Professional Plus',
+        name_ar: 'الاحترافي بلس',
+        description_en: 'Best for growing businesses needing custom branding and advanced tools.',
+        description_ar: 'الأفضل للشركات المتنامية التي تحتاج إلى علامة تجارية مخصصة وأدوات متقدمة.',
         type: 'paid',
-        price: 1499,
-        monthlyPrice: 1499,
+        price: 999,
+        monthlyPrice: 999,
         currency: 'EGP',
         maxStores: 10,
         storeLimit: 10,
@@ -85,6 +88,41 @@ const plans = [
         duration: 30,
         features_en: [
             '10 Online Stores',
+            'Unlimited Products',
+            'Priority Email Support',
+            'Custom Domain Support',
+            'Premium Themes & Builder',
+            'Instapay & VCash Integration',
+            'Advanced Analytics'
+        ],
+        features_ar: [
+            '10 متاجر إلكترونية',
+            'منتجات غير محدودة',
+            'دعم بريد إلكتروني ذو أولوية',
+            'دعم النطاق المخصص',
+            'قوالب ممتازة ومنشئ قوالب',
+            'تكامل إنستاباي وفودافون كاش',
+            'تحليلات متقدمة'
+        ],
+        isActive: true
+    },
+    {
+        name: 'Enterprise',
+        name_en: 'Enterprise',
+        name_ar: 'المؤسسات',
+        description_en: 'For high-volume merchants needing dedicated resources and custom solutions.',
+        description_ar: 'للتجار ذوي الحجم الكبير الذين يحتاجون إلى موارد مخصصة وحلول مخصصة.',
+        type: 'paid',
+        price: 1499,
+        monthlyPrice: 1499,
+        currency: 'EGP',
+        maxStores: 50,
+        storeLimit: 50,
+        productLimit: -1, // Unlimited
+        orderFee: 0,
+        duration: 30,
+        features_en: [
+            '50 Online Stores',
             'Dedicated Account Manager',
             'Custom Integration Support',
             'SLA & Priority Chat Support',
@@ -93,7 +131,7 @@ const plans = [
             'Highest Performance Servers'
         ],
         features_ar: [
-            '10 متاجر إلكترونية',
+            '50 متجر إلكتروني',
             'مدير حساب مخصص',
             'دعم التكامل المخصص',
             'اتفاقية مستوى الخدمة ودعم الدردشة ذو الأولوية',
