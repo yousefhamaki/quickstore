@@ -4,6 +4,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useBillingOverview } from '@/lib/hooks/useBilling';
 import { BillingOverview } from '@/lib/api/billing';
 
+import Cookies from 'js-cookie';
+import { usePathname } from 'next/navigation';
+
 interface WalletContextType {
     billing: BillingOverview | undefined;
     isLoading: boolean;
@@ -15,8 +18,23 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-    // 30s polling to keep wallet balance and status synced
-    const { data: billing, isLoading, refetch } = useBillingOverview();
+    const pathname = usePathname();
+    const [shouldCheck, setShouldCheck] = useState(false);
+
+    useEffect(() => {
+        const token = Cookies.get('token');
+
+        // Don't check billing for storefront paths or if no token exists
+        const isStorePath = pathname?.includes('/store/') ||
+            (typeof window !== 'undefined' &&
+                window.location.hostname.split('.').length > 2 &&
+                !window.location.hostname.startsWith('www.'));
+
+        setShouldCheck(!!token && !isStorePath);
+    }, [pathname]);
+
+    // 30s polling to keep wallet balance and status synced (only if enabled)
+    const { data: billing, isLoading, refetch } = useBillingOverview(shouldCheck);
 
     // We derive isBlocked from the backend's blockingReason
     const isBlocked = !!billing?.blockingReason;

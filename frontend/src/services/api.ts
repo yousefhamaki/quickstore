@@ -31,8 +31,14 @@ api.interceptors.response.use(
             Cookies.remove('token');
             localStorage.removeItem('user');
 
-            // Prevent infinite redirect loops if we are already on the login page
-            if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+            // Prevent infinite redirect loops and don't redirect on storefront paths
+            const isAuthPage = typeof window !== 'undefined' && window.location.pathname.includes('/auth/login');
+            const isStorePage = typeof window !== 'undefined' && (
+                window.location.pathname.includes('/store/') ||
+                (window.location.hostname.split('.').length > 2 && !window.location.hostname.startsWith('www.'))
+            );
+
+            if (typeof window !== 'undefined' && !isAuthPage && !isStorePage) {
                 const pathname = window.location.pathname;
                 const segments = pathname.split('/');
                 const locale = ['en', 'ar'].includes(segments[1]) ? segments[1] : 'en';

@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as billingApi from '@/lib/api/billing';
 import { toast } from 'sonner';
 
-export const useBillingOverview = () => {
+export const useBillingOverview = (enabled: boolean = true) => {
     return useQuery({
         queryKey: ['billingOverview'],
         queryFn: billingApi.getBillingOverview,
-        refetchInterval: 30000, // Sync every 30s
+        refetchInterval: enabled ? 30000 : false, // Sync every 30s only if enabled
+        enabled
     });
 };
 
