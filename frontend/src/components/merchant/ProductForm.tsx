@@ -114,7 +114,7 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                     values: Array.isArray(opt.values)
                         ? opt.values.map((v: string) => v.trim()).filter((v: string) => v !== '')
                         : (typeof opt.values === 'string'
-                            ? (opt.values as string).split(',').map(v => v.trim()).filter(v => v !== '')
+                            ? (opt.values as string).split(/[,،]/).map(v => v.trim()).filter(v => v !== '')
                             : [])
                 }))
                 .filter(opt => opt.values.length > 0);
@@ -237,7 +237,7 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                                                     <Label>{t('variants.values')}</Label>
                                                     <Input
                                                         value={Array.isArray(option.values) ? option.values.join(', ') : option.values}
-                                                        onChange={e => updateOption(i, 'values', e.target.value.split(',').map(v => v.trimStart()))}
+                                                        onChange={e => updateOption(i, 'values', e.target.value.split(/[,،]/).map(v => v.trimStart()))}
                                                         placeholder={t('variants.valuesPlaceholder')}
                                                         className="rounded-xl border shadow-sm bg-white"
                                                     />

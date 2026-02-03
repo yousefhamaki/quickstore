@@ -3,10 +3,11 @@ import { getPublicStore } from "@/services/publicStoreService";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 interface StoreLayoutProps {
     children: ReactNode;
-    params: Promise<{ subdomain: string }>;
+    params: Promise<{ locale: string; subdomain: string }>;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ subdomain: string }> }): Promise<Metadata> {
@@ -32,7 +33,8 @@ import { HeaderCart } from "@/components/storefront/HeaderCart";
 import { VisitorTracker } from "@/components/storefront/VisitorTracker";
 
 export default async function StoreLayout({ children, params }: StoreLayoutProps) {
-    const { subdomain } = await params;
+    const { subdomain, locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'store.layout' });
     let store: any;
     try {
         store = await getPublicStore(subdomain);
@@ -83,9 +85,9 @@ export default async function StoreLayout({ children, params }: StoreLayoutProps
                             )}
                         </Link>
                         <nav className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                            <Link href="/" className="hover:text-black transition-colors">Shop</Link>
-                            <Link href="/track-order" className="hover:text-black transition-colors">Track Order</Link>
-                            <Link href="/contact" className="hover:text-black transition-colors">Contact</Link>
+                            <Link href="/" className="hover:text-black transition-colors">{t('shop')}</Link>
+                            <Link href="/track-order" className="hover:text-black transition-colors">{t('trackOrder')}</Link>
+                            <Link href="/contact" className="hover:text-black transition-colors">{t('contact')}</Link>
                         </nav>
                         <div className="flex items-center gap-4">
                             <HeaderCart />
@@ -101,18 +103,18 @@ export default async function StoreLayout({ children, params }: StoreLayoutProps
                         <h3 className="text-xl font-black tracking-tighter" style={{ color: primaryColor }}>{store.name}</h3>
 
                         <nav className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                            <Link href={`/track-order`} className="hover:text-black transition-colors">Track Order</Link>
-                            <Link href={`/contact`} className="hover:text-black transition-colors">Contact</Link>
-                            <Link href={`/policies/shipping`} className="hover:text-black transition-colors">Shipping Policy</Link>
-                            <Link href={`/policies/refund`} className="hover:text-black transition-colors">Refund Policy</Link>
-                            <Link href={`/policies/privacy`} className="hover:text-black transition-colors">Privacy Policy</Link>
-                            <Link href={`/policies/terms`} className="hover:text-black transition-colors">Terms of Service</Link>
+                            <Link href={`/track-order`} className="hover:text-black transition-colors">{t('trackOrder')}</Link>
+                            <Link href={`/contact`} className="hover:text-black transition-colors">{t('contact')}</Link>
+                            <Link href={`/policies/shipping`} className="hover:text-black transition-colors">{t('shippingPolicy')}</Link>
+                            <Link href={`/policies/refund`} className="hover:text-black transition-colors">{t('refundPolicy')}</Link>
+                            <Link href={`/policies/privacy`} className="hover:text-black transition-colors">{t('privacyPolicy')}</Link>
+                            <Link href={`/policies/terms`} className="hover:text-black transition-colors">{t('termsOfService')}</Link>
                         </nav>
 
                         <div className="pt-4 space-y-2">
-                            <p className="text-gray-400 text-[10px] font-medium uppercase tracking-widest">© 2026 {store.name}. All rights reserved.</p>
+                            <p className="text-gray-400 text-[10px] font-medium uppercase tracking-widest">© 2026 {store.name}. {t('allRightsReserved')}</p>
                             <div className="flex justify-center gap-4 text-gray-500">
-                                <span className="text-[10px] font-black opacity-50">POWERED BY BUILDORA</span>
+                                <span className="text-[10px] font-black opacity-50">{t('poweredBy')}</span>
                             </div>
                         </div>
                     </div>

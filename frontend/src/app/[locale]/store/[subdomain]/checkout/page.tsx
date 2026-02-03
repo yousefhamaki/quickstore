@@ -11,29 +11,39 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
-const checkoutSchema = z.object({
-    firstName: z.string().min(2, 'Required'),
-    lastName: z.string().min(2, 'Required'),
-    email: z.string().email('Invalid email'),
-    phone: z.string().min(10, 'Invalid phone'),
-    address: z.string().min(5, 'Required'),
-    city: z.string().min(2, 'Required'),
+const createCheckoutSchema = (t: any) => z.object({
+    firstName: z.string().min(2, t('errors.required')),
+    lastName: z.string().min(2, t('errors.required')),
+    email: z.string().email(t('errors.validation')),
+    phone: z.string().min(10, t('errors.validation')),
+    address: z.string().min(5, t('errors.required')),
+    city: z.string().min(2, t('errors.required')),
     zipCode: z.string().optional(),
 });
 
-type CheckoutFormData = z.infer<typeof checkoutSchema>;
+type CheckoutFormData = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    zipCode?: string;
+};
 
 export default function CheckoutPage() {
+    const t = useTranslations('store.checkout');
+    const commonT = useTranslations('errors');
     const { subdomain } = useParams();
     const router = useRouter();
     const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
     const [step, setStep] = useState(1); // 1: Cart, 2: Info, 3: Payment
     const [loading, setLoading] = useState(false);
-    const [storeId, setStoreId] = useState('');
 
     const { register, handleSubmit, formState: { errors } } = useForm<CheckoutFormData>({
-        resolver: zodResolver(checkoutSchema)
+        resolver: zodResolver(createCheckoutSchema(useTranslations())),
     });
 
     const onSubmit = async (data: CheckoutFormData) => {
@@ -44,7 +54,6 @@ export default function CheckoutPage() {
 
         setLoading(true);
         try {
-            // Get storeId if not present (we could pass it from layout context or fetch once)
             const store = await getPublicStore(subdomain as string) as any;
 
             const orderData = {
@@ -68,13 +77,13 @@ export default function CheckoutPage() {
             const response = await createOrder(orderData) as any;
             if (response.success) {
                 clearCart();
-                toast.success('Order placed successfully!');
+                toast.success(t('messages.success'));
                 router.push(`/order/success/${response.orderNumber}`);
             } else {
-                toast.error(response.message || 'Failed to place order');
+                toast.error(response.message || t('messages.error'));
             }
         } catch (error) {
-            toast.error('Failed to place order. Please try again.');
+            toast.error(t('messages.error'));
         } finally {
             setLoading(false);
         }
@@ -86,12 +95,12 @@ export default function CheckoutPage() {
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400">
                     <ShoppingCart size={40} />
                 </div>
-                <h1 className="text-4xl font-black tracking-tighter">Your cart is empty</h1>
+                <h1 className="text-4xl font-black tracking-tighter">{t('empty')}</h1>
                 <p className="text-gray-500 max-w-sm mx-auto font-medium">
-                    Look like you haven't added anything to your cart yet.
+                    {t('emptySubtitle')}
                 </p>
                 <Link href="/" className="inline-block store-button">
-                    Start Shopping
+                    {t('startShopping')}
                 </Link>
             </div>
         );
@@ -104,9 +113,9 @@ export default function CheckoutPage() {
                 {/* Steps Indicator */}
                 <div className="flex items-center justify-center mb-12">
                     {[
-                        { n: 1, l: 'Cart', i: <ShoppingCart size={16} /> },
-                        { n: 2, l: 'Info', i: <Truck size={16} /> },
-                        { n: 3, l: 'Payment', i: <CreditCard size={16} /> }
+                        { n: 1, l: t('steps.cart'), i: <ShoppingCart size={16} /> },
+                        { n: 2, l: t('steps.info'), i: <Truck size={16} /> },
+                        { n: 3, l: t('steps.payment'), i: <CreditCard size={16} /> }
                     ].map((s, i) => (
                         <div key={s.n} className="flex items-center">
                             <div className={`flex flex-col items-center gap-2 ${step >= s.n ? 'text-black' : 'text-gray-300'}`}>
@@ -128,7 +137,7 @@ export default function CheckoutPage() {
                     <div className="lg:col-span-8 space-y-8">
                         {step === 1 && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-                                <h2 className="text-3xl font-black tracking-tighter">Review Your Cart</h2>
+                                <h2 className="text-3xl font-black tracking-tighter">{t('reviewTitle')}</h2>
                                 <div className="space-y-4">
                                     {cart.map((item) => (
                                         <div key={item.cartItemId} className="flex flex-col md:flex-row md:items-center gap-6 p-6 bg-gray-50 rounded-[32px] border relative group">
@@ -183,40 +192,40 @@ export default function CheckoutPage() {
 
                         {step === 2 && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                <h2 className="text-3xl font-black tracking-tighter">Shipping Information</h2>
+                                <h2 className="text-3xl font-black tracking-tighter">{t('shippingTitle')}</h2>
                                 <form id="checkout-form" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">First Name</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.firstName')}</label>
                                         <input {...register('firstName')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                         {errors.firstName && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.firstName.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Last Name</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.lastName')}</label>
                                         <input {...register('lastName')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                         {errors.lastName && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.lastName.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Email Address</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.email')}</label>
                                         <input {...register('email')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                         {errors.email && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.email.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Phone Number</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.phone')}</label>
                                         <input {...register('phone')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                         {errors.phone && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.phone.message}</p>}
                                     </div>
                                     <div className="md:col-span-2 space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Full Address</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.address')}</label>
                                         <input {...register('address')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                         {errors.address && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.address.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">City</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.city')}</label>
                                         <input {...register('city')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                         {errors.city && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.city.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Zip Code (Optional)</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.zipCode')}</label>
                                         <input {...register('zipCode')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                     </div>
                                 </form>
@@ -225,7 +234,7 @@ export default function CheckoutPage() {
 
                         {step === 3 && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                <h2 className="text-3xl font-black tracking-tighter">Payment Method</h2>
+                                <h2 className="text-3xl font-black tracking-tighter">{t('paymentTitle')}</h2>
                                 <div className="space-y-4">
                                     <div className="p-6 bg-black text-white rounded-[32px] border flex items-center justify-between group cursor-pointer hover:scale-[1.02] transition-all">
                                         <div className="flex items-center gap-4">
@@ -233,8 +242,8 @@ export default function CheckoutPage() {
                                                 <CreditCard size={24} />
                                             </div>
                                             <div>
-                                                <h3 className="font-bold">Cash on Delivery</h3>
-                                                <p className="text-gray-400 text-xs font-medium uppercase tracking-widest">Pay when you receive</p>
+                                                <h3 className="font-bold">{t('payment.cod')}</h3>
+                                                <p className="text-gray-400 text-xs font-medium uppercase tracking-widest">{t('payment.codSubtitle')}</p>
                                             </div>
                                         </div>
                                         <CheckCircle2 className="text-white" size={24} />
@@ -246,8 +255,8 @@ export default function CheckoutPage() {
                                                 <CreditCard size={24} />
                                             </div>
                                             <div>
-                                                <h3 className="font-bold">Credit/Debit Card (Coming Soon)</h3>
-                                                <p className="text-[10px] font-black uppercase tracking-widest">Powered by Stripe</p>
+                                                <h3 className="font-bold">{t('payment.card')}</h3>
+                                                <p className="text-[10px] font-black uppercase tracking-widest">{t('payment.cardSubtitle')}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -259,20 +268,20 @@ export default function CheckoutPage() {
                     {/* Right Side: Summary */}
                     <div className="lg:col-span-4">
                         <div className="bg-gray-50 rounded-[40px] p-8 border sticky top-24 space-y-8">
-                            <h2 className="text-xl font-black tracking-tighter uppercase">Order Summary</h2>
+                            <h2 className="text-xl font-black tracking-tighter uppercase">{t('orderSummary')}</h2>
 
                             <div className="space-y-4">
                                 <div className="flex justify-between text-sm font-medium">
-                                    <span className="text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                    <span className="text-gray-400 uppercase tracking-widest">{t('subtotal')}</span>
                                     <span className="font-bold">EGP {getCartTotal().toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-medium">
-                                    <span className="text-gray-400 uppercase tracking-widest">Shipping</span>
+                                    <span className="text-gray-400 uppercase tracking-widest">{t('shipping')}</span>
                                     <span className="font-bold">EGP 50</span>
                                 </div>
                                 <div className="h-px bg-gray-200" />
                                 <div className="flex justify-between items-center pt-2">
-                                    <span className="text-lg font-black tracking-tighter uppercase">Total</span>
+                                    <span className="text-lg font-black tracking-tighter uppercase">{t('total')}</span>
                                     <span className="text-2xl font-black">EGP {(getCartTotal() + 50).toLocaleString()}</span>
                                 </div>
                             </div>
@@ -284,7 +293,7 @@ export default function CheckoutPage() {
                                 }}
                                 className="w-full h-16 bg-black text-white rounded-full font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-900 transition-all disabled:opacity-50"
                             >
-                                {loading ? 'Processing...' : step === 3 ? 'Place Order' : 'Continue'} <ChevronRight size={18} />
+                                {loading ? t('processing') : step === 3 ? t('placeOrder') : t('continue')} <ChevronRight size={18} />
                             </button>
 
                             {step > 1 && (
@@ -292,7 +301,7 @@ export default function CheckoutPage() {
                                     onClick={() => setStep(step - 1)}
                                     className="w-full text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black transition-colors"
                                 >
-                                    Go Back
+                                    {t('goBack')}
                                 </button>
                             )}
                         </div>

@@ -859,5 +859,132 @@
         "error": "فشل حفظ المنتج"
       }
     }
+  },
+  "store": {
+    "product": {
+      "selectOption": "الرجاء اختيار: {options}",
+      "addToCart": "إضافة إلى السلة",
+      "addedToCart": "تم إضافة {quantity} × {name} إلى السلة!",
+      "outOfStock": "نفد المخزون",
+      "onlyLeft": "بقي {count} فقط",
+      "noDescription": "لا يوجد وصف متاح لهذا المنتج.",
+      "genuineProduct": "منتج أصلي",
+      "fastDelivery": "توصيل سريع",
+      "easyReturns": "إرجاع سهل",
+      "relatedProducts": "منتجات ذات صلة",
+      "viewDetails": "عرض التفاصيل"
+    },
+    "home": {
+      "welcome": "مرحباً بكم في",
+      "startShopping": "ابدأ التسوق",
+      "ourCollection": "تسوق مجموعتنا",
+      "emptyCatalog": "جاري تحديث قائمة المنتجات حالياً.",
+      "newsletterTitle": "لا تفوت\nتحديثاتنا الحصرية.",
+      "newsletterSubtitle": "كن أول من يعلم عن أحدث المنتجات، التخفيضات، والمناسبات الخاصة.",
+      "emailPlaceholder": "عنوان بريدك الإلكتروني",
+      "subscribe": "اشتراك",
+      "all": "الكل"
+    },
+    "checkout": {
+      "empty": "عربة التسوق فارغة",
+      "emptySubtitle": "يبدو أنك لم تضف أي شيء إلى العربة بعد.",
+      "startShopping": "ابدأ التسوق",
+      "steps": {
+        "cart": "العربة",
+        "info": "المعلومات",
+        "payment": "الدفع"
+      },
+      "reviewTitle": "مراجعة عربة التسوق",
+      "shippingTitle": "معلومات الشحن",
+      "paymentTitle": "طريفة الدفع",
+      "orderSummary": "ملخص الطلب",
+      "subtotal": "المجموع الفرعي",
+      "shipping": "الشحن",
+      "total": "الإجمالي",
+      "continue": "متابعة",
+      "placeOrder": "إتمام الطلب",
+      "processing": "جاري المعالجة...",
+      "goBack": "العودة",
+      "form": {
+        "firstName": "الاسم الأول",
+        "lastName": "اسم العائلة",
+        "email": "البريد الإلكتروني",
+        "phone": "رقم الهاتف",
+        "address": "العنوان بالكامل",
+        "city": "المدينة",
+        "zipCode": "الرمز البريدي (اختياري)"
+      },
+      "payment": {
+        "cod": "الدفع عند الاستلام",
+        "codSubtitle": "ادفع عند استلام طلبك",
+        "card": "بطاقة ائتمان (قريباً)",
+        "cardSubtitle": "بواسطة Stripe"
+      },
+      "messages": {
+        "success": "تم تقديم الطلب بنجاح!",
+        "error": "فشل تقديم الطلب. يرجى المحاولة مرة أخرى."
+      }
+    },
+    "contact": {
+      "title": "تواصل معنا",
+      "subtitle": "لديك سؤال أو تحتاج إلى مساعدة؟ فريقنا هنا لمساعدتك.",
+      "emailUs": "راسلنا",
+      "callUs": "اتصل بنا",
+      "whatsapp": "واتساب",
+      "instagram": "إنستغرام",
+      "businessHours": "ساعات العمل",
+      "monFri": "الاثنين - الجمعة",
+      "sat": "السبت",
+      "sun": "الأحد",
+      "closed": "مغلق",
+      "formTitle": "أرسل رسالة",
+      "formSubtitle": "سنرد على استفسارك خلال 24 ساعة.",
+      "labels": {
+        "name": "اسمك",
+        "email": "البريد الإلكتروني",
+        "subject": "الموضوع",
+        "message": "الرسالة"
+      },
+      "placeholders": {
+        "name": "مثلاً: أحمد محمد",
+        "email": "مثلاً: ahmed@example.com",
+        "subject": "كيف يمكننا مساعدتك؟",
+        "message": "اكتب رسالتك هنا..."
+      },
+      "send": "إرسال الرسالة",
+      "success": "تم إرسال الرسالة! سنرد عليك قريباً."
+    },
+    "trackOrder": {
+      "title": "تتبع طلبك",
+      "subtitle": "أدخل رقم طلبك للتحقق من الحالة الحالية ووقت التسليم المتوقع.",
+      "placeholder": "رقم الطلب (مثلاً: QS-260120-8230)",
+      "trackNow": "تتبع الآن",
+      "error": "الطلب غير موجود. يرجى التحقق من رقم الطلب والمحاولة مرة أخرى.",
+      "orderTitle": "طلب {orderNumber}",
+      "placedOn": "تم الطلب في {date}",
+      "totalAmount": "إجمالي المبلغ",
+      "progress": "تطور الطلب",
+      "contents": "محتويات الطلب",
+      "details": "تفاصيل التسليم",
+      "address": "عنوان الشحن",
+      "status": "الحالة الحالية",
+      "copySuccess": "تم نسخ رقم الطلب!",
+      "subtotal": "المجموع الفرعي",
+      "shipping": "الشحن",
+      "total": "الإجمالي",
+      "statusReviewed": "جاري مراجعة طلبك.",
+      "statusMsg": "طلبك حالياً في مرحلة {status}."
+    },
+    "layout": {
+      "shop": "المتجر",
+      "trackOrder": "تتبع الطلب",
+      "contact": "تواصل معنا",
+      "shippingPolicy": "سياسة الشحن",
+      "refundPolicy": "سياسة الاسترجاع",
+      "privacyPolicy": "سياسة الخصوصية",
+      "termsOfService": "شروط الخدمة",
+      "allRightsReserved": "جميع الحقوق محفوظة.",
+      "poweredBy": "مشغل بواسطة BUILDORA"
+    }
   }
 }

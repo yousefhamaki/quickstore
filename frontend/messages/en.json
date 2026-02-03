@@ -859,5 +859,132 @@
         "error": "Failed to save product"
       }
     }
+  },
+  "store": {
+    "product": {
+      "selectOption": "Please select: {options}",
+      "addToCart": "Add to Cart",
+      "addedToCart": "{quantity} x {name} added to cart!",
+      "outOfStock": "Out of Stock",
+      "onlyLeft": "Only {count} left",
+      "noDescription": "No description available for this product.",
+      "genuineProduct": "Genuine Product",
+      "fastDelivery": "Fast Delivery",
+      "easyReturns": "Easy Returns",
+      "relatedProducts": "Related Products",
+      "viewDetails": "View Details"
+    },
+    "home": {
+      "welcome": "Welcome to",
+      "startShopping": "Start Shopping",
+      "ourCollection": "Shop Our Collection",
+      "emptyCatalog": "Our catalog is currently being updated.",
+      "newsletterTitle": "Don't miss our\nexclusive updates.",
+      "newsletterSubtitle": "Be the first to know about new arrivals, sales, and special events.",
+      "emailPlaceholder": "Your email address",
+      "subscribe": "Subscribe",
+      "all": "All"
+    },
+    "checkout": {
+      "empty": "Your cart is empty",
+      "emptySubtitle": "Look like you haven't added anything to your cart yet.",
+      "startShopping": "Start Shopping",
+      "steps": {
+        "cart": "Cart",
+        "info": "Info",
+        "payment": "Payment"
+      },
+      "reviewTitle": "Review Your Cart",
+      "shippingTitle": "Shipping Information",
+      "paymentTitle": "Payment Method",
+      "orderSummary": "Order Summary",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "total": "Total",
+      "continue": "Continue",
+      "placeOrder": "Place Order",
+      "processing": "Processing...",
+      "goBack": "Go Back",
+      "form": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "address": "Full Address",
+        "city": "City",
+        "zipCode": "Zip Code (Optional)"
+      },
+      "payment": {
+        "cod": "Cash on Delivery",
+        "codSubtitle": "Pay when you receive",
+        "card": "Credit/Debit Card (Coming Soon)",
+        "cardSubtitle": "Powered by Stripe"
+      },
+      "messages": {
+        "success": "Order placed successfully!",
+        "error": "Failed to place order. Please try again."
+      }
+    },
+    "contact": {
+      "title": "Get in Touch",
+      "subtitle": "Have a question or need assistance? Our team is here to help you.",
+      "emailUs": "Email Us",
+      "callUs": "Call Us",
+      "whatsapp": "WhatsApp",
+      "instagram": "Instagram",
+      "businessHours": "Business Hours",
+      "monFri": "Monday - Friday",
+      "sat": "Saturday",
+      "sun": "Sunday",
+      "closed": "Closed",
+      "formTitle": "Send a Message",
+      "formSubtitle": "We'll respond to your inquiry within 24 hours.",
+      "labels": {
+        "name": "Your Name",
+        "email": "Email Address",
+        "subject": "Subject",
+        "message": "Message"
+      },
+      "placeholders": {
+        "name": "E.g. John Doe",
+        "email": "E.g. john@example.com",
+        "subject": "How can we help?",
+        "message": "Write your message here..."
+      },
+      "send": "Send Message",
+      "success": "Message sent! We'll get back to you soon."
+    },
+    "trackOrder": {
+      "title": "Track Your Order",
+      "subtitle": "Enter your order number to check the current status and estimated delivery time.",
+      "placeholder": "Order Number (e.g. QS-260120-8230)",
+      "trackNow": "Track Now",
+      "error": "Order not found. Please check the order number and try again.",
+      "orderTitle": "Order {orderNumber}",
+      "placedOn": "Placed on {date}",
+      "totalAmount": "Total Amount",
+      "progress": "Order Progress",
+      "contents": "Order Contents",
+      "details": "Delivery Details",
+      "address": "Shipping Address",
+      "status": "Current Status",
+      "copySuccess": "Order Number copied!",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "total": "Total",
+      "statusReviewed": "Your order is being reviewed.",
+      "statusMsg": "Your order is being {status}."
+    },
+    "layout": {
+      "shop": "Shop",
+      "trackOrder": "Track Order",
+      "contact": "Contact",
+      "shippingPolicy": "Shipping Policy",
+      "refundPolicy": "Refund Policy",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "allRightsReserved": "All rights reserved.",
+      "poweredBy": "POWERED BY BUILDORA"
+    }
   }
 }
