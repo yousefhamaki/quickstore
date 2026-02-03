@@ -168,6 +168,9 @@ export default function TrackOrderPage() {
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="font-bold text-sm">{item.name}</p>
+                                                    {item.variant && (
+                                                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tight">{item.variant}</p>
+                                                    )}
                                                     <p className="text-xs text-gray-500">{item.quantity} x EGP {item.price.toLocaleString()}</p>
                                                 </div>
                                                 <div className={`${locale === 'ar' ? 'text-left' : 'text-right'}`}>

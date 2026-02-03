@@ -113,7 +113,8 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 name: item.name,
                 quantity: Number(item.quantity),
                 price: Number(item.price),
-                image: item.image
+                image: item.image,
+                variant: item.selectedOptions ? Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ') : undefined
             })),
             subtotal: numericTotal - shippingFee,
             shipping: shippingFee,

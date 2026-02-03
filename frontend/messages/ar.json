@@ -858,6 +858,55 @@
         "successUpdate": "تم تحديث المنتج",
         "error": "فشل حفظ المنتج"
       }
+    },
+    "orders": {
+      "title": "الطلبات",
+      "subtitle": "تتبع وإدارة طلبات عملائك.",
+      "export": "تصدير",
+      "searchPlaceholder": "البحث برقم الطلب أو العميل...",
+      "allStatuses": "جميع الحالات",
+      "status": {
+        "pending": "قيد الانتظار",
+        "processing": "جاري المعالجة",
+        "shipped": "تم الشحن",
+        "delivered": "تم التوصيل",
+        "cancelled": "تم الإلغاء"
+      },
+      "noOrdersFound": "لا توجد طلبات",
+      "noOrdersSubtitle": "عندما يقوم العميل بتقديم طلب، سيظهر هنا.",
+      "table": {
+        "order": "الطلب",
+        "date": "التاريخ",
+        "customer": "العميل",
+        "total": "الإجمالي",
+        "status": "الحالة",
+        "action": "الإجراء",
+        "view": "عرض"
+      },
+      "pagination": "صفحة {page} من {pages}",
+      "loadError": "فشل تحميل الطلبات"
+    },
+    "orderDetails": {
+      "back": "العودة إلى الطلبات",
+      "notFound": "الطلب غير موجود",
+      "placedOn": "تم الطلب في {date}",
+      "updateStatus": "تحديث الحالة",
+      "updateSuccess": "تم تحديث حالة الطلب إلى {status}",
+      "updateError": "فشل تحديث الحالة",
+      "loadError": "فشل تحميل تفاصيل الطلب",
+      "orderItems": "محتويات الطلب",
+      "qty": "الكمية",
+      "summary": "الملخص المالي",
+      "subtotal": "المجموع الفرعي",
+      "shipping": "الشحن",
+      "tax": "الضريبة",
+      "total": "الإجمالي",
+      "customerInfo": "معلومات العميل",
+      "customerId": "المعرف",
+      "shippingAddress": "عنوان الشحن",
+      "payment": "الدفع",
+      "paymentMethod": "الطريقة",
+      "paymentStatus": "الحالة"
     }
   },
   "store": {

@@ -858,6 +858,55 @@
         "successUpdate": "Product updated",
         "error": "Failed to save product"
       }
+    },
+    "orders": {
+      "title": "Orders",
+      "subtitle": "Track and manage your customer orders.",
+      "export": "Export",
+      "searchPlaceholder": "Search by order # or customer...",
+      "allStatuses": "All Statuses",
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "shipped": "Shipped",
+        "delivered": "Delivered",
+        "cancelled": "Cancelled"
+      },
+      "noOrdersFound": "No orders found",
+      "noOrdersSubtitle": "When a customer places an order, it will appear here.",
+      "table": {
+        "order": "Order",
+        "date": "Date",
+        "customer": "Customer",
+        "total": "Total",
+        "status": "Status",
+        "action": "Action",
+        "view": "View"
+      },
+      "pagination": "Page {page} of {pages}",
+      "loadError": "Failed to load orders"
+    },
+    "orderDetails": {
+      "back": "Back to Orders",
+      "notFound": "Order not found",
+      "placedOn": "Placed on {date}",
+      "updateStatus": "Update Status",
+      "updateSuccess": "Order status updated to {status}",
+      "updateError": "Failed to update status",
+      "loadError": "Failed to load order details",
+      "orderItems": "Order Items",
+      "qty": "Qty",
+      "summary": "Financial Summary",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "tax": "Tax",
+      "total": "Total",
+      "customerInfo": "Customer Info",
+      "customerId": "ID",
+      "shippingAddress": "Shipping Address",
+      "payment": "Payment",
+      "paymentMethod": "Method",
+      "paymentStatus": "Status"
     }
   },
   "store": {
