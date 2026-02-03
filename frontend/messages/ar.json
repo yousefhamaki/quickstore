@@ -907,6 +907,24 @@
       "payment": "الدفع",
       "paymentMethod": "الطريقة",
       "paymentStatus": "الحالة"
+    },
+    "customers": {
+      "title": "العملاء",
+      "subtitle": "عرض وإدارة عملاء متجرك.",
+      "addCustomer": "إضافة عميل",
+      "searchPlaceholder": "البحث عن العملاء بالاسم أو البريد الإلكتروني...",
+      "filters": "تصفية",
+      "noCustomersFound": "لا يوجد عملاء",
+      "noCustomersSubtitle": "الأشخاص الذين يطلبون من متجرك سيظهرون هنا.",
+      "table": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "orders": "الطلبات",
+        "joined": "تاريخ الانضمام",
+        "actions": "الإجراءات"
+      },
+      "loadError": "فشل تحميل العملاء"
     }
   },
   "store": {

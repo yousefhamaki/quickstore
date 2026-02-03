@@ -907,6 +907,24 @@
       "payment": "Payment",
       "paymentMethod": "Method",
       "paymentStatus": "Status"
+    },
+    "customers": {
+      "title": "Customers",
+      "subtitle": "View and manage your store customers.",
+      "addCustomer": "Add Customer",
+      "searchPlaceholder": "Search customers by name or email...",
+      "filters": "Filters",
+      "noCustomersFound": "No customers found",
+      "noCustomersSubtitle": "People who order from your store will be listed here.",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "orders": "Orders",
+        "joined": "Joined",
+        "actions": "Actions"
+      },
+      "loadError": "Failed to load customers"
     }
   },
   "store": {

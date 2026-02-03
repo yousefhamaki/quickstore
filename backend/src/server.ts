@@ -16,6 +16,7 @@ import storeRoutes from './routes/storeRoutes';
 import billingRoutes from './routes/billingRoutes';
 import publicRoutes from './routes/publicRoutes';
 import supportRoutes from './routes/supportRoutes';
+import customerRoutes from './routes/customerRoutes';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
@@ -34,6 +35,7 @@ app.use('/api/stores', storeRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/customers', customerRoutes);
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Buildora API is running...');
