@@ -51,7 +51,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
     const missingSteps = checklist
         ? Object.entries(checklist.checklist)
             .filter(([_, value]) => !value.completed)
-            .map(([key, value]) => t(`checklist.steps.${key}` as any))
+            .map(([key, value]) => t(`checklist.steps.${key}` as any, value as any))
         : [];
 
     return (

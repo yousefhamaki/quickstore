@@ -772,6 +772,92 @@
         "noActive": "You have no active subscription.",
         "subscribeNow": "Subscribe Now"
       }
+    },
+    "products": {
+      "title": "Products",
+      "subtitle": "Manage your inventory, prices and variants.",
+      "addProduct": "Add Product",
+      "searchPlaceholder": "Search products by name or SKU...",
+      "allStatus": "All Status",
+      "status": {
+        "active": "Active",
+        "draft": "Draft",
+        "archived": "Archived"
+      },
+      "refresh": "Refresh",
+      "loading": "Fetching your catalog...",
+      "empty": {
+        "title": "No products found",
+        "filterResults": "No products match your current filters. Try clearing them.",
+        "getStarted": "Start by adding your first product to your store catalog.",
+        "createBtn": "Create Product"
+      },
+      "table": {
+        "product": "Product",
+        "status": "Status",
+        "inventory": "Inventory",
+        "price": "Price",
+        "actions": "Actions",
+        "inStock": "{count} in stock",
+        "lowStock": "Low Stock"
+      },
+      "pagination": {
+        "showing": "Showing {start} to {end} of {total} products",
+        "page": "Page {current} of {total}"
+      },
+      "deleteConfirm": "Are you sure you want to delete this product?",
+      "deleteSuccess": "Product deleted successfully",
+      "deleteError": "Failed to delete product",
+      "loadError": "Failed to load products",
+      "new": {
+        "title": "Add New Product",
+        "subtitle": "List a new item in your store catalog.",
+        "back": "Back to Products"
+      },
+      "form": {
+        "general": "General Information",
+        "name": "Product Name",
+        "namePlaceholder": "Blue Denim Jacket",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe your product...",
+        "media": "Media",
+        "upload": "Click to Upload",
+        "uploading": "Uploading images...",
+        "uploadSuccess": "Images uploaded",
+        "uploadError": "Failed to upload images",
+        "variants": {
+          "title": "Variants",
+          "addOption": "Add Option",
+          "empty": "No variants for this product yet. Add options like Size or Color.",
+          "name": "Option Name",
+          "namePlaceholder": "e.g. Color",
+          "values": "Options Values (comma separated)",
+          "valuesPlaceholder": "e.g. Red, Blue, Green"
+        },
+        "pricing": {
+          "title": "Pricing & Inventory",
+          "price": "Price (EGP)",
+          "compareAt": "Compare at Price",
+          "cost": "Cost per Item (for profit calc)",
+          "sku": "SKU (Stock Keeping Unit)",
+          "skuPlaceholder": "e.g. SHIRT-BLU-S",
+          "barcode": "Barcode (ISBN, UPC, GTIN)",
+          "trackInventory": "Track Inventory Quantity",
+          "available": "Available Quantity"
+        },
+        "organization": {
+          "title": "Organization",
+          "category": "Category",
+          "categoryPlaceholder": "Clothing",
+          "status": "Product Status"
+        },
+        "save": "Publish Product",
+        "update": "Update Product",
+        "saving": "Saving...",
+        "success": "Product created",
+        "successUpdate": "Product updated",
+        "error": "Failed to save product"
+      }
     }
   }
 }

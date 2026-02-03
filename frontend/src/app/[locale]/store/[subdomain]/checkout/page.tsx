@@ -131,7 +131,7 @@ export default function CheckoutPage() {
                                 <h2 className="text-3xl font-black tracking-tighter">Review Your Cart</h2>
                                 <div className="space-y-4">
                                     {cart.map((item) => (
-                                        <div key={item._id} className="flex items-center gap-6 p-6 bg-gray-50 rounded-[32px] border relative group">
+                                        <div key={item.cartItemId} className="flex flex-col md:flex-row md:items-center gap-6 p-6 bg-gray-50 rounded-[32px] border relative group">
                                             <div className="w-24 h-24 bg-white rounded-2xl overflow-hidden border shrink-0">
                                                 {item.image ? (
                                                     <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
@@ -141,29 +141,40 @@ export default function CheckoutPage() {
                                             </div>
                                             <div className="flex-1 space-y-1">
                                                 <h3 className="font-bold text-lg">{item.name}</h3>
+                                                {item.selectedOptions && Object.entries(item.selectedOptions).length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        {Object.entries(item.selectedOptions).map(([key, value]) => (
+                                                            <span key={key} className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border text-gray-400 uppercase tracking-tight">
+                                                                {key}: {value}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                                 <p className="text-gray-500 font-bold">EGP {item.price.toLocaleString()}</p>
                                             </div>
-                                            <div className="flex items-center bg-white rounded-full p-1 border">
+                                            <div className="flex items-center justify-between gap-4 mt-4 md:mt-0">
+                                                <div className="flex items-center bg-white rounded-full p-1 border">
+                                                    <button
+                                                        onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
+                                                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all"
+                                                    >
+                                                        <Minus size={14} />
+                                                    </button>
+                                                    <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
+                                                    <button
+                                                        onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
+                                                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all"
+                                                    >
+                                                        <Plus size={14} />
+                                                    </button>
+                                                </div>
                                                 <button
-                                                    onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all"
+                                                    onClick={() => removeFromCart(item.cartItemId)}
+                                                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                                                 >
-                                                    <Minus size={14} />
-                                                </button>
-                                                <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
-                                                <button
-                                                    onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all"
-                                                >
-                                                    <Plus size={14} />
+                                                    <Trash2 size={20} />
                                                 </button>
                                             </div>
-                                            <button
-                                                onClick={() => removeFromCart(item._id)}
-                                                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 size={20} />
-                                            </button>
                                         </div>
                                     ))}
                                 </div>

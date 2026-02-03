@@ -586,7 +586,7 @@
       "globalProducts": "{count} منتج عالمي",
       "unlimitedGlobalProducts": "منتجات عالمية غير محدودة",
       "secureWallet": "تكامل محفظة آمن",
-      "customDomain": "دعم الدومين المخصص",
+      "customDomain": "دومين مخصص",
       "dropshipping": "نظام الدروبشيبينغ",
       "orderFee": "{amount} ج.م رسوم للطلب"
     },
@@ -653,11 +653,11 @@
           "customers": "العملاء",
           "marketing": "التسويق",
           "analytics": "التحليلات",
-          "general": "عام",
+          "general": "نظام",
           "appearance": "المظهر",
           "payments": "المدفوعات",
           "shipping": "الشحن",
-          "domain": "النطاق",
+          "domain": "نطاق",
           "policies": "السياسات"
         }
       },
@@ -771,6 +771,92 @@
         "status": "الحالة",
         "noActive": "ليس لديك اشتراك نشط.",
         "subscribeNow": "اشترك الآن"
+      }
+    },
+    "products": {
+      "title": "المنتجات",
+      "subtitle": "إدارة المخزون والأسعار والمتغيرات.",
+      "addProduct": "إضافة منتج",
+      "searchPlaceholder": "البحث عن المنتجات بالاسم أو SKU...",
+      "allStatus": "كل الحالات",
+      "status": {
+        "active": "نشط",
+        "draft": "مسودة",
+        "archived": "مؤرشف"
+      },
+      "refresh": "تحديث",
+      "loading": "جاري جلب الكتالوج الخاص بك...",
+      "empty": {
+        "title": "لم يتم العثور على منتجات",
+        "filterResults": "لا توجد منتجات تطابق الفلاتر الحالية. حاول مسحها.",
+        "getStarted": "ابدأ بإضافة أول منتج لك إلى كتالوج متجرك.",
+        "createBtn": "إنشاء منتج"
+      },
+      "table": {
+        "product": "المنتج",
+        "status": "الحالة",
+        "inventory": "المخزون",
+        "price": "السعر",
+        "actions": "الإجراءات",
+        "inStock": "{count} في المخزون",
+        "lowStock": "مخزون منخفض"
+      },
+      "pagination": {
+        "showing": "عرض {start} إلى {end} من {total} منتج",
+        "page": "صفحة {current} من {total}"
+      },
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذا المنتج؟",
+      "deleteSuccess": "تم حذف المنتج بنجاح",
+      "deleteError": "فشل حذف المنتج",
+      "loadError": "فشل تحميل المنتجات",
+      "new": {
+        "title": "إضافة منتج جديد",
+        "subtitle": "إدراج عنصر جديد في كتالوج متجرك.",
+        "back": "العودة إلى المنتجات"
+      },
+      "form": {
+        "general": "معلومات عامة",
+        "name": "اسم المنتج",
+        "namePlaceholder": "جاكيت دينم أزرق",
+        "description": "الوصف",
+        "descriptionPlaceholder": "صف منتجك...",
+        "media": "الوسائط",
+        "upload": "انقر للرفع",
+        "uploading": "جاري رفع الصور...",
+        "uploadSuccess": "تم رفع الصور",
+        "uploadError": "فشل رفع الصور",
+        "variants": {
+          "title": "المتغيرات",
+          "addOption": "إضافة خيار",
+          "empty": "لا توجد متغيرات لهذا المنتج بعد. أضف خيارات مثل الحجم أو اللون.",
+          "name": "اسم الخيار",
+          "namePlaceholder": "مثلاً: اللون",
+          "values": "قيم الخيارات (مفصولة بفاصلة)",
+          "valuesPlaceholder": "مثلاً: أحمر، أزرق، أخضر"
+        },
+        "pricing": {
+          "title": "التسعير والمخزون",
+          "price": "السعر (ج.م)",
+          "compareAt": "السعر قبل الخصم",
+          "cost": "التكلفة لكل عنصر (لحساب الربح)",
+          "sku": "SKU (وحدة حفظ المخزون)",
+          "skuPlaceholder": "مثلاً: SHIRT-BLU-S",
+          "barcode": "باركود (ISBN, UPC, GTIN)",
+          "trackInventory": "تتبع كمية المخزون",
+          "available": "الكمية المتاحة"
+        },
+        "organization": {
+          "title": "التنظيم",
+          "category": "الفئة",
+          "categoryPlaceholder": "ملابس",
+          "status": "حالة المنتج"
+        },
+        "save": "نشر المنتج",
+        "update": "تحديث المنتج",
+        "saving": "جاري الحفظ...",
+        "success": "تم إنشاء المنتج",
+        "successUpdate": "تم تحديث المنتج",
+        "error": "فشل حفظ المنتج"
       }
     }
   }

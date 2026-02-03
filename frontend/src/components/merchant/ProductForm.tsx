@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,8 @@ interface ProductFormProps {
 
 export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
     const router = useRouter();
+    const t = useTranslations("merchant.products.form");
+    const tStatus = useTranslations("merchant.products.status");
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({
         name: '',
@@ -44,7 +47,7 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                 sku: initialData.sku || '',
                 barcode: initialData.barcode || '',
                 trackInventory: initialData.trackInventory !== false,
-                inventory: initialData.inventory?.toString() || (initialData.inventory?.quantity?.toString() || '0'),
+                inventory: initialData.inventory?.quantity?.toString() || (initialData.inventory?.quantity?.toString() || '0'),
                 images: initialData.images || [],
                 options: initialData.options || [],
                 status: initialData.status || 'active'
@@ -60,14 +63,14 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
             formData.append('images', file);
         });
 
-        const toastId = toast.loading('Uploading images...');
+        const toastId = toast.loading(t('uploading'));
         try {
             const uploadedImages = await uploadImages(formData);
             setForm(prev => ({ ...prev, images: [...prev.images, ...(uploadedImages as any[])] }));
-            toast.success('Images uploaded', { id: toastId });
+            toast.success(t('uploadSuccess'), { id: toastId });
         } catch (error) {
             console.error('Upload Error:', error);
-            toast.error('Failed to upload images', { id: toastId });
+            toast.error(t('uploadError'), { id: toastId });
         }
     };
 
@@ -103,25 +106,39 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
         setLoading(true);
 
         try {
+            // Cleanup options: filter out empty names and empty values
+            const cleanOptions = form.options
+                .filter(opt => opt.name.trim() !== '')
+                .map(opt => ({
+                    name: opt.name.trim(),
+                    values: Array.isArray(opt.values)
+                        ? opt.values.map((v: string) => v.trim()).filter((v: string) => v !== '')
+                        : (typeof opt.values === 'string'
+                            ? (opt.values as string).split(',').map(v => v.trim()).filter(v => v !== '')
+                            : [])
+                }))
+                .filter(opt => opt.values.length > 0);
+
             const data = {
                 ...form,
                 price: parseFloat(form.price),
                 compareAtPrice: form.compareAtPrice ? parseFloat(form.compareAtPrice) : undefined,
                 costPerItem: form.costPerItem ? parseFloat(form.costPerItem) : undefined,
-                inventory: form.trackInventory ? { quantity: parseInt(form.inventory), lowStockThreshold: 5 } : undefined
+                inventory: form.trackInventory ? { quantity: parseInt(form.inventory), lowStockThreshold: 5 } : undefined,
+                options: cleanOptions
             };
 
             if (isEdit) {
                 await updateProduct(initialData._id, data);
-                toast.success('Product updated');
+                toast.success(t('successUpdate'));
             } else {
                 await createProduct(data);
-                toast.success('Product created');
+                toast.success(t('success'));
             }
-            router.push('/merchant/products');
+            router.back();
         } catch (error) {
             console.error('Save Product Error:', error);
-            toast.error('Failed to save product');
+            toast.error(t('error'));
         } finally {
             setLoading(false);
         }
@@ -134,26 +151,26 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                 <div className="lg:col-span-2 space-y-8">
                     <Card className="shadow-xl border-0 overflow-hidden glass">
                         <CardContent className="p-8 space-y-6 pt-8">
-                            <h2 className="text-xl font-bold">General Information</h2>
+                            <h2 className="text-xl font-bold">{t('general')}</h2>
                             <div className="space-y-2">
-                                <Label htmlFor="name">Product Name</Label>
+                                <Label htmlFor="name">{t('name')}</Label>
                                 <Input
                                     id="name"
                                     value={form.name}
                                     onChange={e => setForm({ ...form, name: e.target.value })}
-                                    placeholder="Blue Denim Jacket"
+                                    placeholder={t('namePlaceholder')}
                                     required
                                     className="rounded-xl"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description">{t('description')}</Label>
                                 <textarea
                                     id="description"
                                     value={form.description}
                                     onChange={e => setForm({ ...form, description: e.target.value })}
                                     className="w-full min-h-[150px] p-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-blue-500 border bg-transparent"
-                                    placeholder="Describe your product..."
+                                    placeholder={t('descriptionPlaceholder')}
                                 />
                             </div>
                         </CardContent>
@@ -161,7 +178,7 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
 
                     <Card className="shadow-xl border-0 overflow-hidden glass">
                         <CardContent className="p-8 space-y-6 pt-8">
-                            <h2 className="text-xl font-bold">Media</h2>
+                            <h2 className="text-xl font-bold">{t('media')}</h2>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {form.images.map((img, i) => (
                                     <div key={i} className="group relative aspect-square rounded-xl bg-gray-100 overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all">
@@ -177,7 +194,7 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                                 ))}
                                 <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                                     <Upload className="text-gray-400 mb-2" />
-                                    <span className="text-xs font-bold text-gray-500 uppercase text-center px-2">Click to Upload</span>
+                                    <span className="text-xs font-bold text-gray-500 uppercase text-center px-2">{t('upload')}</span>
                                     <input type="file" multiple className="hidden" onChange={handleImageUpload} accept="image/*" />
                                 </label>
                             </div>
@@ -187,14 +204,14 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                     <Card className="shadow-xl border-0 overflow-hidden glass">
                         <CardContent className="p-8 space-y-6 pt-8">
                             <div className="flex justify-between items-center">
-                                <h2 className="text-xl font-bold">Variants</h2>
+                                <h2 className="text-xl font-bold">{t('variants.title')}</h2>
                                 <Button type="button" variant="outline" size="sm" onClick={addOption} className="rounded-full">
-                                    <Plus className="w-4 h-4 mr-2" /> Add Option
+                                    <Plus className="w-4 h-4 mr-2" /> {t('variants.addOption')}
                                 </Button>
                             </div>
 
                             {form.options.length === 0 ? (
-                                <p className="text-gray-500 text-center py-8">No variants for this product yet. Add options like Size or Color.</p>
+                                <p className="text-gray-500 text-center py-8">{t('variants.empty')}</p>
                             ) : (
                                 <div className="space-y-6">
                                     {form.options.map((option, i) => (
@@ -208,20 +225,20 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                                             </button>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
-                                                    <Label>Option Name</Label>
+                                                    <Label>{t('variants.name')}</Label>
                                                     <Input
                                                         value={option.name}
                                                         onChange={e => updateOption(i, 'name', e.target.value)}
-                                                        placeholder="e.g. Color"
+                                                        placeholder={t('variants.namePlaceholder')}
                                                         className="rounded-xl border shadow-sm bg-white"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Options Values (comma separated)</Label>
+                                                    <Label>{t('variants.values')}</Label>
                                                     <Input
-                                                        value={option.values.join(', ')}
-                                                        onChange={e => updateOption(i, 'values', e.target.value.split(',').map((v: string) => v.trim()).filter((v: string) => v !== ''))}
-                                                        placeholder="e.g. Red, Blue, Green"
+                                                        value={Array.isArray(option.values) ? option.values.join(', ') : option.values}
+                                                        onChange={e => updateOption(i, 'values', e.target.value.split(',').map(v => v.trimStart()))}
+                                                        placeholder={t('variants.valuesPlaceholder')}
                                                         className="rounded-xl border shadow-sm bg-white"
                                                     />
                                                 </div>
@@ -238,10 +255,10 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                 <div className="space-y-8">
                     <Card className="shadow-xl border-0 overflow-hidden glass">
                         <CardContent className="p-8 space-y-6 pt-8">
-                            <h2 className="text-xl font-bold">Pricing & Inventory</h2>
+                            <h2 className="text-xl font-bold">{t('pricing.title')}</h2>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="price">Price (EGP)</Label>
+                                    <Label htmlFor="price">{t('pricing.price')}</Label>
                                     <Input
                                         id="price"
                                         value={form.price}
@@ -254,7 +271,7 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="compareAtPrice">Compare at Price</Label>
+                                    <Label htmlFor="compareAtPrice">{t('pricing.compareAt')}</Label>
                                     <Input
                                         id="compareAtPrice"
                                         value={form.compareAtPrice}
@@ -267,7 +284,7 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="costPerItem">Cost per Item (for profit calc)</Label>
+                                <Label htmlFor="costPerItem">{t('pricing.cost')}</Label>
                                 <Input
                                     id="costPerItem"
                                     value={form.costPerItem}
@@ -283,17 +300,17 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="sku">SKU (Stock Keeping Unit)</Label>
+                                    <Label htmlFor="sku">{t('pricing.sku')}</Label>
                                     <Input
                                         id="sku"
                                         value={form.sku}
                                         onChange={e => setForm({ ...form, sku: e.target.value })}
-                                        placeholder="e.g. SHIRT-BLU-S"
+                                        placeholder={t('pricing.skuPlaceholder')}
                                         className="rounded-xl"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="barcode">Barcode (ISBN, UPC, GTIN)</Label>
+                                    <Label htmlFor="barcode">{t('pricing.barcode')}</Label>
                                     <Input
                                         id="barcode"
                                         value={form.barcode}
@@ -312,12 +329,12 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                                     onChange={e => setForm({ ...form, trackInventory: e.target.checked })}
                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
-                                <Label htmlFor="trackInventory" className="cursor-pointer">Track Inventory Quantity</Label>
+                                <Label htmlFor="trackInventory" className="cursor-pointer mx-2">{t('pricing.trackInventory')}</Label>
                             </div>
 
                             {form.trackInventory && (
                                 <div className="space-y-2">
-                                    <Label htmlFor="inventory">Available Quantity</Label>
+                                    <Label htmlFor="inventory">{t('pricing.available')}</Label>
                                     <Input
                                         id="inventory"
                                         value={form.inventory}
@@ -333,28 +350,28 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
 
                     <Card className="shadow-xl border-0 overflow-hidden glass">
                         <CardContent className="p-8 space-y-6 pt-8">
-                            <h2 className="text-xl font-bold">Organization</h2>
+                            <h2 className="text-xl font-bold">{t('organization.title')}</h2>
                             <div className="space-y-2">
-                                <Label htmlFor="category">Category</Label>
+                                <Label htmlFor="category">{t('organization.category')}</Label>
                                 <Input
                                     id="category"
                                     value={form.category}
                                     onChange={e => setForm({ ...form, category: e.target.value })}
-                                    placeholder="Clothing"
+                                    placeholder={t('organization.categoryPlaceholder')}
                                     className="rounded-xl"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="status">Product Status</Label>
+                                <Label htmlFor="status">{t('organization.status')}</Label>
                                 <select
                                     id="status"
                                     value={form.status}
                                     onChange={e => setForm({ ...form, status: e.target.value })}
-                                    className="w-full p-3 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500"
+                                    className="w-full p-3 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                                 >
-                                    <option value="active">Active</option>
-                                    <option value="draft">Draft</option>
-                                    <option value="archived">Archived</option>
+                                    <option value="active">{tStatus('active')}</option>
+                                    <option value="draft">{tStatus('draft')}</option>
+                                    <option value="archived">{tStatus('archived')}</option>
                                 </select>
                             </div>
                         </CardContent>
@@ -365,7 +382,7 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                         className="w-full bg-blue-600 hover:bg-blue-700 h-14 rounded-2xl font-black text-lg shadow-xl shadow-blue-200 disabled:opacity-50"
                         disabled={loading}
                     >
-                        {loading ? 'Saving...' : (isEdit ? 'Update Product' : 'Publish Product')}
+                        {loading ? t('saving') : (isEdit ? t('update') : t('save'))}
                     </Button>
                 </div>
             </div>
