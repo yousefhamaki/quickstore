@@ -1,0 +1,360 @@
+{
+    "plans": {
+        "badge": "فئات ساس المميزة",
+        "title": "توسع بثقة",
+        "subtitle": "اختر الخطة التي تناسب حجم أعمالك. تطبق رسوم معاملة على كل طلب حسب خطتك.",
+        "currency": "ج.م/شهرياً",
+        "bestValue": "الأفضل قيمة",
+        "currentTier": "الفئة الحالية",
+        "switchToFree": "التحويل للمجانية",
+        "upgradeNow": "ترقية الآن",
+        "insufficientBalance": "رصيد المحفظة غير كافٍ",
+        "enterpriseTitle": "حل للمؤسسات؟",
+        "enterpriseSubtitle": "لشبكات البائعين المتعددين التي تزيد عن 50 متجراً، نقدم بنية تحتية مخصصة ومديري حسابات مخصصين.",
+        "talkToSales": "تحدث إلى المبيعات",
+        "managedStores": "{count} متجر مدار",
+        "unlimitedManagedStores": "متاجر مدارة غير محدودة",
+        "globalProducts": "{count} منتج عالمي",
+        "unlimitedGlobalProducts": "منتجات عالمية غير محدودة",
+        "secureWallet": "تكامل محفظة آمن",
+        "customDomain": "دومين مخصص",
+        "dropshipping": "نظام الدروبشيبينغ",
+        "orderFee": "{amount} ج.م رسوم للطلب"
+    },
+    "dashboard": {
+        "welcome": "مرحباً بعودتك، {name}!",
+        "subtitle": "أدر إمبراطورية التجارة الإلكترونية الخاصة بك من لوحة تحكم واحدة.",
+        "billingAndPlans": "الفواتير والخطط",
+        "createNewStore": "إنشاء متجر جديد",
+        "logout": "تسجيل الخروج",
+        "logoutConfirm": "هل أنت متأكد من رغبتك في تسجيل الخروج؟",
+        "activeStores": "المتاجر النشطة",
+        "myStores": "متاجري الإلكترونية",
+        "searchPlaceholder": "البحث باسم المتجر..."
+    },
+    "storeDashboard": {
+        "loading": "جاري تحميل الأدوات الرائعة لـ {name}...",
+        "storeNotFound": "المتجر غير موجود.",
+        "launchStore": "إطلاق المتجر",
+        "viewLive": "عرض المتجر",
+        "settings": "الإعدادات",
+        "statusDraftTitle": "متجرك حالياً في وضع المسودة",
+        "statusDraftDescription": "أكمل قائمة التحقق من الإعداد أدناه للكشف عن متجرك للعالم. بمجرد نشره، سيتمكن عملاؤك من تصفح المنتجات وإجراء عمليات الشراء.",
+        "stats": {
+            "revenue": "الإيرادات",
+            "confirmedRevenue": "المحصلة (المدفوعة/المسلمة)",
+            "grossRevenue": "الإجمالي (الكلي)",
+            "orders": "إجمالي الطلبات",
+            "activeProducts": "المنتجات النشطة",
+            "customers": "العملاء"
+        },
+        "quickActions": {
+            "title": "إجراءات سريعة",
+            "addProductsTitle": "إضافة منتجات",
+            "addProductsDesc": "أدرج عناصر للبيع",
+            "createCouponTitle": "إنشاء كوبون",
+            "createCouponDesc": "قم بتشغيل عرض ترويجي للمبيعات",
+            "legalPoliciesTitle": "السياسات القانونية",
+            "legalPoliciesDesc": "الشروط، الخصوصية والاسترداد"
+        },
+        "details": {
+            "title": "تفاصيل المتجر",
+            "plan": "الخطة",
+            "currency": "العملة",
+            "subdomain": "النطاق الفرعي",
+            "editBtn": "تعديل إعدادات المتجر"
+        },
+        "help": {
+            "title": "هل تحتاج مساعدة؟",
+            "description": "اطلع على البرنامج التعليمي الخاص بنا حول كيفية زيادة مبيعاتك أو اتصل بفريق الدعم لدينا.",
+            "guideBtn": "عرض الدليل ←"
+        },
+        "nav": {
+            "mainMenu": "القائمة الرئيسية",
+            "storeSettings": "إعدادات المتجر",
+            "allDashboards": "كل لوحات التحكم",
+            "createNewStore": "إنشاء متجر جديد",
+            "storeManager": "مدير المتاجر",
+            "logout": "تسجيل الخروج",
+            "logoutConfirm": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
+            "items": {
+                "dashboard": "لوحة التحكم",
+                "products": "المنتجات",
+                "orders": "الطلبات",
+                "customers": "العملاء",
+                "marketing": "التسويق",
+                "analytics": "التحليلات",
+                "general": "نظام",
+                "appearance": "المظهر",
+                "payments": "المدفوعات",
+                "shipping": "الشحن",
+                "domain": "نطاق",
+                "policies": "السياسات"
+            }
+        },
+        "checklist": {
+            "title": "تقدم إعداد المتجر",
+            "setupBtn": "إعداد",
+            "steps": {
+                "storeInfo": "معلومات المتجر",
+                "branding": "هوية العلامة التجارية",
+                "products": "إضافة منتجات ({current}/{target})",
+                "payment": "إعداد الدفع",
+                "shipping": "مناطق الشحن",
+                "policies": "السياسات القانونية"
+            }
+        },
+        "publishModal": {
+            "title": "إطلاق {name}",
+            "description": "هل أنت مستعد لبدء عملك؟ بمجرد النشر، يمكن للعملاء زيارة متجرك وطلبه المنتجات.",
+            "notReady": "انتظر! متجرك ليس جاهزاً تماماً بعد:",
+            "ready": "كل الأنظمة جاهزة! متجرك يستوفي جميع متطلبات الإطلاق.",
+            "previewUrl": "رابط المعاينة",
+            "maybeLater": "ربما لاحقاً",
+            "goLive": "انطلق الآن",
+            "launching": "جاري الإطلاق...",
+            "successTitle": "متجرك الآن مباشر!",
+            "successDesc": "تهانينا! {name} مفتوح الآن رسمياً للعمل.",
+            "copyUrl": "نسخ رابط المتجر",
+            "shareStore": "مشاركة المتجر",
+            "viewLiveBtn": "عرض المتجر المباشر",
+            "closeBtn": "إغلاق ومتابعة الإدارة",
+            "copied": "تم نسخ الرابط إلى الحافظة!",
+            "shareText": "تحقق من متجري الجديد على Buildora!"
+        }
+    },
+    "billing": {
+        "title": "الفواتير والمحفظة",
+        "subtitle": "المصدر الوحيد للحقيقة لنشاطك المالي.",
+        "upgradePlan": "ترقية الخطة",
+        "resolveNow": "حل المشكلة الآن",
+        "availableBalance": "الرصيد المتاح",
+        "recharge": "شحن الرصيد",
+        "rechargePlaceholder": "المبلغ",
+        "rechargeNote": "شحن فوري عبر بوابة Paymob المؤمنة",
+        "planTitle": "خطة {name}",
+        "activeStatus": "حالة النشاط",
+        "storesCapacity": "سعة المتاجر",
+        "productsActive": "المنتجات النشطة",
+        "timeline": "الجدول الزمني",
+        "milestones": "أحداث الاشتراك الهامة",
+        "nextRenewal": "التجديد القادم",
+        "transactionHistory": "سجل المعاملات",
+        "features": {
+            "dashboard": "لوحة تحكم التاجر"
+        },
+        "ledger": {
+            "date": "التاريخ",
+            "type": "النوع",
+            "reason": "السبب",
+            "amount": "المبلغ",
+            "receipt": "الإيصال",
+            "noActivity": "لم يتم تسجيل أي نشاط مالي بعد.",
+            "credit": "إيداع",
+            "debit": "سحب"
+        },
+        "blocking": {
+            "expiredTitle": "الاشتراك محظور",
+            "expiredSubtitle": "اشتراكك منتهي أو متأخر السداد. يرجى التجديد للحفاظ على متجرك نشطاً.",
+            "lowBalanceTitle": "رصيد المحفظة منخفض",
+            "lowBalanceSubtitle": "رصيدك منخفض جداً للحفاظ على ظهور الخطة المجانية. الحد الأدنى المطلوب 250 ج.م."
+        },
+        "reasons": {
+            "recharge": "شحن المحفظة",
+            "subscription_payment": "دفع الاشتراك",
+            "order_fee": "رسوم معاملة الطلب",
+            "refund": "استرداد الأموال",
+            "manual_adjustment": "تعديل يدوي"
+        }
+    },
+    "settings": {
+        "title": "إعدادات الحساب",
+        "tabs": {
+            "billing": "معلومات الفوترة",
+            "subscription": "الاشتراك"
+        },
+        "billing": {
+            "title": "معلومات الفوترة",
+            "description": "العنوان والرقم الضريبي المستخدم في الفواتير.",
+            "form": {
+                "fullName": "الاسم الكامل / اسم الشركة",
+                "billingEmail": "بريد الفوترة الإلكتروني",
+                "addressLine1": "عنوان السطر 1",
+                "city": "المدينة",
+                "state": "المنطقة / المحافظة",
+                "postalCode": "الرمز البريدي",
+                "taxId": "الرقم الضريبي (اختياري)",
+                "save": "حفظ التغييرات",
+                "saving": "جاري الحفظ..."
+            },
+            "messages": {
+                "success": "تم تحديث ملف الفوترة بنجاح",
+                "error": "فشل تحديث الملف الشخصي",
+                "loadError": "فشل تحميل الإعدادات"
+            }
+        },
+        "subscription": {
+            "title": "الاشتراك الحالي",
+            "description": "إدارة خطتك وطرق الدفع.",
+            "renewsOn": "يتجدد في {date}",
+            "expiresOn": "ينتهي في {date}",
+            "manage": "إدارة الخطة",
+            "status": "الحالة",
+            "noActive": "ليس لديك اشتراك نشط.",
+            "subscribeNow": "اشترك الآن"
+        }
+    },
+    "products": {
+        "title": "المنتجات",
+        "subtitle": "إدارة المخزون والأسعار والمتغيرات.",
+        "addProduct": "إضافة منتج",
+        "searchPlaceholder": "البحث عن المنتجات بالاسم أو SKU...",
+        "allStatus": "كل الحالات",
+        "status": {
+            "active": "نشط",
+            "draft": "مسودة",
+            "archived": "مؤرشف"
+        },
+        "refresh": "تحديث",
+        "loading": "جاري جلب الكتالوج الخاص بك...",
+        "empty": {
+            "title": "لم يتم العثور على منتجات",
+            "filterResults": "لا توجد منتجات تطابق الفلاتر الحالية. حاول مسحها.",
+            "getStarted": "ابدأ بإضافة أول منتج لك إلى كتالوج متجرك.",
+            "createBtn": "إنشاء منتج"
+        },
+        "table": {
+            "product": "المنتج",
+            "status": "الحالة",
+            "inventory": "المخزون",
+            "price": "السعر",
+            "actions": "الإجراءات",
+            "inStock": "{count} في المخزون",
+            "lowStock": "مخزون منخفض"
+        },
+        "pagination": {
+            "showing": "عرض {start} إلى {end} من {total} منتج",
+            "page": "صفحة {current} من {total}"
+        },
+        "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذا المنتج؟",
+        "deleteSuccess": "تم حذف المنتج بنجاح",
+        "deleteError": "فشل حذف المنتج",
+        "loadError": "فشل تحميل المنتجات",
+        "new": {
+            "title": "إضافة منتج جديد",
+            "subtitle": "إدراج عنصر جديد في كتالوج متجرك.",
+            "back": "العودة إلى المنتجات"
+        },
+        "form": {
+            "general": "معلومات عامة",
+            "name": "اسم المنتج",
+            "namePlaceholder": "جاكيت دينم أزرق",
+            "description": "الوصف",
+            "descriptionPlaceholder": "صف منتجك...",
+            "media": "الوسائط",
+            "upload": "انقر للرفع",
+            "uploading": "جاري رفع الصور...",
+            "uploadSuccess": "تم رفع الصور",
+            "uploadError": "فشل رفع الصور",
+            "variants": {
+                "title": "المتغيرات",
+                "addOption": "إضافة خيار",
+                "empty": "لا توجد متغيرات لهذا المنتج بعد. أضف خيارات مثل الحجم أو اللون.",
+                "name": "اسم الخيار",
+                "namePlaceholder": "مثلاً: اللون",
+                "values": "قيم الخيارات (مفصولة بفاصلة)",
+                "valuesPlaceholder": "مثلاً: أحمر، أزرق، أخضر"
+            },
+            "pricing": {
+                "title": "التسعير والمخزون",
+                "price": "السعر (ج.م)",
+                "compareAt": "السعر قبل الخصم",
+                "cost": "التكلفة لكل عنصر (لحساب الربح)",
+                "sku": "SKU (وحدة حفظ المخزون)",
+                "skuPlaceholder": "مثلاً: SHIRT-BLU-S",
+                "barcode": "باركود (ISBN, UPC, GTIN)",
+                "trackInventory": "تتبع كمية المخزون",
+                "available": "الكمية المتاحة"
+            },
+            "organization": {
+                "title": "التنظيم",
+                "category": "الفئة",
+                "categoryPlaceholder": "ملابس",
+                "status": "حالة المنتج"
+            },
+            "save": "نشر المنتج",
+            "update": "تحديث المنتج",
+            "saving": "جاري الحفظ...",
+            "success": "تم إنشاء المنتج",
+            "successUpdate": "تم تحديث المنتج",
+            "error": "فشل حفظ المنتج"
+        }
+    },
+    "orders": {
+        "title": "الطلبات",
+        "subtitle": "تتبع وإدارة طلبات عملائك.",
+        "export": "تصدير",
+        "searchPlaceholder": "البحث برقم الطلب أو العميل...",
+        "allStatuses": "جميع الحالات",
+        "status": {
+            "pending": "قيد الانتظار",
+            "processing": "جاري المعالجة",
+            "shipped": "تم الشحن",
+            "delivered": "تم التوصيل",
+            "cancelled": "تم الإلغاء"
+        },
+        "noOrdersFound": "لا توجد طلبات",
+        "noOrdersSubtitle": "عندما يقوم العميل بتقديم طلب، سيظهر هنا.",
+        "table": {
+            "order": "الطلب",
+            "date": "التاريخ",
+            "customer": "العميل",
+            "total": "الإجمالي",
+            "status": "الحالة",
+            "action": "الإجراء",
+            "view": "عرض"
+        },
+        "pagination": "صفحة {page} من {pages}",
+        "loadError": "فشل تحميل الطلبات"
+    },
+    "orderDetails": {
+        "back": "العودة إلى الطلبات",
+        "notFound": "الطلب غير موجود",
+        "placedOn": "تم الطلب في {date}",
+        "updateStatus": "تحديث الحالة",
+        "updateSuccess": "تم تحديث حالة الطلب إلى {status}",
+        "updateError": "فشل تحديث الحالة",
+        "loadError": "فشل تحميل تفاصيل الطلب",
+        "orderItems": "محتويات الطلب",
+        "qty": "الكمية",
+        "summary": "الملخص المالي",
+        "subtotal": "المجموع الفرعي",
+        "shipping": "الشحن",
+        "tax": "الضريبة",
+        "total": "الإجمالي",
+        "customerInfo": "معلومات العميل",
+        "customerId": "المعرف",
+        "shippingAddress": "عنوان الشحن",
+        "payment": "الدفع",
+        "paymentMethod": "الطريقة",
+        "paymentStatus": "الحالة"
+    },
+    "customers": {
+        "title": "العملاء",
+        "subtitle": "عرض وإدارة عملاء متجرك.",
+        "addCustomer": "إضافة عميل",
+        "searchPlaceholder": "البحث عن العملاء بالاسم أو البريد الإلكتروني...",
+        "filters": "تصفية",
+        "noCustomersFound": "لا يوجد عملاء",
+        "noCustomersSubtitle": "الأشخاص الذين يطلبون من متجرك سيظهرون هنا.",
+        "table": {
+            "name": "الاسم",
+            "email": "البريد الإلكتروني",
+            "phone": "الهاتف",
+            "orders": "الطلبات",
+            "joined": "تاريخ الانضمام",
+            "actions": "الإجراءات"
+        },
+        "loadError": "فشل تحميل العملاء"
+    }
+}

@@ -992,7 +992,7 @@
         "error": "Failed to place order. Please try again."
       }
     },
-    "contact": {
+    "storeContact": {
       "title": "Get in Touch",
       "subtitle": "Have a question or need assistance? Our team is here to help you.",
       "emailUs": "Email Us",

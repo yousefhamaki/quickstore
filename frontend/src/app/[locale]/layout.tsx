@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Cairo } from "next/font/google";
+import { notFound } from 'next/navigation';
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Providers } from "./providers";
+import { routing } from '@/i18n/routing';
 import { IntlProvider } from "@/components/IntlProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
@@ -13,7 +15,12 @@ export const metadata: Metadata = {
   description: "Create and manage multiple online stores from one dashboard",
 };
 
-export default async function RootLayout({
+// Generate static params for all supported locales
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
+export default async function LocaleLayout({
   children,
   params
 }: {
@@ -22,9 +29,14 @@ export default async function RootLayout({
 }) {
   const { locale } = await params;
 
+  // Validate locale
+  if (!routing.locales.includes(locale as any)) {
+    notFound();
+  }
+
   return (
     <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <body className={`${inter.variable} ${cairo.variable} font-inter`}>
+      <body className={`${inter.variable} ${cairo.variable} ${locale === 'ar' ? 'font-cairo' : 'font-inter'}`}>
         <IntlProvider>
           <AuthProvider>
             <Providers>

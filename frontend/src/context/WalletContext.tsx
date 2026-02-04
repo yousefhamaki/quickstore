@@ -19,19 +19,17 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const [shouldCheck, setShouldCheck] = useState(false);
+    const [shouldCheck, setShouldCheck] = useState(() => {
+        // Calculate once on mount instead of on every pathname change
+        if (typeof window === 'undefined') return false;
 
-    useEffect(() => {
         const token = Cookies.get('token');
-
-        // Don't check billing for storefront paths or if no token exists
         const isStorePath = pathname?.includes('/store/') ||
-            (typeof window !== 'undefined' &&
-                window.location.hostname.split('.').length > 2 &&
+            (window.location.hostname.split('.').length > 2 &&
                 !window.location.hostname.startsWith('www.'));
 
-        setShouldCheck(!!token && !isStorePath);
-    }, [pathname]);
+        return !!token && !isStorePath;
+    });
 
     // 30s polling to keep wallet balance and status synced (only if enabled)
     const { data: billing, isLoading, refetch } = useBillingOverview(shouldCheck);

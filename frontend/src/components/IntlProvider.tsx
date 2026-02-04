@@ -1,22 +1,28 @@
 'use client';
 
 import { NextIntlClientProvider } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 
-// List of namespaces to load from messages/[locale]/[namespace].json
-const NAMESPACES = [
+// Core namespaces loaded immediately
+const CORE_NAMESPACES = [
     'common',
     'auth',
     'dashboard',
+    'merchant',
     'landing',
     'features',
     'contact',
     'pricing',
     'about',
-    'support',
+    'support'
+];
+
+// Lazy-loaded namespaces (loaded on demand)
+const LAZY_NAMESPACES = [
     'privacy',
-    'terms'
+    'terms',
+    'store'
 ];
 
 export function IntlProvider({ children }: { children: React.ReactNode }) {
@@ -37,16 +43,8 @@ export function IntlProvider({ children }: { children: React.ReactNode }) {
             const loadedMessages: any = {};
 
             try {
-                // Load consolidated file first if it exists
-                try {
-                    const consolidated = await import(`../../messages/${targetLocale}.json`);
-                    Object.assign(loadedMessages, consolidated.default || consolidated);
-                } catch (e) {
-                    console.warn(`Consolidated file for ${targetLocale} not found, skipping...`);
-                }
-
-                // Load all individual namespaces
-                const namespacePromises = NAMESPACES.map(async (ns) => {
+                // Load ONLY core namespaces initially for faster render
+                const corePromises = CORE_NAMESPACES.map(async (ns) => {
                     try {
                         const msg = await import(`../../messages/${targetLocale}/${ns}.json`);
                         return { ns, data: msg.default || msg };
@@ -57,7 +55,7 @@ export function IntlProvider({ children }: { children: React.ReactNode }) {
                                 const fallbackMsg = await import(`../../messages/en/${ns}.json`);
                                 return { ns, data: fallbackMsg.default || fallbackMsg };
                             } catch (fallbackError) {
-                                console.error(`Failed to load namespace ${ns} for both ${targetLocale} and en`);
+                                console.error(`Failed to load core namespace ${ns}`);
                                 return null;
                             }
                         }
@@ -65,22 +63,63 @@ export function IntlProvider({ children }: { children: React.ReactNode }) {
                     }
                 });
 
-                const results = await Promise.all(namespacePromises);
-                results.forEach(result => {
+                const coreResults = await Promise.all(corePromises);
+                coreResults.forEach(result => {
                     if (result) {
                         loadedMessages[result.ns] = result.data;
+                        // For 'common', also spread its keys to the root for better compatibility
+                        if (result.ns === 'common') {
+                            Object.assign(loadedMessages, result.data);
+                        }
                     }
                 });
 
                 setMessages(loadedMessages);
+                setIsLoading(false);
+
+                // Load lazy namespaces in the background (non-blocking)
+                setTimeout(() => {
+                    const lazyPromises = LAZY_NAMESPACES.map(async (ns) => {
+                        try {
+                            const msg = await import(`../../messages/${targetLocale}/${ns}.json`);
+                            return { ns, data: msg.default || msg };
+                        } catch (e) {
+                            if (targetLocale !== 'en') {
+                                try {
+                                    const fallbackMsg = await import(`../../messages/en/${ns}.json`);
+                                    return { ns, data: fallbackMsg.default || fallbackMsg };
+                                } catch {
+                                    return null;
+                                }
+                            }
+                            return null;
+                        }
+                    });
+
+                    Promise.all(lazyPromises).then(lazyResults => {
+                        // Create a NEW object to trigger state update
+                        const updatedMessages = { ...loadedMessages };
+                        lazyResults.forEach(result => {
+                            if (result) {
+                                updatedMessages[result.ns] = result.data;
+                                // Also spread store into root if loaded
+                                if (result.ns === 'store') {
+                                    Object.assign(updatedMessages, result.data);
+                                }
+                            }
+                        });
+                        setMessages(updatedMessages);
+                    });
+                }, 100); // Load after 100ms
+
             } catch (error) {
                 console.error('Initial translation load failed:', error);
                 // Last resort fallback
                 if (targetLocale !== 'en') {
                     loadMessages('en');
+                } else {
+                    setIsLoading(false);
                 }
-            } finally {
-                setIsLoading(false);
             }
         };
 
@@ -103,16 +142,32 @@ export function IntlProvider({ children }: { children: React.ReactNode }) {
 
     if (isLoading || !messages) {
         return (
-            <div className="flex flex-col items-center justify-center min-vh-screen min-h-[100vh] bg-white">
-                <Loader2 className="h-10 w-10 text-blue-600 animate-spin mb-4" />
-                <p className="text-gray-500 font-medium tracking-tight">Building your experience...</p>
+            <div className="flex flex-col items-center justify-center min-vh-screen min-h-[100vh] bg-background">
+                <div className="relative">
+                    <div className="absolute -inset-4 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                    <Loader2 className="h-10 w-10 text-primary animate-spin mb-4 relative z-10" />
+                </div>
+                <p className="text-muted-foreground font-medium tracking-tight animate-pulse">Building Buildora...</p>
             </div>
         );
     }
 
     return (
-        <NextIntlClientProvider locale={locale} messages={messages}>
-            {children}
+        <NextIntlClientProvider
+            locale={locale}
+            messages={messages}
+            onError={(error) => {
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('Translation Error:', error);
+                }
+            }}
+            getMessageFallback={({ namespace, key }) => {
+                return key.split('.').pop() || key;
+            }}
+        >
+            <div className="transition-opacity duration-500 animate-in fade-in">
+                {children}
+            </div>
         </NextIntlClientProvider>
     );
 }

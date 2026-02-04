@@ -1,6 +1,7 @@
 import { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatsCardProps {
     title: string;
@@ -12,6 +13,7 @@ interface StatsCardProps {
         isUp: boolean;
     };
     className?: string;
+    isLoading?: boolean;
 }
 
 export function StatsCard({
@@ -20,8 +22,24 @@ export function StatsCard({
     icon: Icon,
     description,
     trend,
-    className
+    className,
+    isLoading
 }: StatsCardProps) {
+    if (isLoading) {
+        return (
+            <Card className={cn("overflow-hidden", className)}>
+                <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-8 w-8 rounded-lg" />
+                    </div>
+                    <Skeleton className="h-8 w-32" />
+                    <Skeleton className="h-4 w-40" />
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <Card className={cn("overflow-hidden group transition-all duration-300 hover:shadow-md", className)}>
             <CardContent className="p-6">

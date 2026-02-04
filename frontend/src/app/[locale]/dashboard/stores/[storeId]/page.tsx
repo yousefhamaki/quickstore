@@ -7,6 +7,7 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { PublishModal } from "@/components/dashboard/PublishModal";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
     Package,
@@ -34,19 +35,8 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
     const publishMutation = usePublishStore(storeId);
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[600px] gap-4">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <p className="text-muted-foreground font-medium animate-pulse">{t('loading', { name: storeId })}</p>
-            </div>
-        );
-    }
-
-    if (!store) return <div className="p-8 text-center">{t('storeNotFound')}</div>;
-
-    const isDraft = store.status === 'draft';
-    const liveUrl = `https://${store.domain.subdomain}.quickstore.live`;
+    const isDraft = store?.status === 'draft';
+    const liveUrl = store ? `https://${store.domain.subdomain}.quickstore.live` : '';
 
     const missingSteps = checklist
         ? Object.entries(checklist.checklist)
@@ -59,36 +49,56 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-bold tracking-tight">{store.name}</h1>
-                        <StatusBadge status={store.status} />
-                    </div>
-                    <p className="text-muted-foreground font-mono text-sm">{store.domain.subdomain}.quickstore.live</p>
+                    {isLoading ? (
+                        <>
+                            <Skeleton className="h-10 w-48" />
+                            <Skeleton className="h-4 w-64" />
+                        </>
+                    ) : (
+                        store && (
+                            <>
+                                <div className="flex items-center gap-3">
+                                    <h1 className="text-3xl font-bold tracking-tight">{store.name}</h1>
+                                    <StatusBadge status={store.status} />
+                                </div>
+                                <p className="text-muted-foreground font-mono text-sm">{store.domain.subdomain}.quickstore.live</p>
+                            </>
+                        )
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {isDraft ? (
-                        <Button
-                            onClick={() => setIsPublishModalOpen(true)}
-                            className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
-                        >
-                            <Rocket className="w-4 h-4 mr-2" />
-                            {t('launchStore')}
-                        </Button>
+                    {isLoading ? (
+                        <>
+                            <Skeleton className="h-10 w-32" />
+                            <Skeleton className="h-10 w-32" />
+                        </>
                     ) : (
-                        <Button asChild variant="outline">
-                            <a href={liveUrl} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                {t('viewLive')}
-                            </a>
-                        </Button>
+                        <>
+                            {isDraft ? (
+                                <Button
+                                    onClick={() => setIsPublishModalOpen(true)}
+                                    className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
+                                >
+                                    <Rocket className="w-4 h-4 mr-2" />
+                                    {t('launchStore')}
+                                </Button>
+                            ) : (
+                                <Button asChild variant="outline">
+                                    <a href={liveUrl} target="_blank" rel="noopener noreferrer">
+                                        <ExternalLink className="w-4 h-4 mr-2" />
+                                        {t('viewLive')}
+                                    </a>
+                                </Button>
+                            )}
+                            <Button asChild variant="secondary">
+                                <Link href={`/dashboard/stores/${storeId}/settings/general`}>
+                                    <Settings className="w-4 h-4 mr-2" />
+                                    {t('settings')}
+                                </Link>
+                            </Button>
+                        </>
                     )}
-                    <Button asChild variant="secondary">
-                        <Link href={`/dashboard/stores/${storeId}/settings/general`}>
-                            <Settings className="w-4 h-4 mr-2" />
-                            {t('settings')}
-                        </Link>
-                    </Button>
                 </div>
             </div>
 
@@ -111,27 +121,31 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                     title={t('stats.revenue')}
-                    value={`${store.stats.settledRevenue.toLocaleString()} EGP`}
-                    description={`${t('stats.grossRevenue')}: ${store.stats.totalRevenue.toLocaleString()} EGP`}
+                    value={store ? `${store.stats.settledRevenue.toLocaleString()} EGP` : '0 EGP'}
+                    description={store ? `${t('stats.grossRevenue')}: ${store.stats.totalRevenue.toLocaleString()} EGP` : ''}
                     icon={DollarSign}
                     trend={{ value: 12, isUp: true }}
+                    isLoading={isLoading}
                 />
                 <StatsCard
                     title={t('stats.orders')}
-                    value={store.stats.totalOrders}
+                    value={store ? store.stats.totalOrders : 0}
                     icon={ShoppingCart}
                     trend={{ value: 8, isUp: true }}
+                    isLoading={isLoading}
                 />
                 <StatsCard
                     title={t('stats.activeProducts')}
-                    value={store.stats.totalProducts}
+                    value={store ? store.stats.totalProducts : 0}
                     icon={Package}
+                    isLoading={isLoading}
                 />
                 <StatsCard
                     title={t('stats.customers')}
-                    value={store.stats.totalCustomers}
+                    value={store ? store.stats.totalCustomers : 0}
                     icon={Users}
                     trend={{ value: 24, isUp: true }}
+                    isLoading={isLoading}
                 />
             </div>
 
@@ -214,7 +228,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">{t('details.subdomain')}</span>
-                                <span className="font-bold font-mono">{store.domain.subdomain}</span>
+                                <span className="font-bold font-mono">{store?.domain?.subdomain}</span>
                             </div>
                         </div>
                         <Button asChild variant="outline" className="w-full h-11 rounded-xl">
@@ -242,7 +256,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
             <PublishModal
                 isOpen={isPublishModalOpen}
                 onClose={() => setIsPublishModalOpen(false)}
-                storeName={store.name}
+                storeName={store?.name || ''}
                 storeUrl={liveUrl}
                 isReady={checklist?.progress.percentage === 100}
                 missingSteps={missingSteps}

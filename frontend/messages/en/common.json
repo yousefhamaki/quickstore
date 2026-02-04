@@ -77,7 +77,8 @@
   },
   "loading": {
     "default": "Loading...",
-    "pleaseWait": "Please wait..."
+    "pleaseWait": "Please wait...",
+    "building": "Your store is being built"
   },
   "empty": {
     "noData": "No data available",

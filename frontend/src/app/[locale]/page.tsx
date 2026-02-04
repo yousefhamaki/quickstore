@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ShieldCheck, Zap, Globe, Sparkles } from 'lucide-react';
@@ -48,14 +48,14 @@ export default function LandingPage() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16">
-            <Link href="/auth/register">
+            <NavLink href="/auth/register">
               <Button
                 size="lg"
                 className="h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-2xl shadow-blue-300 hover:shadow-blue-400 font-bold transition-all duration-300 hover:scale-105"
               >
                 {t('hero.ctaPrimary')} <ArrowRight className="ml-2 h-5 w-5 md:h-6 md:w-6" />
               </Button>
-            </Link>
+            </NavLink>
             <Button
               variant="outline"
               size="lg"
@@ -126,7 +126,7 @@ export default function LandingPage() {
 
           {/* Explore All Features Button */}
           <div className="text-center">
-            <Link href="/features">
+            <NavLink href="/features">
               <Button
                 variant="outline"
                 size="lg"
@@ -134,7 +134,7 @@ export default function LandingPage() {
               >
                 {t('features.exploreAll')} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-            </Link>
+            </NavLink>
           </div>
         </div>
       </section>
@@ -153,14 +153,14 @@ export default function LandingPage() {
           <p className="text-xl md:text-2xl text-white/90 mb-10 font-medium">
             Join hundreds of successful merchants in Egypt today.
           </p>
-          <Link href="/auth/register">
+          <NavLink href="/auth/register">
             <Button
               size="lg"
               className="h-16 px-12 text-xl rounded-full bg-white text-blue-600 hover:bg-gray-100 shadow-2xl font-bold transition-all duration-300 hover:scale-105"
             >
               {tNav('getStarted')} <ArrowRight className="ml-2 h-6 w-6" />
             </Button>
-          </Link>
+          </NavLink>
         </div>
       </section>
 

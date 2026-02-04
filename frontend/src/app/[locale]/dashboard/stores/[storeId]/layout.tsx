@@ -24,8 +24,8 @@ import {
     LogOut,
     ShieldCheck
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { NavLink, useSafeNavigation } from "@/components/NavLink";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +50,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
     const t = useTranslations('merchant.storeDashboard.nav');
     const { storeId } = use(params);
     const pathname = usePathname();
-    const router = useRouter();
+    const { navigate } = useSafeNavigation();
     const { data: store } = useStore(storeId);
     const { data: stores } = useStores();
     const { logout } = useAuth();
@@ -107,7 +107,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                             {stores?.map((s) => (
                                 <DropdownMenuItem
                                     key={s._id}
-                                    onClick={() => router.push(`/dashboard/stores/${s._id}`)}
+                                    onClick={() => navigate(`/dashboard/stores/${s._id}`)}
                                     className="rounded-lg mb-1 py-2 cursor-pointer flex items-center justify-between"
                                 >
                                     <div className="flex items-center gap-2 overflow-hidden">
@@ -121,7 +121,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                             ))}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                                onClick={() => router.push('/dashboard/stores/new')}
+                                onClick={() => navigate('/dashboard/stores/new')}
                                 className="rounded-lg py-2 cursor-pointer text-primary font-bold"
                             >
                                 <Plus className="w-4 h-4 mr-2" />
@@ -129,7 +129,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                                onClick={() => router.push('/dashboard')}
+                                onClick={() => navigate('/dashboard')}
                                 className="rounded-lg py-2 cursor-pointer flex items-center text-muted-foreground"
                             >
                                 <ChevronLeft className="w-4 h-4 mr-2" />
@@ -143,7 +143,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                     <nav className="space-y-1">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">{t('mainMenu')}</p>
                         {navigation.map((item) => (
-                            <Link
+                            <NavLink
                                 key={item.name}
                                 href={item.href}
                                 className={cn(
@@ -158,14 +158,14 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                     isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
                                 )} />
                                 {item.name}
-                            </Link>
+                            </NavLink>
                         ))}
                     </nav>
 
                     <nav className="space-y-1">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">{t('storeSettings')}</p>
                         {settingsLinks.map((item) => (
-                            <Link
+                            <NavLink
                                 key={item.name}
                                 href={item.href}
                                 className={cn(
@@ -180,17 +180,17 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                     isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
                                 )} />
                                 {item.name}
-                            </Link>
+                            </NavLink>
                         ))}
                     </nav>
                 </div>
 
                 <div className="p-4 border-t mt-auto space-y-2">
                     <Button variant="outline" className="w-full justify-start rounded-xl h-12" asChild>
-                        <Link href="/dashboard">
+                        <NavLink href="/dashboard">
                             <StoreIcon className="w-4 h-4 mr-2" />
                             {t('storeManager')}
-                        </Link>
+                        </NavLink>
                     </Button>
                     <Button
                         variant="ghost"

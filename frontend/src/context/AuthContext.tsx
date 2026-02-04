@@ -39,12 +39,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const storedToken = Cookies.get('token');
         const storedUser = localStorage.getItem('user');
 
-        if (storedToken && storedUser) {
+        if (storedToken) {
             setToken(storedToken);
-            setUser(JSON.parse(storedUser));
+            if (storedUser) {
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch (e) {
+                    console.error('Failed to parse stored user:', e);
+                }
+            }
+
+            // Only sync with server if we don't have user data
+            // This prevents unnecessary API calls on every route change
+            if (!storedUser) {
+                api.get('/auth/profile').then(res => {
+                    const userData = res.data as any;
+                    setUser(userData);
+                    localStorage.setItem('user', JSON.stringify(userData));
+                }).catch(() => {
+                    // If token is invalid, it will be handled by axios interceptors
+                });
+            }
         }
         setIsLoading(false);
-    }, []);
+    }, []); // Empty dependency array - only run once on mount
 
     const login = (newToken: string, newUser: User) => {
         setToken(newToken);

@@ -6,119 +6,251 @@ import Order from '../models/Order';
 import Customer from '../models/Customer';
 import { AuthRequest } from '../middleware/authMiddleware';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 
 // @desc    Get all stores for logged-in merchant
 // @route   GET /api/stores
 // @access  Private/Merchant
 export const getStores = async (req: AuthRequest, res: Response) => {
     try {
-        const stores = await Store.find({ ownerId: req.user._id })
-            .sort({ createdAt: -1 })
-            .lean();
+        const userId = new mongoose.Types.ObjectId(req.user._id);
 
-        const storesWithStats = await Promise.all(stores.map(async (store) => {
-            const [totalProducts, totalOrders, totalCustomers, revenueData] = await Promise.all([
-                Product.countDocuments({ storeId: store._id, status: 'active' }),
-                Order.countDocuments({ storeId: store._id }),
-                Customer.countDocuments({ storeId: store._id }),
-                Order.aggregate([
-                    { $match: { storeId: store._id, status: { $nin: ['cancelled', 'refunded'] } } },
-                    {
-                        $group: {
-                            _id: null,
-                            totalRevenue: { $sum: "$total" },
-                            settledRevenue: {
-                                $sum: {
-                                    $cond: [
-                                        { $or: [{ $eq: ["$status", "delivered"] }, { $eq: ["$paymentStatus", "paid"] }] },
-                                        "$total",
-                                        0
+        const storesWithStats = await Store.aggregate([
+            { $match: { ownerId: userId } },
+            { $sort: { createdAt: -1 } },
+            // Look up products count
+            {
+                $lookup: {
+                    from: 'products',
+                    let: { storeId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$storeId', '$$storeId'] },
+                                        { $eq: ['$status', 'active'] }
                                     ]
                                 }
                             }
-                        }
-                    }
-                ])
-            ]);
-
-            const totalRevenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
-            const settledRevenue = revenueData.length > 0 ? revenueData[0].settledRevenue : 0;
-
-            return {
-                ...store,
-                stats: {
-                    ...store.stats,
-                    totalProducts,
-                    totalOrders,
-                    totalCustomers,
-                    totalRevenue,
-                    settledRevenue
+                        },
+                        { $count: 'count' }
+                    ],
+                    as: 'productStats'
                 }
-            };
-        }));
+            },
+            // Look up orders count and revenue
+            {
+                $lookup: {
+                    from: 'orders',
+                    let: { storeId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$storeId', '$$storeId'] } } },
+                        {
+                            $group: {
+                                _id: null,
+                                totalOrders: { $sum: 1 },
+                                totalRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            { $not: [{ $in: ['$status', ['cancelled', 'refunded']] }] },
+                                            '$total',
+                                            0
+                                        ]
+                                    }
+                                },
+                                settledRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $or: [
+                                                    { $eq: ["$status", "delivered"] },
+                                                    { $eq: ["$paymentStatus", "paid"] }
+                                                ]
+                                            },
+                                            "$total",
+                                            0
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    as: 'orderStats'
+                }
+            },
+            // Look up customers count
+            {
+                $lookup: {
+                    from: 'customers',
+                    let: { storeId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$storeId', '$$storeId'] } } },
+                        { $count: 'count' }
+                    ],
+                    as: 'customerStats'
+                }
+            },
+            {
+                $addFields: {
+                    stats: {
+                        totalProducts: { $ifNull: [{ $arrayElemAt: ['$productStats.count', 0] }, 0] },
+                        totalOrders: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalOrders', 0] }, 0] },
+                        totalCustomers: { $ifNull: [{ $arrayElemAt: ['$customerStats.count', 0] }, 0] },
+                        totalRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalRevenue', 0] }, 0] },
+                        settledRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.settledRevenue', 0] }, 0] }
+                    }
+                }
+            },
+            {
+                $project: {
+                    productStats: 0,
+                    orderStats: 0,
+                    customerStats: 0
+                }
+            }
+        ]);
 
         res.json(storesWithStats);
     } catch (error) {
+        console.error('getStores Error:', error);
         res.status(500).json({ message: 'Server Error', error });
     }
 };
 
-// @desc    Get single store
-// @route   GET /api/stores/:id
-// @access  Private/Merchant
 export const getStore = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({
-            _id: req.params.id,
-            ownerId: req.user._id
-        }).lean();
+        const userId = new mongoose.Types.ObjectId(req.user._id);
+        const storeId = new mongoose.Types.ObjectId(req.params.id as string);
 
-        if (!store) {
+        const storeWithStats = await Store.aggregate([
+            { $match: { _id: storeId, ownerId: userId } },
+            // Look up subscription and plan
+            {
+                $lookup: {
+                    from: 'subscriptions',
+                    localField: 'subscriptionId',
+                    foreignField: '_id',
+                    as: 'subscription'
+                }
+            },
+            { $unwind: { path: '$subscription', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'subscription.planId',
+                    foreignField: '_id',
+                    as: 'subscription.planId'
+                }
+            },
+            { $unwind: { path: '$subscription.planId', preserveNullAndEmptyArrays: true } },
+            // Re-map subscription to subscriptionId to match FE expectations if needed
+            // Actually, populate({path: 'subscriptionId', populate: {path: 'planId'}}) 
+            // creates store.subscriptionId.planId.name
+            {
+                $addFields: {
+                    subscriptionId: '$subscription'
+                }
+            },
+            // Look up products count
+            {
+                $lookup: {
+                    from: 'products',
+                    let: { sId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$storeId', '$$sId'] },
+                                        { $eq: ['$status', 'active'] }
+                                    ]
+                                }
+                            }
+                        },
+                        { $count: 'count' }
+                    ],
+                    as: 'productStats'
+                }
+            },
+            // Look up orders count and revenue
+            {
+                $lookup: {
+                    from: 'orders',
+                    let: { sId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$storeId', '$$sId'] } } },
+                        {
+                            $group: {
+                                _id: null,
+                                totalOrders: { $sum: 1 },
+                                totalRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            { $not: [{ $in: ['$status', ['cancelled', 'refunded']] }] },
+                                            '$total',
+                                            0
+                                        ]
+                                    }
+                                },
+                                settledRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $or: [
+                                                    { $eq: ["$status", "delivered"] },
+                                                    { $eq: ["$paymentStatus", "paid"] }
+                                                ]
+                                            },
+                                            "$total",
+                                            0
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    as: 'orderStats'
+                }
+            },
+            // Look up customers count
+            {
+                $lookup: {
+                    from: 'customers',
+                    let: { sId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$storeId', '$$sId'] } } },
+                        { $count: 'count' }
+                    ],
+                    as: 'customerStats'
+                }
+            },
+            {
+                $addFields: {
+                    stats: {
+                        totalProducts: { $ifNull: [{ $arrayElemAt: ['$productStats.count', 0] }, 0] },
+                        totalOrders: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalOrders', 0] }, 0] },
+                        totalCustomers: { $ifNull: [{ $arrayElemAt: ['$customerStats.count', 0] }, 0] },
+                        totalRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalRevenue', 0] }, 0] },
+                        settledRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.settledRevenue', 0] }, 0] }
+                    }
+                }
+            },
+            {
+                $project: {
+                    subscription: 0,
+                    productStats: 0,
+                    orderStats: 0,
+                    customerStats: 0
+                }
+            }
+        ]);
+
+        if (storeWithStats.length === 0) {
             return res.status(404).json({ message: 'Store not found' });
         }
 
-        // Calculate real-time stats
-        const [totalProducts, totalOrders, totalCustomers, revenueData] = await Promise.all([
-            Product.countDocuments({ storeId: store._id, status: 'active' }),
-            Order.countDocuments({ storeId: store._id }),
-            Customer.countDocuments({ storeId: store._id }),
-            Order.aggregate([
-                { $match: { storeId: store._id, status: { $nin: ['cancelled', 'refunded'] } } },
-                {
-                    $group: {
-                        _id: null,
-                        totalRevenue: { $sum: "$total" },
-                        settledRevenue: {
-                            $sum: {
-                                $cond: [
-                                    { $or: [{ $eq: ["$status", "delivered"] }, { $eq: ["$paymentStatus", "paid"] }] },
-                                    "$total",
-                                    0
-                                ]
-                            }
-                        }
-                    }
-                }
-            ])
-        ]);
-
-        const totalRevenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
-        const settledRevenue = revenueData.length > 0 ? revenueData[0].settledRevenue : 0;
-
-        // Merge stats into the response
-        const storeWithStats = {
-            ...store,
-            stats: {
-                ...store.stats,
-                totalProducts,
-                totalOrders,
-                totalCustomers,
-                totalRevenue,
-                settledRevenue
-            }
-        };
-
-        res.json(storeWithStats);
+        res.json(storeWithStats[0]);
     } catch (error) {
         console.error('Get Store Error:', error);
         res.status(500).json({ message: 'Server Error', error });

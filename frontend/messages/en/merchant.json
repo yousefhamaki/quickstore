@@ -1,0 +1,360 @@
+{
+    "plans": {
+        "badge": "Premium SaaS Tiers",
+        "title": "Scale with Confidence",
+        "subtitle": "Select a plan that fits your volume. Transaction fees apply per order depending on your plan.",
+        "currency": "EGP/mo",
+        "bestValue": "Best Value",
+        "currentTier": "Current Tier",
+        "switchToFree": "Switch to Free",
+        "upgradeNow": "Upgrade Now",
+        "insufficientBalance": "Insufficient wallet balance",
+        "enterpriseTitle": "Enterprise Solution?",
+        "enterpriseSubtitle": "For multiseller networks with 50+ stores, we offer custom infrastructure and dedicated account managers.",
+        "talkToSales": "Talk to sales",
+        "managedStores": "{count} Managed Store(s)",
+        "unlimitedManagedStores": "Unlimited Managed Stores",
+        "globalProducts": "{count} Global Products",
+        "unlimitedGlobalProducts": "Unlimited Global Products",
+        "secureWallet": "Secure Wallet Integration",
+        "customDomain": "Custom Domain Support",
+        "dropshipping": "Dropshipping Ecosystem",
+        "orderFee": "{amount} EGP fee per order"
+    },
+    "dashboard": {
+        "welcome": "Welcome back, {name}!",
+        "subtitle": "Manage your e-commerce empire from a single dashboard.",
+        "billingAndPlans": "Billing & Plans",
+        "createNewStore": "Create New Store",
+        "logout": "Logout",
+        "logoutConfirm": "Are you sure you want to logout?",
+        "activeStores": "Active Stores",
+        "myStores": "My Online Stores",
+        "searchPlaceholder": "Search by store name..."
+    },
+    "storeDashboard": {
+        "loading": "Loading amazing tools for {name}...",
+        "storeNotFound": "Store not found.",
+        "launchStore": "Launch Store",
+        "viewLive": "View Live",
+        "settings": "Settings",
+        "statusDraftTitle": "Your store is currently in draft mode",
+        "statusDraftDescription": "Complete the setup checklist below to reveal your store to the world. Once published, your customers can browse products and checkout.",
+        "stats": {
+            "revenue": "Revenue",
+            "confirmedRevenue": "Confirmed (Paid/Delivered)",
+            "grossRevenue": "Gross Total",
+            "orders": "Total Orders",
+            "activeProducts": "Active Products",
+            "customers": "Customers"
+        },
+        "quickActions": {
+            "title": "Quick Actions",
+            "addProductsTitle": "Add Products",
+            "addProductsDesc": "List items for sale",
+            "createCouponTitle": "Create Coupon",
+            "createCouponDesc": "Run a sales promotion",
+            "legalPoliciesTitle": "Legal Policies",
+            "legalPoliciesDesc": "Terms, Privacy & Refunds"
+        },
+        "details": {
+            "title": "Store Details",
+            "plan": "Plan",
+            "currency": "Currency",
+            "subdomain": "Subdomain",
+            "editBtn": "Edit Store Settings"
+        },
+        "help": {
+            "title": "Need Help?",
+            "description": "Check out our tutorial on how to grow your sales or contact our support team.",
+            "guideBtn": "View Guide →"
+        },
+        "nav": {
+            "mainMenu": "Main Menu",
+            "storeSettings": "Store Settings",
+            "allDashboards": "All Dashboards",
+            "createNewStore": "Create New Store",
+            "storeManager": "Store Manager",
+            "logout": "Logout",
+            "logoutConfirm": "Are you sure you want to logout?",
+            "items": {
+                "dashboard": "Dashboard",
+                "products": "Products",
+                "orders": "Orders",
+                "customers": "Customers",
+                "marketing": "Marketing",
+                "analytics": "Analytics",
+                "general": "General",
+                "appearance": "Appearance",
+                "payments": "Payments",
+                "shipping": "Shipping",
+                "domain": "Domain",
+                "policies": "Policies"
+            }
+        },
+        "checklist": {
+            "title": "Store Setup Progress",
+            "setupBtn": "Setup",
+            "steps": {
+                "storeInfo": "Store Information",
+                "branding": "Brand Identity",
+                "products": "Add Products ({current}/{target})",
+                "payment": "Payment Setup",
+                "shipping": "Shipping Zones",
+                "policies": "Legal Policies"
+            }
+        },
+        "publishModal": {
+            "title": "Launch {name}",
+            "description": "Ready to take your business live? Once published, customers can visit your store and place orders.",
+            "notReady": "Wait! Your store isn't quite ready yet:",
+            "ready": "All systems go! Your store meets all requirements for launch.",
+            "previewUrl": "Preview URL",
+            "maybeLater": "Maybe Later",
+            "goLive": "Go Live Now",
+            "launching": "Launching...",
+            "successTitle": "Your Store is Live!",
+            "successDesc": "Congratulations! {name} is officially open for business.",
+            "copyUrl": "Copy Store URL",
+            "shareStore": "Share Store",
+            "viewLiveBtn": "View Live Store",
+            "closeBtn": "Close and continue managing",
+            "copied": "Link copied to clipboard!",
+            "shareText": "Check out my new store on Buildora!"
+        }
+    },
+    "billing": {
+        "title": "Billing & Wallet",
+        "subtitle": "Single source of truth for your financial activity.",
+        "upgradePlan": "Upgrade Plan",
+        "resolveNow": "Resolve Now",
+        "availableBalance": "Available Balance",
+        "recharge": "Recharge",
+        "rechargePlaceholder": "Amount",
+        "rechargeNote": "Instant recharge via Paymob Secure Gateway",
+        "planTitle": "{name} Plan",
+        "activeStatus": "Active Status",
+        "storesCapacity": "Stores Capacity",
+        "productsActive": "Products Active",
+        "timeline": "Timeline",
+        "milestones": "Subscription milestones",
+        "nextRenewal": "Next Renewal",
+        "transactionHistory": "Transaction History",
+        "features": {
+            "dashboard": "Merchant Dashboard"
+        },
+        "ledger": {
+            "date": "Date",
+            "type": "Type",
+            "reason": "Reason",
+            "amount": "Amount",
+            "receipt": "Receipt",
+            "noActivity": "No financial activity recorded yet.",
+            "credit": "Credit",
+            "debit": "Debit"
+        },
+        "blocking": {
+            "expiredTitle": "Subscription Blocked",
+            "expiredSubtitle": "Your subscription is expired or past due. Please renew to keep your store active.",
+            "lowBalanceTitle": "Low Wallet Balance",
+            "lowBalanceSubtitle": "Your balance is too low to maintain Free plan visibility. Minimum 250 EGP required."
+        },
+        "reasons": {
+            "recharge": "Wallet Recharge",
+            "subscription_payment": "Subscription Payment",
+            "order_fee": "Order Transaction Fee",
+            "refund": "Refund",
+            "manual_adjustment": "Manual Adjustment"
+        }
+    },
+    "settings": {
+        "title": "Account Settings",
+        "tabs": {
+            "billing": "Billing Info",
+            "subscription": "Subscription"
+        },
+        "billing": {
+            "title": "Billing Information",
+            "description": "Address and Tax ID used for invoices.",
+            "form": {
+                "fullName": "Full Name / Company Name",
+                "billingEmail": "Billing Email",
+                "addressLine1": "Address Line 1",
+                "city": "City",
+                "state": "State / Province",
+                "postalCode": "Postal Code",
+                "taxId": "Tax ID (Optional)",
+                "save": "Save Changes",
+                "saving": "Saving..."
+            },
+            "messages": {
+                "success": "Billing profile updated",
+                "error": "Failed to update profile",
+                "loadError": "Failed to load settings"
+            }
+        },
+        "subscription": {
+            "title": "Current Subscription",
+            "description": "Manage your plan and payment methods.",
+            "renewsOn": "Renews on {date}",
+            "expiresOn": "Expires on {date}",
+            "manage": "Manage Plan",
+            "status": "Status",
+            "noActive": "You have no active subscription.",
+            "subscribeNow": "Subscribe Now"
+        }
+    },
+    "products": {
+        "title": "Products",
+        "subtitle": "Manage your inventory, prices and variants.",
+        "addProduct": "Add Product",
+        "searchPlaceholder": "Search products by name or SKU...",
+        "allStatus": "All Status",
+        "status": {
+            "active": "Active",
+            "draft": "Draft",
+            "archived": "Archived"
+        },
+        "refresh": "Refresh",
+        "loading": "Fetching your catalog...",
+        "empty": {
+            "title": "No products found",
+            "filterResults": "No products match your current filters. Try clearing them.",
+            "getStarted": "Start by adding your first product to your store catalog.",
+            "createBtn": "Create Product"
+        },
+        "table": {
+            "product": "Product",
+            "status": "Status",
+            "inventory": "Inventory",
+            "price": "Price",
+            "actions": "Actions",
+            "inStock": "{count} in stock",
+            "lowStock": "Low Stock"
+        },
+        "pagination": {
+            "showing": "Showing {start} to {end} of {total} products",
+            "page": "Page {current} of {total}"
+        },
+        "deleteConfirm": "Are you sure you want to delete this product?",
+        "deleteSuccess": "Product deleted successfully",
+        "deleteError": "Failed to delete product",
+        "loadError": "Failed to load products",
+        "new": {
+            "title": "Add New Product",
+            "subtitle": "List a new item in your store catalog.",
+            "back": "Back to Products"
+        },
+        "form": {
+            "general": "General Information",
+            "name": "Product Name",
+            "namePlaceholder": "Blue Denim Jacket",
+            "description": "Description",
+            "descriptionPlaceholder": "Describe your product...",
+            "media": "Media",
+            "upload": "Click to Upload",
+            "uploading": "Uploading images...",
+            "uploadSuccess": "Images uploaded",
+            "uploadError": "Failed to upload images",
+            "variants": {
+                "title": "Variants",
+                "addOption": "Add Option",
+                "empty": "No variants for this product yet. Add options like Size or Color.",
+                "name": "Option Name",
+                "namePlaceholder": "e.g. Color",
+                "values": "Options Values (comma separated)",
+                "valuesPlaceholder": "e.g. Red, Blue, Green"
+            },
+            "pricing": {
+                "title": "Pricing & Inventory",
+                "price": "Price (EGP)",
+                "compareAt": "Compare at Price",
+                "cost": "Cost per Item (for profit calc)",
+                "sku": "SKU (Stock Keeping Unit)",
+                "skuPlaceholder": "e.g. SHIRT-BLU-S",
+                "barcode": "Barcode (ISBN, UPC, GTIN)",
+                "trackInventory": "Track Inventory Quantity",
+                "available": "Available Quantity"
+            },
+            "organization": {
+                "title": "Organization",
+                "category": "Category",
+                "categoryPlaceholder": "Clothing",
+                "status": "Product Status"
+            },
+            "save": "Publish Product",
+            "update": "Update Product",
+            "saving": "Saving...",
+            "success": "Product created",
+            "successUpdate": "Product updated",
+            "error": "Failed to save product"
+        }
+    },
+    "orders": {
+        "title": "Orders",
+        "subtitle": "Track and manage your customer orders.",
+        "export": "Export",
+        "searchPlaceholder": "Search by order # or customer...",
+        "allStatuses": "All Statuses",
+        "status": {
+            "pending": "Pending",
+            "processing": "Processing",
+            "shipped": "Shipped",
+            "delivered": "Delivered",
+            "cancelled": "Cancelled"
+        },
+        "noOrdersFound": "No orders found",
+        "noOrdersSubtitle": "When a customer places an order, it will appear here.",
+        "table": {
+            "order": "Order",
+            "date": "Date",
+            "customer": "Customer",
+            "total": "Total",
+            "status": "Status",
+            "action": "Action",
+            "view": "View"
+        },
+        "pagination": "Page {page} of {pages}",
+        "loadError": "Failed to load orders"
+    },
+    "orderDetails": {
+        "back": "Back to Orders",
+        "notFound": "Order not found",
+        "placedOn": "Placed on {date}",
+        "updateStatus": "Update Status",
+        "updateSuccess": "Order status updated to {status}",
+        "updateError": "Failed to update status",
+        "loadError": "Failed to load order details",
+        "orderItems": "Order Items",
+        "qty": "Qty",
+        "summary": "Financial Summary",
+        "subtotal": "Subtotal",
+        "shipping": "Shipping",
+        "tax": "Tax",
+        "total": "Total",
+        "customerInfo": "Customer Info",
+        "customerId": "ID",
+        "shippingAddress": "Shipping Address",
+        "payment": "Payment",
+        "paymentMethod": "Method",
+        "paymentStatus": "Status"
+    },
+    "customers": {
+        "title": "Customers",
+        "subtitle": "View and manage your store customers.",
+        "addCustomer": "Add Customer",
+        "searchPlaceholder": "Search customers by name or email...",
+        "filters": "Filters",
+        "noCustomersFound": "No customers found",
+        "noCustomersSubtitle": "People who order from your store will be listed here.",
+        "table": {
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone",
+            "orders": "Orders",
+            "joined": "Joined",
+            "actions": "Actions"
+        },
+        "loadError": "Failed to load customers"
+    }
+}

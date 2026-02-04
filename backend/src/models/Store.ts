@@ -64,6 +64,15 @@ export interface IPolicies {
     shippingPolicy?: string;
 }
 
+export interface IMarketingSettings {
+    facebookPixelId?: string;
+    googleAnalyticsId?: string;
+    tiktokPixelId?: string;
+    snapchatPixelId?: string;
+    seoTitle?: string;
+    seoDescription?: string;
+}
+
 export interface IStoreSettings {
     currency: string;
     language: string;
@@ -72,6 +81,7 @@ export interface IStoreSettings {
     shipping: IShippingSettings;
     tax: ITaxSettings;
     policies: IPolicies;
+    marketing: IMarketingSettings;
 }
 
 export interface ITheme {
@@ -85,6 +95,10 @@ export interface IStats {
     totalRevenue: number;
     totalCustomers: number;
     totalVisitors: number;
+    aiUsage: {
+        count: number;
+        lastReset: Date;
+    };
 }
 
 export interface IStore extends Document {
@@ -221,6 +235,15 @@ const StoreSchema: Schema = new Schema(
                 privacyPolicy: { type: String },
                 termsOfService: { type: String },
                 shippingPolicy: { type: String }
+            },
+
+            marketing: {
+                facebookPixelId: { type: String },
+                googleAnalyticsId: { type: String },
+                tiktokPixelId: { type: String },
+                snapchatPixelId: { type: String },
+                seoTitle: { type: String },
+                seoDescription: { type: String }
             }
         },
 
@@ -236,7 +259,11 @@ const StoreSchema: Schema = new Schema(
             totalOrders: { type: Number, default: 0 },
             totalRevenue: { type: Number, default: 0 },
             totalCustomers: { type: Number, default: 0 },
-            totalVisitors: { type: Number, default: 0 }
+            totalVisitors: { type: Number, default: 0 },
+            aiUsage: {
+                count: { type: Number, default: 0 },
+                lastReset: { type: Date, default: Date.now }
+            }
         }
     },
     { timestamps: true }

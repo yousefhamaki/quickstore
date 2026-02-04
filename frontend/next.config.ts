@@ -12,10 +12,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Performance optimizations
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+  },
+  // Enable React strict mode for better performance warnings
+  reactStrictMode: true,
 };
 
 export default withNextIntl(nextConfig);
-
-
-
-

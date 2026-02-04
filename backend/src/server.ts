@@ -3,6 +3,7 @@ dotenv.config();
 
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import mongoose from 'mongoose';
 
 import authRoutes from './routes/authRoutes';
@@ -17,10 +18,15 @@ import billingRoutes from './routes/billingRoutes';
 import publicRoutes from './routes/publicRoutes';
 import supportRoutes from './routes/supportRoutes';
 import customerRoutes from './routes/customerRoutes';
+import couponRoutes from './routes/couponRoutes';
+import marketingRoutes from './routes/marketingRoutes';
+import abandonedCartRoutes from './routes/abandonedCartRoutes';
+import aiMarketingRoutes from './routes/aiMarketingRoutes';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
 
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
@@ -36,6 +42,10 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/marketing', marketingRoutes);
+app.use('/api/abandoned-carts', abandonedCartRoutes);
+app.use('/api/ai-marketing', aiMarketingRoutes);
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Buildora API is running...');

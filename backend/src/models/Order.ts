@@ -114,6 +114,7 @@ const OrderSchema: Schema = new Schema(
 );
 
 OrderSchema.index({ storeId: 1, customerId: 1 });
+OrderSchema.index({ storeId: 1, status: 1, paymentStatus: 1 });
 OrderSchema.index({ storeId: 1, createdAt: -1 });
 OrderSchema.index({ storeId: 1, orderNumber: 1 }, { unique: true });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import { NavLink } from '@/components/NavLink';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ export function Navbar() {
         <nav className="fixed top-0 w-full z-50 glass border-b">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-20">
-                    <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse group">
+                    <NavLink href="/" className="flex items-center space-x-3 rtl:space-x-reverse group">
                         <div className="relative h-10 w-10 flex-shrink-0">
                             <Image
                                 src="/logo.png"
@@ -39,21 +39,21 @@ export function Navbar() {
                             />
                         </div>
                         <span className="text-2xl font-black tracking-tighter text-gray-900">{t('brand.name').toUpperCase()}</span>
-                    </Link>
+                    </NavLink>
 
                     {/* Desktop Menu */}
                     <div className="hidden md:flex items-center space-x-8 rtl:space-x-reverse">
                         {navLinks.map((link) => (
-                            <Link key={link.href} href={link.href} className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">
+                            <NavLink key={link.href} href={link.href} className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">
                                 {link.label}
-                            </Link>
+                            </NavLink>
                         ))}
-                        <Link href="/auth/login" className="text-sm font-bold text-gray-900 hover:text-blue-600 transition-colors">{t('nav.login')}</Link>
-                        <Link href="/auth/register">
+                        <NavLink href="/auth/login" className="text-sm font-bold text-gray-900 hover:text-blue-600 transition-colors">{t('nav.login')}</NavLink>
+                        <NavLink href="/auth/register">
                             <Button className="bg-blue-600 hover:bg-blue-700 rounded-full px-6 font-bold shadow-lg shadow-blue-200">
                                 {t('nav.getStarted')}
                             </Button>
-                        </Link>
+                        </NavLink>
                         <LanguageSwitcher />
                     </div>
 
@@ -76,27 +76,27 @@ export function Navbar() {
                 <div className="md:hidden glass border-t">
                     <div className="px-4 pt-4 pb-6 space-y-4">
                         {navLinks.map((link) => (
-                            <Link
+                            <NavLink
                                 key={link.href}
                                 href={link.href}
                                 className="block text-base font-bold text-gray-500 hover:text-blue-600 transition-colors py-2"
                                 onClick={() => setIsOpen(false)}
                             >
                                 {link.label}
-                            </Link>
+                            </NavLink>
                         ))}
-                        <Link
+                        <NavLink
                             href="/auth/login"
                             className="block text-base font-bold text-gray-900 hover:text-blue-600 transition-colors py-2"
                             onClick={() => setIsOpen(false)}
                         >
                             {t('nav.login')}
-                        </Link>
-                        <Link href="/auth/register" onClick={() => setIsOpen(false)}>
+                        </NavLink>
+                        <NavLink href="/auth/register" onClick={() => setIsOpen(false)}>
                             <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-full font-bold shadow-lg shadow-blue-200">
                                 {t('nav.getStarted')}
                             </Button>
-                        </Link>
+                        </NavLink>
                     </div>
                 </div>
             )}

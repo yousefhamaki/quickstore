@@ -3,6 +3,7 @@ import { AuthRequest } from './authMiddleware';
 import Subscription from '../models/Subscription';
 import Plan from '../models/SubscriptionPlan';
 import Wallet from '../models/Wallet';
+import Store from '../models/Store';
 import mongoose from 'mongoose';
 
 /**
@@ -12,11 +13,24 @@ import mongoose from 'mongoose';
 export const billingContext = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const userId = req.user._id;
+        const storeId = req.body?.storeId || req.query?.storeId || req.params?.storeId;
 
-        // 1. Fetch Subscription & Plan
-        let sub = await Subscription.findOne({ userId }).populate('planId');
+        let sub = null;
 
-        // Fallback: Create Free subscription if missing
+        // 1. If storeId is provided, attempt to resolve subscription via the Store
+        if (storeId && mongoose.Types.ObjectId.isValid(storeId)) {
+            const store = await Store.findById(storeId);
+            if (store && store.subscriptionId) {
+                sub = await Subscription.findById(store.subscriptionId).populate('planId');
+            }
+        }
+
+        // 2. Fallback: Fetch Subscription via userId
+        if (!sub) {
+            sub = await Subscription.findOne({ userId }).populate('planId');
+        }
+
+        // 3. Fallback: Create Free subscription if missing
         if (!sub) {
             const freePlan = await Plan.findOne({ type: 'free' });
             if (freePlan) {

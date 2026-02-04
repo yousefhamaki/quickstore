@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User';
+import Subscription from '../models/Subscription';
 import { generateToken, generateRefreshToken } from '../utils/auth';
 
 import crypto from 'crypto';
@@ -90,13 +91,20 @@ export const loginUser = async (req: Request, res: Response) => {
 
         if (user && user.passwordHash && (await bcrypt.compare(password, user.passwordHash))) {
             await ensureWallet(user._id.toString());
-            // We allow login but actions might be restricted
+
+            // Populate plan name for frontend feature gating
+            const sub = await Subscription.findOne({ userId: user._id }).populate('planId');
+            const planName = (sub?.planId as any)?.name || 'Free';
+
             res.json({
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
                 isVerified: user.isVerified,
+                subscriptionPlan: {
+                    name: planName
+                },
                 token: generateToken((user._id as any).toString(), user.role, user.isVerified, user.authProvider, user.email),
             });
         } else {
@@ -219,12 +227,18 @@ export const googleLogin = async (req: Request, res: Response) => {
 
         await ensureWallet(user._id.toString());
 
+        const activeSub = await Subscription.findOne({ userId: user._id }).populate('planId');
+        const planName = (activeSub?.planId as any)?.name || 'Free';
+
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
             isVerified: user.isVerified,
+            subscriptionPlan: {
+                name: planName
+            },
             token: generateToken((user._id as any).toString(), user.role, user.isVerified, user.authProvider, user.email),
         });
 
@@ -241,11 +255,17 @@ export const getUserProfile = async (req: any, res: Response) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
+        const activeSub = await Subscription.findOne({ userId: user._id }).populate('planId');
+        const planName = (activeSub?.planId as any)?.name || 'Free';
+
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
+            subscriptionPlan: {
+                name: planName
+            }
         });
     } else {
         res.status(404).json({ message: 'User not found' });

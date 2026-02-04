@@ -6,8 +6,9 @@ export const useBillingOverview = (enabled: boolean = true) => {
     return useQuery({
         queryKey: ['billingOverview'],
         queryFn: billingApi.getBillingOverview,
-        refetchInterval: enabled ? 30000 : false, // Sync every 30s only if enabled
-        enabled
+        refetchInterval: enabled ? 120000 : false, // Reduced from 30s to 2 minutes
+        enabled,
+        staleTime: 60000, // Consider data fresh for 1 minute
     });
 };
 
