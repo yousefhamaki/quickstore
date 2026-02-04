@@ -19,3 +19,8 @@ export const trackVisit = async (storeId: string) => {
     const response = await api.post(`/public/stores/${storeId}/visit`);
     return response.data;
 };
+
+export const validateCoupon = async (storeId: string, code: string, subtotal: number) => {
+    const response = await api.get(`/public/stores/${storeId}/coupons/validate?code=${code}&subtotal=${subtotal}`);
+    return response.data;
+};

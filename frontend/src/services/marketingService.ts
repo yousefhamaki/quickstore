@@ -7,6 +7,7 @@ export interface Coupon {
     value: number;
     maxUsage: number;
     usageCount: number;
+    minOrderAmount?: number;
     expiresAt?: string;
     isActive: boolean;
 }

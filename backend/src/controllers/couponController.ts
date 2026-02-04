@@ -30,7 +30,7 @@ export const getCoupons = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const createCoupon = async (req: AuthRequest, res: Response) => {
     try {
-        const { storeId, code, type, value, maxUsage, expiresAt } = req.body;
+        const { storeId, code, type, value, maxUsage, expiresAt, minOrderAmount } = req.body;
 
         const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
         if (!store) {
@@ -44,6 +44,7 @@ export const createCoupon = async (req: AuthRequest, res: Response) => {
             value,
             maxUsage,
             expiresAt,
+            minOrderAmount,
             isActive: true
         });
 

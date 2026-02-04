@@ -139,7 +139,11 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">No coupons created yet</p>
                             </div>
                         )}
-                        <Button className="w-full rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]" variant="outline">
+                        <Button
+                            className="w-full rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
+                            variant="outline"
+                            onClick={() => router.push(`/dashboard/stores/${storeId}/marketing/coupons`)}
+                        >
                             Manage Coupons
                         </Button>
                     </CardContent>

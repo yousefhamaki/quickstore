@@ -43,6 +43,7 @@ export interface IOrder extends Document {
     billingAddress: IOrderAddress;
     customerNote?: string;
     merchantNote?: string;
+    couponCode?: string;
     transactionFee: number;
     timeline: IOrderTimeline[];
     createdAt: Date;
@@ -101,6 +102,7 @@ const OrderSchema: Schema = new Schema(
         },
         customerNote: { type: String },
         merchantNote: { type: String },
+        couponCode: { type: String },
         transactionFee: { type: Number, default: 0 },
         timeline: [
             {

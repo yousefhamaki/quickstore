@@ -7,6 +7,7 @@ export interface ICoupon extends Document {
     value: number;
     maxUsage: number;
     usageCount: number;
+    minOrderAmount?: number;
     expiresAt?: Date;
     isActive: boolean;
     createdAt: Date;
@@ -20,6 +21,7 @@ const CouponSchema: Schema = new Schema({
     value: { type: Number, default: 0 },
     maxUsage: { type: Number, default: -1 }, // -1 for unlimited
     usageCount: { type: Number, default: 0 },
+    minOrderAmount: { type: Number, default: 0 },
     expiresAt: { type: Date },
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });

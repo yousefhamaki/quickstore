@@ -3,7 +3,8 @@ import {
     getStoreBySubdomain,
     getStoreProducts,
     getProductDetails,
-    trackStoreVisit
+    trackStoreVisit,
+    validateCoupon
 } from '../controllers/publicController';
 import {
     createPublicOrder,
@@ -18,6 +19,7 @@ router.get('/stores/:subdomain', getStoreBySubdomain);
 router.get('/stores/:storeId/products', getStoreProducts);
 router.post('/stores/:storeId/visit', trackStoreVisit);
 router.get('/products/:productId', getProductDetails);
+router.get('/stores/:storeId/coupons/validate', validateCoupon);
 
 router.post('/orders', storefrontBillingContext, checkServiceAvailability, createPublicOrder);
 router.get('/orders/track/:orderNumber', trackOrder);

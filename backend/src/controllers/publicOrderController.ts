@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Order from '../models/Order';
 import Product from '../models/Product';
 import Store from '../models/Store';
+import Coupon from '../models/Coupon';
 import mongoose from 'mongoose';
 import Customer from '../models/Customer';
 import { processOrderFee } from './billingController';
@@ -17,7 +18,9 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             customer: customerData,
             shippingAddress,
             paymentMethod,
-            totalAmount
+            totalAmount,
+            couponCode,
+            discountAmount
         } = req.body;
 
         if (!items || items.length === 0) {
@@ -84,8 +87,6 @@ export const createPublicOrder = async (req: Request, res: Response) => {
 
             // Stock check (if tracking enabled)
             if (product.trackInventory && (product.inventory.quantity ?? 0) < item.quantity) {
-                // return res.status(400).json({ success: false, message: `Product ${item.name} is out of stock.` });
-                // Per requirement: allowed for testing, so we just log warning or proceed
                 console.warn(`Stock low for ${product.name}: available ${product.inventory.quantity}, requested ${item.quantity}`);
             }
         }
@@ -97,58 +98,9 @@ export const createPublicOrder = async (req: Request, res: Response) => {
 
         const numericTotal = Number(totalAmount);
         const shippingFee = 50;
-
-        // Calculate transaction fee based on plan
-        const plan = (store.subscriptionId as any)?.planId;
-        const feePercent = plan?.transactionFeePercent || 0;
-        const transactionFee = Number((numericTotal * (feePercent / 100)).toFixed(2));
-
-        // Create the order
-        const order = new Order({
-            storeId: oidStoreId,
-            customerId: customer._id,
-            orderNumber,
-            items: items.map((item: any) => ({
-                productId: new mongoose.Types.ObjectId(item._id),
-                name: item.name,
-                quantity: Number(item.quantity),
-                price: Number(item.price),
-                image: item.image,
-                variant: item.selectedOptions ? Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ') : undefined
-            })),
-            subtotal: numericTotal - shippingFee,
-            shipping: shippingFee,
-            total: numericTotal,
-            transactionFee, // Track platform fee
-            status: 'pending',
-            paymentStatus: 'pending',
-            paymentMethod: paymentMethod === 'COD' ? 'Cash on Delivery' : paymentMethod,
-            shippingAddress: {
-                fullName: `${customerData.firstName} ${customerData.lastName}`,
-                phone: customerData.phone,
-                address: shippingAddress.address,
-                city: shippingAddress.city,
-                state: shippingAddress.city,
-                postalCode: shippingAddress.zipCode || '00000',
-                country: 'Egypt'
-            },
-            billingAddress: {
-                fullName: `${customerData.firstName} ${customerData.lastName}`,
-                phone: customerData.phone,
-                address: shippingAddress.address,
-                city: shippingAddress.city,
-                state: shippingAddress.city,
-                postalCode: shippingAddress.zipCode || '00000',
-                country: 'Egypt'
-            },
-            timeline: [{
-                status: 'pending',
-                note: 'Order placed via storefront'
-            }]
-        });
+        let finalDiscount = Number(discountAmount || 0);
 
         let session: mongoose.ClientSession | null = null;
-
         // Standalone MongoDB (common in local dev) does not support transactions.
         const isLocalStandalone = process.env.MONGODB_URI?.includes('localhost') && !process.env.MONGODB_URI?.includes('replicaSet');
 
@@ -162,6 +114,95 @@ export const createPublicOrder = async (req: Request, res: Response) => {
         }
 
         try {
+            // Verify Coupon if provided
+            if (couponCode) {
+                const coupon = await Coupon.findOne({
+                    storeId: oidStoreId,
+                    code: couponCode.toUpperCase(),
+                    isActive: true
+                });
+
+                if (coupon) {
+                    // Verify limits again for security
+                    const isExpired = coupon.expiresAt && new Date(coupon.expiresAt) < new Date();
+                    const limitReached = coupon.maxUsage !== -1 && coupon.usageCount >= coupon.maxUsage;
+
+                    const cartSubtotal = items.reduce((sum: number, item: any) => sum + (Number(item.price) * Number(item.quantity)), 0);
+                    const minPriceMet = !coupon.minOrderAmount || cartSubtotal >= coupon.minOrderAmount;
+
+                    if (!isExpired && !limitReached && minPriceMet) {
+                        // Recalculate discount based on items to prevent manipulation
+                        let calculatedDiscount = 0;
+
+                        if (coupon.type === 'percentage') {
+                            calculatedDiscount = (cartSubtotal * coupon.value) / 100;
+                        } else if (coupon.type === 'fixed') {
+                            calculatedDiscount = coupon.value;
+                        } else if (coupon.type === 'free_shipping') {
+                            calculatedDiscount = shippingFee;
+                        }
+
+                        // Use the calculated discount
+                        finalDiscount = calculatedDiscount;
+
+                        // Increment usage count
+                        coupon.usageCount += 1;
+                        await coupon.save({ session: session || undefined });
+                    }
+                }
+            }
+
+            // Calculate transaction fee based on plan
+            const plan = (store.subscriptionId as any)?.planId;
+            const feePercent = plan?.transactionFeePercent || 0;
+            const transactionFee = Number((numericTotal * (feePercent / 100)).toFixed(2));
+
+            // Create the order
+            const order = new Order({
+                storeId: oidStoreId,
+                customerId: customer._id,
+                orderNumber,
+                items: items.map((item: any) => ({
+                    productId: new mongoose.Types.ObjectId(item._id),
+                    name: item.name,
+                    quantity: Number(item.quantity),
+                    price: Number(item.price),
+                    image: item.image,
+                    variant: item.selectedOptions ? Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ') : undefined
+                })),
+                subtotal: (numericTotal - shippingFee + finalDiscount),
+                shipping: shippingFee,
+                discount: finalDiscount,
+                total: numericTotal,
+                couponCode: couponCode || undefined,
+                transactionFee,
+                status: 'pending',
+                paymentStatus: 'pending',
+                paymentMethod: paymentMethod === 'COD' ? 'Cash on Delivery' : paymentMethod,
+                shippingAddress: {
+                    fullName: `${customerData.firstName} ${customerData.lastName}`,
+                    phone: customerData.phone,
+                    address: shippingAddress.address,
+                    city: shippingAddress.city,
+                    state: shippingAddress.city,
+                    postalCode: shippingAddress.zipCode || '00000',
+                    country: 'Egypt'
+                },
+                billingAddress: {
+                    fullName: `${customerData.firstName} ${customerData.lastName}`,
+                    phone: customerData.phone,
+                    address: shippingAddress.address,
+                    city: shippingAddress.city,
+                    state: shippingAddress.city,
+                    postalCode: shippingAddress.zipCode || '00000',
+                    country: 'Egypt'
+                },
+                timeline: [{
+                    status: 'pending',
+                    note: 'Order placed via storefront'
+                }]
+            });
+
             const createdOrder = await order.save({ session: session || undefined });
 
             // Deduct Order Fee from Merchant Wallet (0.5 EGP)

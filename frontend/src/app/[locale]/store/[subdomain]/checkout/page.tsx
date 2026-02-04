@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
-import { getPublicStore } from '@/services/publicStoreService';
+import { getPublicStore, validateCoupon } from '@/services/publicStoreService';
 import { createOrder } from '@/services/publicOrderService';
-import { ShoppingCart, Truck, CreditCard, ChevronRight, ChevronLeft, Package, Trash2, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Truck, CreditCard, ChevronRight, ChevronLeft, Package, Trash2, CheckCircle2, Ticket, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -42,6 +42,55 @@ export default function CheckoutPage() {
     const [step, setStep] = useState(1); // 1: Cart, 2: Info, 3: Payment
     const [loading, setLoading] = useState(false);
 
+    // Coupon States
+    const [couponInput, setCouponInput] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+    const [verifyingCoupon, setVerifyingCoupon] = useState(false);
+
+    const handleApplyCoupon = async () => {
+        if (!couponInput.trim()) return;
+
+        setVerifyingCoupon(true);
+        try {
+            const store = await getPublicStore(subdomain as string) as any;
+            const response = await validateCoupon(store._id, couponInput.toUpperCase(), getCartTotal()) as any;
+
+            if (response.success) {
+                setAppliedCoupon(response.coupon);
+                toast.success(t('messages.couponApplied'));
+                setCouponInput('');
+            }
+        } catch (error: any) {
+            const data = error.response?.data;
+            if (data?.code === 'MIN_ORDER_AMOUNT') {
+                toast.error(t('messages.minAmount', { amount: data.minOrderAmount }));
+            } else {
+                toast.error(data?.message || t('messages.error'));
+            }
+        } finally {
+            setVerifyingCoupon(false);
+        }
+    };
+
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        toast.info(t('messages.couponRemoved'));
+    };
+
+    const getDiscountAmount = () => {
+        if (!appliedCoupon) return 0;
+        const subtotal = getCartTotal();
+
+        if (appliedCoupon.type === 'percentage') {
+            return (subtotal * appliedCoupon.value) / 100;
+        } else if (appliedCoupon.type === 'fixed') {
+            return appliedCoupon.value;
+        } else if (appliedCoupon.type === 'free_shipping') {
+            return 50; // Current shipping fee is hardcoded as 50
+        }
+        return 0;
+    };
+
     const { register, handleSubmit, formState: { errors } } = useForm<CheckoutFormData>({
         resolver: zodResolver(createCheckoutSchema(useTranslations())),
     });
@@ -71,7 +120,9 @@ export default function CheckoutPage() {
                     zipCode: data.zipCode
                 },
                 paymentMethod: 'COD',
-                totalAmount: getCartTotal() + 50
+                totalAmount: getCartTotal() + 50 - getDiscountAmount(),
+                couponCode: appliedCoupon?.code,
+                discountAmount: getDiscountAmount()
             };
 
             const response = await createOrder(orderData) as any;
@@ -279,10 +330,50 @@ export default function CheckoutPage() {
                                     <span className="text-gray-400 uppercase tracking-widest">{t('shipping')}</span>
                                     <span className="font-bold">EGP 50</span>
                                 </div>
+
+                                {/* Coupon Section */}
+                                <div className="space-y-4 pt-4 border-t border-dashed">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={couponInput}
+                                            onChange={(e) => setCouponInput(e.target.value)}
+                                            placeholder={t('couponPlaceholder')}
+                                            className="flex-1 h-12 bg-white border rounded-full px-6 outline-none text-sm font-bold uppercase tracking-widest focus:ring-2 focus:ring-black/5"
+                                            disabled={!!appliedCoupon || verifyingCoupon}
+                                        />
+                                        <button
+                                            onClick={handleApplyCoupon}
+                                            disabled={!couponInput || !!appliedCoupon || verifyingCoupon}
+                                            className="h-12 px-6 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all disabled:opacity-50"
+                                        >
+                                            {verifyingCoupon ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('applyCoupon')}
+                                        </button>
+                                    </div>
+                                    {appliedCoupon && (
+                                        <div className="flex items-center justify-between p-3 bg-green-50 rounded-2xl border border-green-100 text-green-700 animate-in zoom-in-95 duration-300">
+                                            <div className="flex items-center gap-2">
+                                                <Ticket size={16} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">{appliedCoupon.code} {t('applied')}</span>
+                                            </div>
+                                            <button onClick={removeCoupon} className="p-1 hover:bg-green-100 rounded-full transition-colors">
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {appliedCoupon && (
+                                    <div className="flex justify-between text-sm font-medium text-green-600">
+                                        <span className="uppercase tracking-widest">{t('discount')}</span>
+                                        <span className="font-bold">- EGP {getDiscountAmount().toLocaleString()}</span>
+                                    </div>
+                                )}
+
                                 <div className="h-px bg-gray-200" />
                                 <div className="flex justify-between items-center pt-2">
                                     <span className="text-lg font-black tracking-tighter uppercase">{t('total')}</span>
-                                    <span className="text-2xl font-black">EGP {(getCartTotal() + 50).toLocaleString()}</span>
+                                    <span className="text-2xl font-black">EGP {(getCartTotal() + 50 - getDiscountAmount()).toLocaleString()}</span>
                                 </div>
                             </div>
 
