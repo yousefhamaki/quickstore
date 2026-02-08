@@ -12,6 +12,20 @@ export interface Coupon {
     isActive: boolean;
 }
 
+export interface MarketingSettings {
+    facebookPixelId?: string;
+    googleAnalyticsId?: string;
+    tiktokPixelId?: string;
+    snapchatPixelId?: string;
+    seoTitle?: string;
+    seoDescription?: string;
+}
+
+export interface MarketingSettingsResponse {
+    success: boolean;
+    marketing?: MarketingSettings;
+}
+
 export const getCoupons = async (storeId: string) => {
     const response = await api.get(`/coupons?storeId=${storeId}`);
     return response.data;
@@ -33,8 +47,8 @@ export const updateCoupon = async (id: string, data: Partial<Coupon>) => {
 };
 
 // Pixels & SEO
-export const getMarketingSettings = async (storeId: string) => {
-    const response = await api.get(`/marketing/settings?storeId=${storeId}`);
+export const getMarketingSettings = async (storeId: string): Promise<MarketingSettingsResponse> => {
+    const response = await api.get<MarketingSettingsResponse>(`/marketing/settings?storeId=${storeId}`);
     return response.data;
 };
 

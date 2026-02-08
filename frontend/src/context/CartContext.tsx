@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { trackAddToCart } from '@/lib/pixelTracking';
 
 export interface CartItem {
     cartItemId: string;
@@ -76,6 +77,15 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
                 image: product.images?.[0]?.url,
                 selectedOptions: selectedOptions
             }];
+        });
+
+        // Track add to cart event across all marketing pixels
+        trackAddToCart({
+            id: product._id,
+            name: product.name,
+            price: product.price,
+            quantity,
+            currency: 'EGP',
         });
     };
 

@@ -389,6 +389,26 @@
             "syncing": "Syncing Coupons...",
             "modalSubtitle": "Set up your discount code parameters below.",
             "statusSubtitle": "Enable or disable this coupon"
+        },
+        "pixels": {
+            "title": "Tracking Pixels",
+            "subtitle": "Track conversions and optimize your advertising campaigns.",
+            "save": "Save Changes",
+            "saving": "Saving...",
+            "success": "Pixels updated successfully!",
+            "error": "Failed to update pixels",
+            "facebook": "Facebook Pixel ID",
+            "google": "Google Analytics ID",
+            "tiktok": "TikTok Pixel ID",
+            "snapchat": "Snapchat Pixel ID",
+            "facebookPlaceholder": "e.g. 1234567890",
+            "googlePlaceholder": "e.g. G-XXXXXXX",
+            "tiktokPlaceholder": "e.g. CXXXXXXXXXXXXXXXXXXX",
+            "snapPlaceholder": "e.g. XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+            "facebookDesc": "Track events like PageView, AddToCart, and Purchase.",
+            "googleDesc": "Analyze your website traffic and user behavior.",
+            "tiktokDesc": "Track conversions for your TikTok ads.",
+            "snapchatDesc": "Measure the impact of your Snapchat campaigns."
         }
     }
 }

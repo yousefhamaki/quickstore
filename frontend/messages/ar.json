@@ -958,6 +958,28 @@
         "syncing": "جاري مزامنة القسائم...",
         "modalSubtitle": "قم بإعداد معايير رمز الخصم الخاص بك أدناه.",
         "statusSubtitle": "تفعيل أو تعطيل هذه القسيمة"
+      },
+      "pixels": {
+        "title": "وحدات التتبع (Pixels)",
+        "subtitle": "تتبع التحويلات وحسن حملاتك الإعلانية.",
+        "save": "حفظ التغييرات",
+        "saving": "جاري الحفظ...",
+        "success": "تم تحديث وحدات التتبع بنجاح!",
+        "error": "فشل تحديث وحدات التتبع",
+        "facebook": "معرف فيسبوك بيكسل",
+        "google": "معرف جوجل أناليتكس",
+        "tiktok": "معرف تيك توك بيكسل",
+        "snapchat": "معرف سناب شات بيكسل",
+        "facebookPlaceholder": "مثال: 1234567890",
+        "googlePlaceholder": "مثال: G-XXXXXXX",
+        "tiktokPlaceholder": "مثال: CXXXXXXXXXXXXXXXXXXX",
+        "snapPlaceholder": "مثال: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+        "facebookDesc": "تتبع أحداث مثل مشاهدة الصفحة، الإضافة إلى السلة، والشراء.",
+        "googleDesc": "حلل حركة المرور في موقعك وسلوك المستخدمين.",
+        "tiktokDesc": "تتبع التحويلات لإعلانات تيك توك الخاصة بك.",
+        "snapchatDesc": "قس تأثير حملات سناب شات الخاصة بك.",
+        "back": "رجوع",
+        "loadError": "فشل تحميل إعدادات التسويق"
       }
     }
   },

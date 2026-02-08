@@ -1,3 +1,5 @@
+import { MarketingSettings } from '@/services/marketingService';
+
 export type StoreStatus = 'draft' | 'live' | 'paused';
 
 export interface StoreLogo {
@@ -32,6 +34,7 @@ export interface StoreStats {
     totalRevenue: number;
     settledRevenue: number;
     totalCustomers: number;
+    totalVisitors: number;
 }
 
 export interface Store {
@@ -67,6 +70,7 @@ export interface Store {
             termsOfService?: string;
             shippingPolicy?: string;
         };
+        marketing?: MarketingSettings;
     };
     stats: StoreStats;
     createdAt: string;

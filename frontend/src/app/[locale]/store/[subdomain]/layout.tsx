@@ -31,6 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ subdomain
 import { CartWrapper } from "./CartWrapper";
 import { HeaderCart } from "@/components/storefront/HeaderCart";
 import { VisitorTracker } from "@/components/storefront/VisitorTracker";
+import { TrackingPixels } from "@/components/storefront/TrackingPixels";
 
 export default async function StoreLayout({ children, params }: StoreLayoutProps) {
     const { subdomain, locale } = await params;
@@ -51,6 +52,7 @@ export default async function StoreLayout({ children, params }: StoreLayoutProps
     return (
         <CartWrapper storeId={store._id}>
             <VisitorTracker storeId={store._id} />
+            <TrackingPixels marketing={store.settings?.marketing} />
             <div style={{ "--primary": primaryColor, fontFamily } as any} className="min-h-screen bg-white">
                 <style dangerouslySetInnerHTML={{
                     __html: `

@@ -4,6 +4,7 @@ import { getProductDetails, getPublicStore, getStoreProducts } from "@/services/
 import { ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Plus, Minus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ProductActions } from "@/components/storefront/ProductActions";
+import { ProductViewTracker } from "@/components/storefront/ProductViewTracker";
 import { getTranslations } from "next-intl/server";
 
 interface ProductPageProps {
@@ -70,6 +71,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     return (
         <div className="container mx-auto px-4 py-12 md:py-20 animate-in fade-in duration-700">
+            {/* Track product view for marketing pixels */}
+            <ProductViewTracker product={product} />
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 pb-20">
 
                 {/* Product Images */}
