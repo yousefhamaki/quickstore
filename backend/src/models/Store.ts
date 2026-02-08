@@ -73,6 +73,18 @@ export interface IMarketingSettings {
     seoDescription?: string;
 }
 
+export interface ISEOSettings {
+    metaTitle?: string;
+    metaDescription?: string;
+    keywords?: string[];
+    ogType?: string;
+    ogImage?: string;
+    twitterCard?: string;
+    twitterUsername?: string;
+    allowIndexing: boolean;
+    sitemapEnabled: boolean;
+}
+
 export interface IStoreSettings {
     currency: string;
     language: string;
@@ -133,6 +145,9 @@ export interface IStore extends Document {
 
     // Analytics
     stats: IStats;
+
+    // SEO Settings
+    seo?: ISEOSettings;
 
     createdAt: Date;
     updatedAt: Date;
@@ -264,6 +279,19 @@ const StoreSchema: Schema = new Schema(
                 count: { type: Number, default: 0 },
                 lastReset: { type: Date, default: Date.now }
             }
+        },
+
+        // SEO Settings
+        seo: {
+            metaTitle: { type: String },
+            metaDescription: { type: String },
+            keywords: [{ type: String }],
+            ogType: { type: String, default: 'website' },
+            ogImage: { type: String },
+            twitterCard: { type: String, default: 'summary_large_image' },
+            twitterUsername: { type: String },
+            allowIndexing: { type: Boolean, default: true },
+            sitemapEnabled: { type: Boolean, default: true }
         }
     },
     { timestamps: true }

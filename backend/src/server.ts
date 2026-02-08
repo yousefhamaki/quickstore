@@ -22,6 +22,7 @@ import couponRoutes from './routes/couponRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import abandonedCartRoutes from './routes/abandonedCartRoutes';
 import aiMarketingRoutes from './routes/aiMarketingRoutes';
+import seoRoutes from './routes/seo';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
@@ -46,6 +47,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/marketing', marketingRoutes);
 app.use('/api/abandoned-carts', abandonedCartRoutes);
 app.use('/api/ai-marketing', aiMarketingRoutes);
+app.use('/api', seoRoutes);
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Buildora API is running...');

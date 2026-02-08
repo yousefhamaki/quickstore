@@ -181,7 +181,11 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                         <CardDescription className="font-medium">Optimize your store for search engines.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-6">
-                        <Button className="w-full rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]" variant="outline">
+                        <Button
+                            className="w-full rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
+                            variant="outline"
+                            onClick={() => router.push(`/dashboard/stores/${storeId}/seo`)}
+                        >
                             Edit SEO Settings
                         </Button>
                     </CardContent>

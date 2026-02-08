@@ -12,9 +12,12 @@ export interface IInventory {
 }
 
 export interface ISEO {
-    title: string;
-    description: string;
-    keywords: string[];
+    title?: string;
+    description?: string;
+    keywords?: string[];
+    canonicalUrl?: string;
+    noindex?: boolean;
+    structuredData?: Record<string, any>;
 }
 
 export interface IProductVariant {
@@ -108,6 +111,9 @@ const ProductSchema: Schema = new Schema(
             title: { type: String },
             description: { type: String },
             keywords: [{ type: String }],
+            canonicalUrl: { type: String },
+            noindex: { type: Boolean, default: false },
+            structuredData: { type: Schema.Types.Mixed }
         },
         isActive: { type: Boolean, default: true },
     },
