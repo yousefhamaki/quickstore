@@ -27,8 +27,10 @@ export default function proxy(request: NextRequest) {
         '[::1]',
         'quickstore.com',
         'quickstore.live',
+        'quickstore.test',
         'www.quickstore.com',
         'www.quickstore.live',
+        'www.quickstore.test',
         'api.quickstore.com',
         'buildora.live',
         'www.buildora.live'
@@ -40,7 +42,7 @@ export default function proxy(request: NextRequest) {
     if (!isMainDomain) {
         // Precise extraction logic:
         let subdomain = '';
-        if (hostname.endsWith('.quickstore.live') || hostname.endsWith('.quickstore.com') || hostname.endsWith('.buildora.live')) {
+        if (hostname.endsWith('.quickstore.live') || hostname.endsWith('.quickstore.com') || hostname.endsWith('.quickstore.test') || hostname.endsWith('.buildora.live')) {
             subdomain = hostname.split('.')[0];
         } else if (hostname.includes('.') && !mainDomains.includes(hostname)) {
             // This is a custom domain mapped to the storefront!
@@ -68,9 +70,17 @@ export default function proxy(request: NextRequest) {
                     ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '/')
                     : pathname;
 
-                // Rewrite to the storefront dynamic route, preserving query parameters
+                // Rewrite to the storefront dynamic route, preserving query parameters and protocol
                 const targetPath = `/${locale}/store/${subdomain}${cleanPathname === '/' ? '' : cleanPathname}${request.nextUrl.search}`;
-                return NextResponse.rewrite(new URL(targetPath, request.url));
+                
+                // Keep it protocol-agnostic. We detect the original protocol (http or https)
+                // from request headers (x-forwarded-proto) or request.nextUrl.protocol, default to http.
+                const requestProtocol = (request.headers.get('x-forwarded-proto') || request.nextUrl.protocol || 'http').replace(':', '');
+                const targetUrlStr = `${requestProtocol}://${host}${targetPath}`;
+
+                console.log(`[Middleware Rewrite] Original Proto: "${request.nextUrl.protocol}" | Resolved Proto: "${requestProtocol}" | Host: "${host}" | Path: "${pathname}" -> "${targetPath}" | Target URL: "${targetUrlStr}"`);
+
+                return NextResponse.rewrite(new URL(targetUrlStr));
             }
         }
     }
