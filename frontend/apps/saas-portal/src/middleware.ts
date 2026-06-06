@@ -4,10 +4,7 @@ import { routing } from './i18n/routing';
 
 const handleI18nRouting = createMiddleware(routing);
 
-export default function proxy(request: NextRequest) {
-
-
-
+export default function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Skip middleware for Next.js internals, API routes, and static files
@@ -35,7 +32,6 @@ export default function proxy(request: NextRequest) {
         'api.quickstore.com',
         'buildora.live',
         'www.buildora.live'
-
     ];
 
     const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
