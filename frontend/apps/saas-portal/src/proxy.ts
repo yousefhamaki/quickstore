@@ -4,7 +4,7 @@ import { routing } from './i18n/routing';
 
 const handleI18nRouting = createMiddleware(routing);
 
-export default function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Skip middleware for Next.js internals, API routes, and static files
@@ -61,21 +61,6 @@ export default function middleware(request: NextRequest) {
         }
     }
 
-    // Extract locale from pathname
-    const pathnameLocale = pathname.split('/')[1];
-    const isLocaleInPath = ['en', 'ar'].includes(pathnameLocale);
-
-    // Auth redirects - check paths without locale prefix
-    const pathWithoutLocale = isLocaleInPath ? (pathname.substring(3) || '/') : pathname;
-
-    // Hand-off explicit dashboard, admin, and merchant links natively to the separated Merchant Dashboard app!
-    const isSystemDashboardPath = ['/dashboard', '/merchant', '/admin'].some(p => pathWithoutLocale.startsWith(p));
-    
-    if (isSystemDashboardPath) {
-        const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3001';
-        return NextResponse.redirect(new URL(`${dashboardUrl}${pathname}${request.nextUrl.search}`, request.url));
-    }
-    
     // Handle i18n routing
     return handleI18nRouting(request);
 }

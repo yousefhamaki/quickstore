@@ -108,7 +108,7 @@ export default function PricingPage() {
                                     popular={plan.name_en === 'Professional'}
                                     color={plan.type === 'free' ? 'gray' : (plan.name_en === 'Professional' ? 'blue' : 'purple')}
                                     onSelect={() => {
-                                        const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3001';
+                                        const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
                                         if (user) {
                                             window.location.href = `${dashboardUrl}/merchant/plans?autoSubscribe=${plan._id}`;
                                         } else {
@@ -149,7 +149,7 @@ export default function PricingPage() {
                     </p>
                     <Button
                         onClick={() => {
-                            const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3001';
+                            const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
                             window.location.href = user ? (user.role === 'super_admin' ? `${dashboardUrl}/admin` : `${dashboardUrl}/merchant`) : `${dashboardUrl}/auth/register`;
                         }}
                         size="lg"
