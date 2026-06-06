@@ -23,7 +23,13 @@ export const getStoreBySubdomain = async (req: Request, res: Response) => {
             return res.json(JSON.parse(cachedStore));
         }
 
-        const store = await Store.findOne({ 'domain.subdomain': subdomain, status: 'live' }).lean(); // Huge performance hydration bypass
+        const store = await Store.findOne({
+            $or: [
+                { 'domain.subdomain': subdomain },
+                { 'domain.customDomain': subdomain }
+            ],
+            status: 'live'
+        }).lean(); // Huge performance hydration bypass
 
         if (!store) {
             return res.status(404).json({ message: 'Store not found or not published' });

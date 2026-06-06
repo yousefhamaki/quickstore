@@ -36,9 +36,23 @@ export default function proxy(request: NextRequest) {
 
     const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
 
-    // Handle subdomain routing (storefront)
+    // Handle subdomain/custom domain routing (storefront)
     if (!isMainDomain) {
-        const subdomain = hostname.split('.')[0];
+        // Precise extraction logic:
+        let subdomain = '';
+        if (hostname.endsWith('.quickstore.live') || hostname.endsWith('.quickstore.com') || hostname.endsWith('.buildora.live')) {
+            subdomain = hostname.split('.')[0];
+        } else if (hostname.includes('.') && !mainDomains.includes(hostname)) {
+            // This is a custom domain mapped to the storefront!
+            subdomain = hostname;
+        } else {
+            // Local dev testing fallback (e.g. hamaki.localhost:3000)
+            const parts = hostname.split('.');
+            if (parts.length > 1) {
+                subdomain = parts[0];
+            }
+        }
+
         if (subdomain && subdomain !== 'www') {
             const segments = pathname.split('/');
             const isLocaleInPath = ['en', 'ar'].includes(segments[1]);
@@ -54,9 +68,9 @@ export default function proxy(request: NextRequest) {
                     ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '/')
                     : pathname;
 
-                return NextResponse.rewrite(
-                    new URL(`/${locale}/store/${subdomain}${cleanPathname === '/' ? '' : cleanPathname}`, request.url)
-                );
+                // Rewrite to the storefront dynamic route, preserving query parameters
+                const targetPath = `/${locale}/store/${subdomain}${cleanPathname === '/' ? '' : cleanPathname}${request.nextUrl.search}`;
+                return NextResponse.rewrite(new URL(targetPath, request.url));
             }
         }
     }
@@ -66,5 +80,6 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/((?!_next|static|public|favicon.ico|api|.*\\..*).*)']
+    // Exclude static resources and framework internals, but process dynamic files like robots.txt and sitemap.xml
+    matcher: ['/((?!_next|static|public|favicon.ico|api|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|css|js)).*)']
 };
