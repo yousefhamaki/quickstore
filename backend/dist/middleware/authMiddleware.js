@@ -22,23 +22,32 @@ const protect = (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
             token = req.headers.authorization.split(' ')[1];
             const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
             req.user = yield User_1.default.findById(decoded.id).select('-password');
-            next();
+            if (!req.user) {
+                return res.status(401).json({ message: 'Not authorized, user not found' });
+            }
+            return next();
         }
         catch (error) {
             console.error(error);
-            res.status(401).json({ message: 'Not authorized, token failed' });
+            return res.status(401).json({ message: 'Not authorized, token failed' });
         }
     }
     if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
+        return res.status(401).json({ message: 'Not authorized, no token' });
     }
 });
 exports.protect = protect;
 const authorize = (...roles) => {
     return (req, res, next) => {
-        if (!req.user || !roles.includes(req.user.role)) {
+        var _a;
+        if (!req.user) {
+            console.error('[AuthMiddleware] req.user is missing in authorize');
+            return res.status(401).json({ message: 'Not authorized, session invalid' });
+        }
+        const userRole = (_a = req.user) === null || _a === void 0 ? void 0 : _a.role;
+        if (!userRole || !roles.includes(userRole)) {
             return res.status(403).json({
-                message: `User role ${req.user.role} is not authorized to access this route`,
+                message: `User role ${userRole || 'unknown'} is not authorized to access this route`,
             });
         }
         next();

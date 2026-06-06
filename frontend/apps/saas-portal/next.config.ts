@@ -1,0 +1,88 @@
+import type { NextConfig } from "next";
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+    ],
+  },
+  turbopack: {
+    root: 'C:/Users/Home/Documents/GitHub/QuickStore/frontend',
+  },
+
+
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@quickstore/shared'],
+  },
+
+  transpilePackages: ['@quickstore/shared'],
+  // Enable React strict mode for better performance warnings
+  reactStrictMode: true,
+  async headers() {
+
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://images.simplycodes.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://images.simplycodes.com; font-src 'self' https://fonts.gstatic.com https://images.simplycodes.com; connect-src 'self' http://localhost:5000 https://images.simplycodes.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;",
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+    ];
+  },
+  async rewrites() {
+    const merchantDashboardUrl = process.env.MERCHANT_DASHBOARD_URL || 'http://localhost:3001';
+    return [
+      {
+        source: '/:locale(en|ar)/merchant/:path*',
+        destination: `${merchantDashboardUrl}/:locale/merchant/:path*`,
+      },
+      {
+        source: '/:locale(en|ar)/dashboard/:path*',
+        destination: `${merchantDashboardUrl}/:locale/dashboard/:path*`,
+      },
+      {
+        source: '/:locale(en|ar)/admin/:path*',
+        destination: `${merchantDashboardUrl}/:locale/admin/:path*`,
+      },
+      {
+        source: '/merchant/:path*',
+        destination: `${merchantDashboardUrl}/merchant/:path*`,
+      },
+      {
+        source: '/dashboard/:path*',
+        destination: `${merchantDashboardUrl}/dashboard/:path*`,
+      },
+      {
+        source: '/admin/:path*',
+        destination: `${merchantDashboardUrl}/admin/:path*`,
+      },
+    ];
+  },
+};
+
+export default withNextIntl(nextConfig);

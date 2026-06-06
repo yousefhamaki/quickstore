@@ -20,7 +20,7 @@ router.get('/stores/:storeId/seo/settings', protect, async (req: AuthRequest, re
         }
 
         // Map backend fields to frontend field names
-        const seoSettings = store.seo || {};
+        const seoSettings = (store.seo || {}) as any;
         res.json({
             settings: {
                 seoTitle: seoSettings.metaTitle,
@@ -74,7 +74,7 @@ router.put('/stores/:storeId/seo/settings', protect, async (req: AuthRequest, re
         await store.save();
 
         // Return with frontend field names
-        const seoSettings = store.seo || {};
+        const seoSettings = (store.seo || {}) as any;
         res.json({
             settings: {
                 seoTitle: seoSettings.metaTitle,

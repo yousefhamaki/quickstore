@@ -23,11 +23,13 @@ import marketingRoutes from './routes/marketingRoutes';
 import abandonedCartRoutes from './routes/abandonedCartRoutes';
 import aiMarketingRoutes from './routes/aiMarketingRoutes';
 import seoRoutes from './routes/seo';
+import articleRoutes from './routes/articleRoutes';
+import chatRoutes from './routes/chatRoutes';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(compression());
+app.use(compression({ level: 6 }));
 app.use(cors());
 app.use(express.json());
 
@@ -48,6 +50,8 @@ app.use('/api/marketing', marketingRoutes);
 app.use('/api/abandoned-carts', abandonedCartRoutes);
 app.use('/api/ai-marketing', aiMarketingRoutes);
 app.use('/api', seoRoutes);
+app.use('/api/articles', articleRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Buildora API is running...');
@@ -55,7 +59,11 @@ app.get('/', (req: Request, res: Response) => {
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI as string);
+        const conn = await mongoose.connect(process.env.MONGODB_URI as string, {
+            maxPoolSize: 100,
+            socketTimeoutMS: 45000,
+            family: 4
+        });
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);

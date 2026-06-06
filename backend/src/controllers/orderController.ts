@@ -4,6 +4,8 @@ import Store from '../models/Store';
 import Customer from '../models/Customer';
 import Product from '../models/Product';
 import { AuthRequest } from '../middleware/authMiddleware';
+import InventoryLog from '../models/InventoryLog';
+import mongoose from 'mongoose';
 
 // @desc    Get all orders for a store
 // @route   GET /api/orders
@@ -83,6 +85,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 // @route   PUT /api/orders/:id/status
 // @access  Private/Merchant
 export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
+    let session: mongoose.ClientSession | null = null;
     try {
         const store = await Store.findOne({ ownerId: req.user._id });
         if (!store) {
@@ -90,12 +93,19 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         }
 
         const { status } = req.body;
-        const order = await Order.findOne({ _id: req.params.id, storeId: store._id });
+        const oldStatus = req.body.oldStatus; // Frontend should ideally pass this, or we fetch it.
+
+        // Start transaction
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        const order = await Order.findOne({ _id: req.params.id, storeId: store._id }).session(session);
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
+        const previousStatus = order.status;
         order.status = status;
         order.timeline.push({
             status,
@@ -103,10 +113,132 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             note: `Status updated to ${status} by merchant`
         });
 
-        const updatedOrder = await order.save();
+        // Inventory Logic based on status transition
+        if (previousStatus === 'pending' && status !== 'pending') {
+            // Moving out of pending
+            if (['cancelled', 'refunded'].includes(status)) {
+                // RELEASE Reservation
+                for (const item of order.items) {
+                    const product = await Product.findById(item.productId).session(session);
+                    if (product && product.trackInventory) {
+                        const updateQuery = item.variantId
+                            ? { "variants._id": item.variantId }
+                            : {};
+
+                        const updateAction = item.variantId
+                            ? { "variants.$.reserved": -item.quantity, "inventory.reserved": -item.quantity }
+                            : { "inventory.reserved": -item.quantity };
+
+                        const updatedProduct = await Product.findOneAndUpdate(
+                            { _id: item.productId, ...updateQuery },
+                            { $inc: updateAction },
+                            { session, new: true }
+                        );
+
+                        if (updatedProduct) {
+                            const variant = item.variantId
+                                ? updatedProduct.variants.find((v: any) => v._id.toString() === item.variantId?.toString())
+                                : null;
+
+                            const calculatedPrevBalance = item.variantId
+                                    ? (variant?.inventory || 0) - ((variant?.reserved || 0) + item.quantity)
+                                    : (updatedProduct.inventory.quantity || 0) - ((updatedProduct.inventory.reserved || 0) + item.quantity);
+                            
+                            const calculatedNewBalance = item.variantId
+                                    ? (variant?.inventory || 0) - (variant?.reserved || 0)
+                                    : (updatedProduct.inventory.quantity || 0) - (updatedProduct.inventory.reserved || 0);
+
+                            await InventoryLog.create([{
+                                storeId: store._id,
+                                productId: item.productId,
+                                variantId: item.variantId,
+                                orderId: order._id,
+                                type: 'RELEASE',
+                                amount: item.quantity,
+                                previousBalance: calculatedPrevBalance,
+                                newBalance: calculatedNewBalance,
+                                reason: `Order #${order.orderNumber} ${status} - stock released`
+                            }], { session });
+                            
+                            // -- CACHE INVALIDATION (Refund/Cancel Sync) --
+                            try {
+                                const { redisClient } = await import('../config/redis');
+                                const { clearStoreProductCaches } = await import('./productController');
+                                
+                                await redisClient.unlink(`product:${item.productId}`);
+                                
+                                // CACHE THRASHING PROTECTION: Only wipe the store list cache if stock goes from 0 back to >0 (Item Back in Stock)
+                                if (calculatedPrevBalance === 0 && calculatedNewBalance > 0) {
+                                    await clearStoreProductCaches(store._id.toString());
+                                }
+                            } catch (e) {
+                                console.warn('Refund cache wipe failed:', e);
+                            }
+                        }
+                    }
+                }
+            } else if (['processing', 'shipped', 'delivered'].includes(status)) {
+                // CAPTURE Reservation (Deduct inventory AND reserved)
+                for (const item of order.items) {
+                    const product = await Product.findById(item.productId).session(session);
+                    if (product && product.trackInventory) {
+                        const updateQuery = item.variantId
+                            ? { "variants._id": item.variantId }
+                            : {};
+
+                        const updateAction = item.variantId
+                            ? {
+                                "variants.$.inventory": -item.quantity,
+                                "variants.$.reserved": -item.quantity,
+                                "inventory.quantity": -item.quantity,
+                                "inventory.reserved": -item.quantity
+                            }
+                            : {
+                                "inventory.quantity": -item.quantity,
+                                "inventory.reserved": -item.quantity
+                            };
+
+                        const updatedProduct = await Product.findOneAndUpdate(
+                            { _id: item.productId, ...updateQuery },
+                            { $inc: updateAction },
+                            { session, new: true }
+                        );
+
+                        if (updatedProduct) {
+                            const variant = item.variantId
+                                ? updatedProduct.variants.find((v: any) => v._id.toString() === item.variantId?.toString())
+                                : null;
+
+                            await InventoryLog.create([{
+                                storeId: store._id,
+                                productId: item.productId,
+                                variantId: item.variantId,
+                                orderId: order._id,
+                                type: 'SALE',
+                                amount: item.quantity,
+                                previousBalance: item.variantId
+                                    ? (variant?.inventory || 0 + item.quantity) - (variant?.reserved || 0 + item.quantity)
+                                    : (updatedProduct.inventory.quantity || 0 + item.quantity) - (updatedProduct.inventory.reserved || 0 + item.quantity),
+                                newBalance: item.variantId
+                                    ? (variant?.inventory || 0) - (variant?.reserved || 0)
+                                    : (updatedProduct.inventory.quantity || 0) - (updatedProduct.inventory.reserved || 0),
+                                reason: `Order #${order.orderNumber} ${status} - stock captured`
+                            }], { session });
+                        }
+                    }
+                }
+            }
+        }
+
+        const updatedOrder = await order.save({ session });
+        await session.commitTransaction();
         res.json(updatedOrder);
     } catch (error) {
+        if (session) await session.abortTransaction();
+        console.error('Update Order Error:', error);
         res.status(500).json({ message: 'Server Error', error });
+    } finally {
+        if (session) session.endSession();
     }
 };
 

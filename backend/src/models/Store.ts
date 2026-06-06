@@ -30,6 +30,13 @@ export interface IDomain {
 
 export interface IPaymentSettings {
     methods: string[];
+    provider?: 'manual' | 'paymob' | 'stripe' | 'paypal' | 'fawry';
+    credentials?: {
+        apiKey?: string;
+        apiSecret?: string;
+        publicKey?: string;
+        iframeId?: string;
+    };
     bankDetails?: {
         bankName: string;
         accountNumber: string;
@@ -48,6 +55,12 @@ export interface IShippingZone {
 
 export interface IShippingSettings {
     enabled: boolean;
+    provider: 'local' | 'bosta' | 'aramex';
+    credentials?: {
+        apiKey?: string;
+        apiSecret?: string;
+        accountNumber?: string;
+    };
     zones: IShippingZone[];
 }
 
@@ -220,6 +233,13 @@ const StoreSchema: Schema = new Schema(
 
             payment: {
                 methods: [{ type: String }],
+                provider: { type: String, enum: ['manual', 'paymob', 'stripe', 'paypal', 'fawry'], default: 'manual' },
+                credentials: {
+                    apiKey: { type: String },
+                    apiSecret: { type: String },
+                    publicKey: { type: String },
+                    iframeId: { type: String }
+                },
                 bankDetails: {
                     bankName: { type: String },
                     accountNumber: { type: String },
@@ -231,6 +251,12 @@ const StoreSchema: Schema = new Schema(
 
             shipping: {
                 enabled: { type: Boolean, default: false },
+                provider: { type: String, enum: ['local', 'bosta', 'aramex'], default: 'local' },
+                credentials: {
+                    apiKey: { type: String },
+                    apiSecret: { type: String },
+                    accountNumber: { type: String }
+                },
                 zones: [{
                     name: { type: String },
                     cities: [{ type: String }],

@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -28,35 +61,249 @@ const Store_1 = __importDefault(require("../models/Store"));
 const User_1 = __importDefault(require("../models/User"));
 const Product_1 = __importDefault(require("../models/Product"));
 const crypto_1 = __importDefault(require("crypto"));
+const mongoose_1 = __importDefault(require("mongoose"));
 // @desc    Get all stores for logged-in merchant
 // @route   GET /api/stores
 // @access  Private/Merchant
 const getStores = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const stores = yield Store_1.default.find({ ownerId: req.user._id })
-            .sort({ createdAt: -1 });
-        res.json(stores);
+        const userId = new mongoose_1.default.Types.ObjectId(req.user._id);
+        const storesWithStats = yield Store_1.default.aggregate([
+            { $match: { ownerId: userId } },
+            { $sort: { createdAt: -1 } },
+            // Look up products count
+            {
+                $lookup: {
+                    from: 'products',
+                    let: { storeId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$storeId', '$$storeId'] },
+                                        { $eq: ['$status', 'active'] }
+                                    ]
+                                }
+                            }
+                        },
+                        { $count: 'count' }
+                    ],
+                    as: 'productStats'
+                }
+            },
+            // Look up orders count and revenue
+            {
+                $lookup: {
+                    from: 'orders',
+                    let: { storeId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$storeId', '$$storeId'] } } },
+                        {
+                            $group: {
+                                _id: null,
+                                totalOrders: { $sum: 1 },
+                                totalRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            { $not: [{ $in: ['$status', ['cancelled', 'refunded']] }] },
+                                            '$total',
+                                            0
+                                        ]
+                                    }
+                                },
+                                settledRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $or: [
+                                                    { $eq: ["$status", "delivered"] },
+                                                    { $eq: ["$paymentStatus", "paid"] }
+                                                ]
+                                            },
+                                            "$total",
+                                            0
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    as: 'orderStats'
+                }
+            },
+            // Look up customers count
+            {
+                $lookup: {
+                    from: 'customers',
+                    let: { storeId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$storeId', '$$storeId'] } } },
+                        { $count: 'count' }
+                    ],
+                    as: 'customerStats'
+                }
+            },
+            {
+                $addFields: {
+                    stats: {
+                        totalProducts: { $ifNull: [{ $arrayElemAt: ['$productStats.count', 0] }, 0] },
+                        totalOrders: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalOrders', 0] }, 0] },
+                        totalCustomers: { $ifNull: [{ $arrayElemAt: ['$customerStats.count', 0] }, 0] },
+                        totalRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalRevenue', 0] }, 0] },
+                        settledRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.settledRevenue', 0] }, 0] }
+                    }
+                }
+            },
+            {
+                $project: {
+                    productStats: 0,
+                    orderStats: 0,
+                    customerStats: 0
+                }
+            }
+        ]);
+        res.json(storesWithStats);
     }
     catch (error) {
+        console.error('getStores Error:', error);
         res.status(500).json({ message: 'Server Error', error });
     }
 });
 exports.getStores = getStores;
-// @desc    Get single store
-// @route   GET /api/stores/:id
-// @access  Private/Merchant
 const getStore = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({
-            _id: req.params.id,
-            ownerId: req.user._id
-        });
-        if (!store) {
+        const userId = new mongoose_1.default.Types.ObjectId(req.user._id);
+        const storeId = new mongoose_1.default.Types.ObjectId(req.params.id);
+        const storeWithStats = yield Store_1.default.aggregate([
+            { $match: { _id: storeId, ownerId: userId } },
+            // Look up subscription and plan
+            {
+                $lookup: {
+                    from: 'subscriptions',
+                    localField: 'subscriptionId',
+                    foreignField: '_id',
+                    as: 'subscription'
+                }
+            },
+            { $unwind: { path: '$subscription', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'subscription.planId',
+                    foreignField: '_id',
+                    as: 'subscription.planId'
+                }
+            },
+            { $unwind: { path: '$subscription.planId', preserveNullAndEmptyArrays: true } },
+            // Re-map subscription to subscriptionId to match FE expectations if needed
+            // Actually, populate({path: 'subscriptionId', populate: {path: 'planId'}}) 
+            // creates store.subscriptionId.planId.name
+            {
+                $addFields: {
+                    subscriptionId: '$subscription'
+                }
+            },
+            // Look up products count
+            {
+                $lookup: {
+                    from: 'products',
+                    let: { sId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$storeId', '$$sId'] },
+                                        { $eq: ['$status', 'active'] }
+                                    ]
+                                }
+                            }
+                        },
+                        { $count: 'count' }
+                    ],
+                    as: 'productStats'
+                }
+            },
+            // Look up orders count and revenue
+            {
+                $lookup: {
+                    from: 'orders',
+                    let: { sId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$storeId', '$$sId'] } } },
+                        {
+                            $group: {
+                                _id: null,
+                                totalOrders: { $sum: 1 },
+                                totalRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            { $not: [{ $in: ['$status', ['cancelled', 'refunded']] }] },
+                                            '$total',
+                                            0
+                                        ]
+                                    }
+                                },
+                                settledRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $or: [
+                                                    { $eq: ["$status", "delivered"] },
+                                                    { $eq: ["$paymentStatus", "paid"] }
+                                                ]
+                                            },
+                                            "$total",
+                                            0
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    as: 'orderStats'
+                }
+            },
+            // Look up customers count
+            {
+                $lookup: {
+                    from: 'customers',
+                    let: { sId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$storeId', '$$sId'] } } },
+                        { $count: 'count' }
+                    ],
+                    as: 'customerStats'
+                }
+            },
+            {
+                $addFields: {
+                    stats: {
+                        totalProducts: { $ifNull: [{ $arrayElemAt: ['$productStats.count', 0] }, 0] },
+                        totalOrders: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalOrders', 0] }, 0] },
+                        totalCustomers: { $ifNull: [{ $arrayElemAt: ['$customerStats.count', 0] }, 0] },
+                        totalRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalRevenue', 0] }, 0] },
+                        settledRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.settledRevenue', 0] }, 0] }
+                    }
+                }
+            },
+            {
+                $project: {
+                    subscription: 0,
+                    productStats: 0,
+                    orderStats: 0,
+                    customerStats: 0
+                }
+            }
+        ]);
+        if (storeWithStats.length === 0) {
             return res.status(404).json({ message: 'Store not found' });
         }
-        res.json(store);
+        res.json(storeWithStats[0]);
     }
     catch (error) {
+        console.error('Get Store Error:', error);
         res.status(500).json({ message: 'Server Error', error });
     }
 });
@@ -66,24 +313,7 @@ exports.getStore = getStore;
 // @access  Private/Merchant
 const createStore = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = yield User_1.default.findById(req.user._id).populate('subscriptionPlan');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        // Check subscription status
-        if (user.subscriptionStatus !== 'active') {
-            return res.status(403).json({
-                message: 'Active subscription required to create stores. Please subscribe first.'
-            });
-        }
-        // Check store limit
-        const plan = user.subscriptionPlan;
-        if (plan && user.stores.length >= plan.maxStores) {
-            return res.status(403).json({
-                message: `Store limit reached for your ${plan.name}. You can create maximum ${plan.maxStores} stores. Upgrade to create more.`
-            });
-        }
-        const { name, description, contact, branding } = req.body;
+        const { name, description, category, contact, branding } = req.body;
         // Generate unique slug from name
         let slug = name.toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
@@ -103,10 +333,11 @@ const createStore = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             subdomainCounter++;
         }
         const store = yield Store_1.default.create({
-            ownerId: user._id,
+            ownerId: req.user._id,
             name,
             slug: uniqueSlug,
             description,
+            category,
             contact: contact || {},
             branding: branding || {},
             domain: {
@@ -118,8 +349,9 @@ const createStore = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             isPublished: false
         });
         // Add store to user's stores array
-        user.stores.push(store._id);
-        yield user.save();
+        yield User_1.default.findByIdAndUpdate(req.user._id, {
+            $push: { stores: store._id }
+        });
         res.status(201).json(store);
     }
     catch (error) {
@@ -132,6 +364,7 @@ exports.createStore = createStore;
 // @route   PUT /api/stores/:id
 // @access  Private/Merchant
 const updateStore = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const store = yield Store_1.default.findOne({
             _id: req.params.id,
@@ -141,8 +374,12 @@ const updateStore = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(404).json({ message: 'Store not found' });
         }
         // Don't allow changing slug or ownerId
-        const _a = req.body, { slug, ownerId } = _a, updateData = __rest(_a, ["slug", "ownerId"]);
+        const _b = req.body, { slug, ownerId } = _b, updateData = __rest(_b, ["slug", "ownerId"]);
         const updatedStore = yield Store_1.default.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        if ((_a = updatedStore === null || updatedStore === void 0 ? void 0 : updatedStore.domain) === null || _a === void 0 ? void 0 : _a.subdomain) {
+            const { redisClient } = yield Promise.resolve().then(() => __importStar(require('../config/redis')));
+            yield redisClient.del(`store_customization:${updatedStore.domain.subdomain}`);
+        }
         res.json(updatedStore);
     }
     catch (error) {

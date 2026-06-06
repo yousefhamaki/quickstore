@@ -18,34 +18,148 @@ const SubscriptionPlan_1 = __importDefault(require("./models/SubscriptionPlan"))
 dotenv_1.default.config();
 const plans = [
     {
-        name: 'Basic Plan',
-        price: 299,
-        features: ['1 store', '100 products per store', 'Basic analytics'],
-        duration: 30,
+        name: 'Free',
+        name_en: 'Starter',
+        name_ar: 'البداية',
+        description_en: 'Perfect for testing your idea and small creators starting out.',
+        description_ar: 'مثالي لاختبار فكرتك وصناع المحتوى الصغار الذين يبدأون رحلتهم.',
+        type: 'free',
+        price: 0,
+        monthlyPrice: 0,
+        currency: 'EGP',
         maxStores: 1,
-        productLimit: 100,
+        storeLimit: 1,
+        productLimit: 10,
+        orderFee: 5,
+        duration: 3650, // 10 years for free plan
+        features_en: [
+            '1 Online Store',
+            'Up to 10 Products',
+            'Community Support',
+            'Buildora Subdomain (.buildora.com)',
+            'Standard Themes'
+        ],
+        features_ar: [
+            'متجر واحد على الإنترنت',
+            'حتى 10 منتجات',
+            'دعم المجتمع',
+            'نطاق فرعي من بيلدورا (.buildora.com)',
+            'قوالب قياسية'
+        ],
+        isActive: true
     },
     {
-        name: 'Pro Plan',
-        price: 599,
-        features: ['3 stores', '1000 products per store', 'Advanced analytics', 'Custom domain'],
-        duration: 30,
+        name: 'Basic',
+        name_en: 'Professional',
+        name_ar: 'الاحترافي',
+        description_en: 'Best for growing businesses needing custom branding and advanced tools.',
+        description_ar: 'الأفضل للشركات المتنامية التي تحتاج إلى علامة تجارية مخصصة وأدوات متقدمة.',
+        type: 'paid',
+        price: 499,
+        monthlyPrice: 499,
+        currency: 'EGP',
         maxStores: 3,
-        productLimit: 1000,
+        storeLimit: 3,
+        productLimit: -1, // Unlimited
+        orderFee: 0,
+        duration: 30,
+        features_en: [
+            '3 Online Stores',
+            'Unlimited Products',
+            'Priority Email Support',
+            'Custom Domain Support',
+            'Premium Themes & Builder',
+            'Instapay & VCash Integration',
+            'Advanced Analytics'
+        ],
+        features_ar: [
+            '3 متاجر إلكترونية',
+            'منتجات غير محدودة',
+            'دعم بريد إلكتروني ذو أولوية',
+            'دعم النطاق المخصص',
+            'قوالب ممتازة ومنشئ قوالب',
+            'تكامل إنستاباي وفودافون كاش',
+            'تحليلات متقدمة'
+        ],
+        isActive: true
     },
     {
-        name: 'Enterprise Plan',
+        name: 'Pro',
+        name_en: 'Professional Plus',
+        name_ar: 'الاحترافي بلس',
+        description_en: 'Best for growing businesses needing custom branding and advanced tools.',
+        description_ar: 'الأفضل للشركات المتنامية التي تحتاج إلى علامة تجارية مخصصة وأدوات متقدمة.',
+        type: 'paid',
         price: 999,
-        features: ['10 stores', 'Unlimited products', 'Priority support', 'API access'],
-        duration: 30,
+        monthlyPrice: 999,
+        currency: 'EGP',
         maxStores: 10,
-        productLimit: 999999,
+        storeLimit: 10,
+        productLimit: -1, // Unlimited
+        orderFee: 0,
+        duration: 30,
+        features_en: [
+            '10 Online Stores',
+            'Unlimited Products',
+            'Priority Email Support',
+            'Custom Domain Support',
+            'Premium Themes & Builder',
+            'Instapay & VCash Integration',
+            'Advanced Analytics'
+        ],
+        features_ar: [
+            '10 متاجر إلكترونية',
+            'منتجات غير محدودة',
+            'دعم بريد إلكتروني ذو أولوية',
+            'دعم النطاق المخصص',
+            'قوالب ممتازة ومنشئ قوالب',
+            'تكامل إنستاباي وفودافون كاش',
+            'تحليلات متقدمة'
+        ],
+        isActive: true
     },
+    {
+        name: 'Enterprise',
+        name_en: 'Enterprise',
+        name_ar: 'المؤسسات',
+        description_en: 'For high-volume merchants needing dedicated resources and custom solutions.',
+        description_ar: 'للتجار ذوي الحجم الكبير الذين يحتاجون إلى موارد مخصصة وحلول مخصصة.',
+        type: 'paid',
+        price: 1499,
+        monthlyPrice: 1499,
+        currency: 'EGP',
+        maxStores: 50,
+        storeLimit: 50,
+        productLimit: -1, // Unlimited
+        orderFee: 0,
+        duration: 30,
+        features_en: [
+            '50 Online Stores',
+            'Dedicated Account Manager',
+            'Custom Integration Support',
+            'SLA & Priority Chat Support',
+            'Advanced Security Features',
+            'Custom Feature Development',
+            'Highest Performance Servers'
+        ],
+        features_ar: [
+            '50 متجر إلكتروني',
+            'مدير حساب مخصص',
+            'دعم التكامل المخصص',
+            'اتفاقية مستوى الخدمة ودعم الدردشة ذو الأولوية',
+            'ميزات أمنية متقدمة',
+            'تطوير ميزات مخصصة',
+            'أعلى أداء للخواتم'
+        ],
+        isActive: true
+    }
 ];
 const seedPlans = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield mongoose_1.default.connect(process.env.MONGODB_URI);
+        console.log('Connected to MongoDB');
         yield SubscriptionPlan_1.default.deleteMany();
+        console.log('Cleared existing plans');
         yield SubscriptionPlan_1.default.insertMany(plans);
         console.log('Subscription plans seeded successfully');
         process.exit();

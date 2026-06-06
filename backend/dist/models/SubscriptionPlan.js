@@ -36,10 +36,36 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const SubscriptionPlanSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
-    price: { type: Number, required: true },
-    features: [{ type: String }],
+    name_en: { type: String },
+    name_ar: { type: String },
+    description_en: { type: String },
+    description_ar: { type: String },
+    price: { type: Number },
+    monthlyPrice: { type: Number },
+    currency: { type: String, default: 'EGP' },
+    features_en: [{ type: String }],
+    features_ar: [{ type: String }],
+    features: {
+        dropshipping: { type: Boolean, default: false },
+        customDomain: { type: Boolean, default: false }
+    },
     duration: { type: Number, required: true, default: 30 },
-    maxStores: { type: Number, required: true, default: 1 },
-    productLimit: { type: Number, required: true },
+    maxStores: { type: Number, default: 1 },
+    storeLimit: { type: Number },
+    productLimit: { type: Number, required: true }, // -1 for unlimited
+    orderFee: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
+    type: { type: String, enum: ['free', 'paid'], required: true, default: 'paid' },
+}, { timestamps: true });
+// Sync aliases
+SubscriptionPlanSchema.pre('save', function () {
+    if (this.price !== undefined && this.monthlyPrice === undefined)
+        this.monthlyPrice = this.price;
+    if (this.monthlyPrice !== undefined && this.price === undefined)
+        this.price = this.monthlyPrice;
+    if (this.maxStores !== undefined && this.storeLimit === undefined)
+        this.storeLimit = this.maxStores;
+    if (this.storeLimit !== undefined && this.maxStores === undefined)
+        this.maxStores = this.storeLimit;
 });
 exports.default = mongoose_1.default.model('SubscriptionPlan', SubscriptionPlanSchema);

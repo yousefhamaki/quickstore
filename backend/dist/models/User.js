@@ -36,9 +36,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const UserSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    email: { type: String, required: true, unique: true, index: true },
+    passwordHash: { type: String, required: false },
     role: { type: String, enum: ['merchant', 'super_admin'], default: 'merchant' },
+    authProvider: { type: String, enum: ['local', 'google'], required: true, default: 'local' },
+    googleId: { type: String, index: true, sparse: true },
+    isVerified: { type: Boolean, default: false },
+    emailVerificationTokenHash: { type: String },
+    emailVerificationExpiresAt: { type: Date },
     subscriptionStatus: {
         type: String,
         enum: ['pending', 'active', 'expired'],

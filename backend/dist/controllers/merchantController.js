@@ -63,7 +63,7 @@ exports.setupStore = setupStore;
 // @access  Private (Merchant)
 const submitSubscription = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const { planId, paymentMethod } = req.body;
+    const { planId, paymentMethod, storeId } = req.body;
     const receiptImage = (_a = req.file) === null || _a === void 0 ? void 0 : _a.path;
     if (!receiptImage) {
         return res.status(400).json({ message: 'Please upload a payment receipt' });
@@ -75,6 +75,7 @@ const submitSubscription = (req, res) => __awaiter(void 0, void 0, void 0, funct
         }
         const receipt = yield PaymentReceipt_1.default.create({
             merchantId: req.user._id,
+            storeId,
             planId,
             receiptImage,
             paymentMethod,

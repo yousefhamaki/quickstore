@@ -21,8 +21,9 @@ const Store_1 = __importDefault(require("../models/Store"));
 // @route   GET /api/analytics/overview
 // @access  Private/Merchant
 const getOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -36,18 +37,38 @@ const getOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             storeId: store._id,
             createdAt: { $gte: startDate }
         });
-        // Total revenue
-        const revenueResult = yield Order_1.default.aggregate([
-            { $match: { storeId: store._id, paymentStatus: 'paid' } },
-            { $group: { _id: null, total: { $sum: '$total' } } }
+        // Revenue breakdown
+        const revenueStats = yield Order_1.default.aggregate([
+            {
+                $match: {
+                    storeId: store._id,
+                    status: { $nin: ['cancelled', 'refunded'] },
+                    paymentStatus: { $ne: 'failed' }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: '$total' },
+                    completed: {
+                        $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, '$total', 0] }
+                    },
+                    pending: {
+                        $sum: { $cond: [{ $ne: ['$status', 'delivered'] }, '$total', 0] }
+                    }
+                }
+            }
         ]);
-        const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+        const totalRevenue = revenueStats.length > 0 ? revenueStats[0].total : 0;
+        const completedRevenue = revenueStats.length > 0 ? revenueStats[0].completed : 0;
+        const pendingRevenue = revenueStats.length > 0 ? revenueStats[0].pending : 0;
         // Recent revenue
         const recentRevenueResult = yield Order_1.default.aggregate([
             {
                 $match: {
                     storeId: store._id,
-                    paymentStatus: 'paid',
+                    status: { $nin: ['cancelled', 'refunded'] },
+                    paymentStatus: { $ne: 'failed' },
                     createdAt: { $gte: startDate }
                 }
             },
@@ -69,15 +90,21 @@ const getOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             trackInventory: true,
             $expr: { $lte: ['$inventory.quantity', '$inventory.lowStockThreshold'] }
         });
+        const totalVisitors = ((_a = store.stats) === null || _a === void 0 ? void 0 : _a.totalVisitors) || 0;
+        const conversion = totalVisitors > 0 ? (totalOrders / totalVisitors) * 100 : 0;
         res.json({
             totalOrders,
             recentOrders,
             totalRevenue,
+            completedRevenue,
+            pendingRevenue,
             recentRevenue,
             totalCustomers,
             recentCustomers,
             totalProducts,
-            lowStockProducts
+            lowStockProducts,
+            totalVisitors,
+            conversion
         });
     }
     catch (error) {
@@ -91,7 +118,7 @@ exports.getOverview = getOverview;
 // @access  Private/Merchant
 const getRevenueChart = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -151,7 +178,7 @@ exports.getRevenueChart = getRevenueChart;
 // @access  Private/Merchant
 const getTopProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -183,7 +210,7 @@ exports.getTopProducts = getTopProducts;
 // @access  Private/Merchant
 const getRecentOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -205,7 +232,7 @@ exports.getRecentOrders = getRecentOrders;
 // @access  Private/Merchant
 const getCustomerStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }

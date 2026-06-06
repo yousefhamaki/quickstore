@@ -7,6 +7,8 @@ import Plan from '../models/SubscriptionPlan';
 import Receipt from '../models/Receipt';
 import BillingProfile from '../models/BillingProfile';
 import mongoose from 'mongoose';
+import axios from 'axios';
+import Transaction from '../models/Transaction';
 
 /**
  * Idempotent Wallet Creation Helper
@@ -14,13 +16,23 @@ import mongoose from 'mongoose';
 export const ensureWallet = async (userId: string) => {
     let wallet = await Wallet.findOne({ userId });
     if (!wallet) {
-        // Create with zero balance if missing
+        // Create with 500 EGP balance as a signup gift
         wallet = await Wallet.create({
             userId,
-            balance: 0,
+            balance: 500,
             currency: 'EGP'
         });
-        console.log(`Initialized missing wallet for user ${userId}`);
+
+        // Record welcome gift transaction in ledger
+        await WalletTransaction.create({
+            userId,
+            type: 'credit',
+            amount: 500,
+            reason: 'gift',
+            referenceId: wallet._id
+        });
+
+        console.log(`Initialized missing wallet for user ${userId} with 500 EGP gift`);
     }
     return wallet;
 };
@@ -219,6 +231,8 @@ export const getBillingOverview = async (req: AuthRequest, res: Response) => {
             },
             plan: {
                 name: plan.name,
+                name_en: plan.name_en || plan.name,
+                name_ar: plan.name_ar || plan.name,
                 type: plan.type,
                 monthlyPrice: plan.monthlyPrice || (plan as any).price || 0,
                 features: plan.features
@@ -343,12 +357,35 @@ export const updateBillingProfile = async (req: AuthRequest, res: Response) => {
     }
 };
 
+import { redisClient } from '../config/redis';
+
 /**
  * @desc    Get all available plans
  */
 export const getPlans = async (req: Request, res: Response) => {
     try {
+        const cacheKey = 'plans:active';
+
+        let cachedPlans = null;
+        try {
+            cachedPlans = await redisClient.get(cacheKey);
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] GET failed for ${cacheKey}`);
+        }
+
+        if (cachedPlans) {
+            return res.json(JSON.parse(cachedPlans));
+        }
+
         const plans = await Plan.find({ isActive: true });
+
+        try {
+            const cache = await redisClient.setex(cacheKey, 86400, JSON.stringify(plans)); // 24 hour cache
+            console.log(cache);
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] SET failed for ${cacheKey}`);
+        }
+
         res.json(plans);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching plans', error });
@@ -373,18 +410,20 @@ export const getCurrentSubscription = async (req: AuthRequest, res: Response) =>
  */
 export const rechargeWallet = async (req: AuthRequest, res: Response) => {
     try {
-        const { amount } = req.body;
+        const { amount, method, walletNumber } = req.body;
         if (!amount || amount <= 0) return res.status(400).json({ message: 'Invalid recharge amount' });
+        if (!['card', 'wallet', 'fawry'].includes(method)) return res.status(400).json({ message: 'Invalid payment method' });
+        if (method === 'wallet' && !walletNumber) return res.status(400).json({ message: 'Wallet number is required' });
 
-        // DEVELOPMENT MODE: If Paymob keys are missing, simulate an instant success for testing
-        if (!process.env.PAYMOB_API_KEY || process.env.NODE_ENV === 'development') {
+        const apiKey = process.env.PAYMOB_API_KEY;
+        if (!apiKey && process.env.NODE_ENV === 'development') {
+            // Development fallback for testing without Paymob
             const wallet = await Wallet.findOneAndUpdate(
                 { userId: req.user._id },
                 { $inc: { balance: amount } },
                 { new: true, upsert: true }
             );
 
-            // Create ledger entry for the simulation
             await WalletTransaction.create({
                 userId: req.user._id,
                 type: 'credit',
@@ -396,16 +435,109 @@ export const rechargeWallet = async (req: AuthRequest, res: Response) => {
             return res.json({
                 success: true,
                 message: 'SIMULATED SUCCESS: Since Paymob keys are not configured, balance has been added directly for testing.',
-                newBalance: wallet.balance
+                newBalance: wallet?.balance
             });
+        } else if (!apiKey) {
+           return res.status(500).json({ message: 'Payment gateway not configured correctly' });
         }
 
-        // Production: Redirect to Paymob
-        const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=PRODUCTION_TOKEN_HERE`;
-        res.json({ success: true, paymentUrl });
-    } catch (error) {
-        console.error('Recharge Error:', error);
-        res.status(500).json({ message: 'Recharge failed', error });
+        const integrationIds: Record<string, string> = {
+            card: process.env.PAYMOB_CARD_INTEGRATION_ID || '111111',
+            wallet: process.env.PAYMOB_WALLET_INTEGRATION_ID || '222222',
+            fawry: process.env.PAYMOB_FAWRY_INTEGRATION_ID || '333333'
+        };
+
+        const integrationId = integrationIds[method];
+
+        // 1. Authentication Request
+        const authRes = await axios.post('https://accept.paymob.com/api/auth/tokens', {
+            api_key: apiKey
+        });
+        const token = authRes.data.token;
+
+        // 2. Order Registration
+        const orderRes = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
+            auth_token: token,
+            delivery_needed: "false",
+            amount_cents: Math.round(amount * 100).toString(),
+            currency: "EGP",
+            items: []
+        });
+        const paymobOrderId = orderRes.data.id;
+
+        // Create Pending Transaction in DB
+        await Transaction.create({
+            userId: req.user._id,
+            orderId: paymobOrderId.toString(),
+            amount,
+            method,
+            status: 'pending'
+        });
+
+        // 3. Payment Key Generation
+        const paymentKeyRes = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
+            auth_token: token,
+            amount_cents: Math.round(amount * 100).toString(),
+            expiration: 3600,
+            order_id: paymobOrderId,
+            billing_data: {
+                apartment: "NA",
+                email: req.user.email || "user@quickstore.local",
+                floor: "NA",
+                first_name: req.user.name?.split(' ')[0] || "Customer",
+                street: "NA",
+                building: "NA",
+                phone_number: walletNumber || "+20100000000",
+                shipping_method: "NA",
+                postal_code: "NA",
+                city: "NA",
+                country: "EG",
+                last_name: req.user.name?.split(' ')[1] || "Name",
+                state: "NA"
+            },
+            currency: "EGP",
+            integration_id: parseInt(integrationId, 10)
+        });
+
+        const paymentToken = paymentKeyRes.data.token;
+
+        // Handle Response based on Method
+        if (method === 'card') {
+            const iframeId = process.env.PAYMOB_IFRAME_ID || '000000';
+            const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
+            return res.json({ success: true, paymentUrl });
+        } else if (method === 'wallet') {
+            const payRes = await axios.post('https://accept.paymob.com/api/acceptance/payments/pay', {
+                source: {
+                    identifier: walletNumber,
+                    subtype: "WALLET"
+                },
+                payment_token: paymentToken
+            });
+            return res.json({ success: true, paymentUrl: payRes.data.redirect_url });
+        } else if (method === 'fawry') {
+            const payRes = await axios.post('https://accept.paymob.com/api/acceptance/payments/pay', {
+                source: {
+                    identifier: "AGGREGATOR",
+                    subtype: "AGGREGATOR"
+                },
+                payment_token: paymentToken
+            });
+            
+            // For Fawry, the ref code is typically in data.bill_reference
+            let referenceCode = '';
+            if (payRes.data.data && payRes.data.data.bill_reference) {
+                referenceCode = payRes.data.data.bill_reference.toString();
+            } else if (payRes.data.id) {
+                referenceCode = payRes.data.id.toString();
+            }
+
+            return res.json({ success: true, referenceCode });
+        }
+
+    } catch (error: any) {
+        console.error('Recharge Error:', error.response?.data || error.message);
+        res.status(500).json({ message: 'Recharge failed', error: error.message });
     }
 };
 

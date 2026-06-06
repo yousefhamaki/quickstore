@@ -39,6 +39,11 @@ export interface IOrder extends Document {
     status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
     paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
     paymentMethod: string;
+    transactionId?: string;
+    shippingProvider?: string;
+    trackingNumber?: string;
+    waybillUrl?: string; // Automatically populated AWB PDF location
+    shippingStatus?: 'pending' | 'ready_for_pickup' | 'picked_up' | 'in_transit' | 'delivered' | 'returned';
     shippingAddress: IOrderAddress;
     billingAddress: IOrderAddress;
     customerNote?: string;
@@ -82,6 +87,15 @@ const OrderSchema: Schema = new Schema(
             default: 'pending',
         },
         paymentMethod: { type: String, required: true },
+        transactionId: { type: String },
+        shippingProvider: { type: String },
+        trackingNumber: { type: String },
+        waybillUrl: { type: String },
+        shippingStatus: {
+            type: String,
+            enum: ['pending', 'ready_for_pickup', 'picked_up', 'in_transit', 'delivered', 'returned'],
+            default: 'pending',
+        },
         shippingAddress: {
             fullName: { type: String },
             phone: { type: String },

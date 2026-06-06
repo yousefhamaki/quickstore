@@ -36,9 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const StoreSchema = new mongoose_1.Schema({
     ownerId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    subscriptionId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Subscription' },
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     description: { type: String },
+    category: { type: String },
     logo: {
         url: { type: String },
         publicId: { type: String }
@@ -92,6 +94,13 @@ const StoreSchema = new mongoose_1.Schema({
         timezone: { type: String, default: 'Africa/Cairo' },
         payment: {
             methods: [{ type: String }],
+            provider: { type: String, enum: ['manual', 'paymob', 'stripe', 'paypal', 'fawry'], default: 'manual' },
+            credentials: {
+                apiKey: { type: String },
+                apiSecret: { type: String },
+                publicKey: { type: String },
+                iframeId: { type: String }
+            },
             bankDetails: {
                 bankName: { type: String },
                 accountNumber: { type: String },
@@ -102,6 +111,12 @@ const StoreSchema = new mongoose_1.Schema({
         },
         shipping: {
             enabled: { type: Boolean, default: false },
+            provider: { type: String, enum: ['local', 'bosta', 'aramex'], default: 'local' },
+            credentials: {
+                apiKey: { type: String },
+                apiSecret: { type: String },
+                accountNumber: { type: String }
+            },
             zones: [{
                     name: { type: String },
                     cities: [{ type: String }],
@@ -119,6 +134,14 @@ const StoreSchema = new mongoose_1.Schema({
             privacyPolicy: { type: String },
             termsOfService: { type: String },
             shippingPolicy: { type: String }
+        },
+        marketing: {
+            facebookPixelId: { type: String },
+            googleAnalyticsId: { type: String },
+            tiktokPixelId: { type: String },
+            snapchatPixelId: { type: String },
+            seoTitle: { type: String },
+            seoDescription: { type: String }
         }
     },
     // Theme
@@ -131,11 +154,28 @@ const StoreSchema = new mongoose_1.Schema({
         totalProducts: { type: Number, default: 0 },
         totalOrders: { type: Number, default: 0 },
         totalRevenue: { type: Number, default: 0 },
-        totalCustomers: { type: Number, default: 0 }
+        totalCustomers: { type: Number, default: 0 },
+        totalVisitors: { type: Number, default: 0 },
+        aiUsage: {
+            count: { type: Number, default: 0 },
+            lastReset: { type: Date, default: Date.now }
+        }
+    },
+    // SEO Settings
+    seo: {
+        metaTitle: { type: String },
+        metaDescription: { type: String },
+        keywords: [{ type: String }],
+        ogType: { type: String, default: 'website' },
+        ogImage: { type: String },
+        twitterCard: { type: String, default: 'summary_large_image' },
+        twitterUsername: { type: String },
+        allowIndexing: { type: Boolean, default: true },
+        sitemapEnabled: { type: Boolean, default: true }
     }
 }, { timestamps: true });
 // Indexes
-StoreSchema.index({ slug: 1 }, { unique: true });
+// StoreSchema.index({ slug: 1 }, { unique: true }); // Removed: Already defined in schema path
 StoreSchema.index({ ownerId: 1 });
 StoreSchema.index({ 'domain.subdomain': 1 }, { unique: true, sparse: true });
 StoreSchema.index({ status: 1, isPublished: 1 });

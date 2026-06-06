@@ -1,0 +1,1121 @@
+{
+  "brand": {
+    "name": "Buildora",
+    "tagline": "Multi-Store E-commerce Platform",
+    "poweredBy": "Powered by QuickStore"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "about": "About",
+    "contact": "Contact",
+    "support": "Support",
+    "login": "Login",
+    "getStarted": "Get Started",
+    "dashboard": "Dashboard"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "submit": "Submit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "viewMore": "View More",
+    "learnMore": "Learn More",
+    "copyLink": "Copy Link",
+    "share": "Share",
+    "download": "Download",
+    "upload": "Upload",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "refresh": "Refresh"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "draft": "Draft",
+    "published": "Published",
+    "live": "Live",
+    "paused": "Paused",
+    "canceled": "Canceled",
+    "completed": "Completed",
+    "processing": "Processing"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "custom": "Custom Range"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "notFound": "Not found",
+    "unauthorized": "You are not authorized to perform this action.",
+    "validation": "Please check your input and try again.",
+    "required": "This field is required"
+  },
+  "success": {
+    "saved": "Saved successfully",
+    "updated": "Updated successfully",
+    "deleted": "Deleted successfully",
+    "created": "Created successfully",
+    "copied": "Copied to clipboard"
+  },
+  "loading": {
+    "default": "Loading...",
+    "pleaseWait": "Please wait..."
+  },
+  "empty": {
+    "noData": "No data available",
+    "noResults": "No results found"
+  },
+  "footer": {
+    "copyright": "© 2026 Buildora powered by QuickStore. All rights reserved.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to your account",
+      "email": "Email Address",
+      "password": "Password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "orContinueWith": "Or continue with"
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join Buildora and start your e-commerce journey",
+      "name": "Full Name",
+      "email": "Email Address",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "agreeToTerms": "I agree to the Terms of Service and Privacy Policy",
+      "submit": "Create Account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "verification": {
+      "title": "Verify Your Email",
+      "subtitle": "We've sent a verification link to your email",
+      "checkInbox": "Please check your inbox and click the link to verify your account.",
+      "didNotReceive": "Didn't receive the email?",
+      "resend": "Resend verification email",
+      "backToLogin": "Back to login"
+    },
+    "forgotPassword": {
+      "title": "Reset Password",
+      "subtitle": "Enter your email to receive a reset link",
+      "email": "Email Address",
+      "submit": "Send Reset Link",
+      "backToLogin": "Back to login",
+      "checkEmail": "Check your email for the reset link"
+    },
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "emailExists": "Email already registered",
+      "weakPassword": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
+      "emailRequired": "Email is required",
+      "passwordRequired": "Password is required",
+      "nameRequired": "Name is required"
+    }
+  },
+  "dashboard": {
+    "home": {
+      "title": "Merchant Dashboard",
+      "subtitle": "Overview of your business overview",
+      "visitStore": "Visit Store",
+      "manageStores": "Manage Your Stores",
+      "manageStoresSubtitle": "Navigate to your global store dashboard to manage products, orders, and settings for all your stores in one place.",
+      "viewAllStores": "View All Stores",
+      "subscriptionInfo": "Subscription Info",
+      "status": "Status",
+      "plan": "Plan",
+      "renews": "Renews",
+      "quickLinks": "Quick Links",
+      "manageSubscription": "Manage Subscription",
+      "upgradePlan": "Upgrade Plan"
+    },
+    "sidebar": {
+      "merchantPanel": "Merchant Panel",
+      "dashboard": "Dashboard",
+      "myStores": "My Stores",
+      "themeBuilder": "Theme Builder",
+      "billing": "Billing & Wallet",
+      "upgradePlans": "Upgrade Plans",
+      "settings": "Settings",
+      "logout": "Logout",
+      "logoutConfirm": "Are you sure you want to logout?"
+    },
+    "stores": {
+      "title": "My Stores",
+      "createNew": "Create New Store",
+      "allStores": "All Stores",
+      "manage": "Manage",
+      "visitSite": "Visit Site",
+      "finishSetup": "Finish Setup",
+      "pauseStore": "Pause Store",
+      "resumeStore": "Resume Store",
+      "products": "Products",
+      "orders": "Orders",
+      "revenue": "Revenue"
+    },
+    "stats": {
+      "totalRevenue": "Total Revenue",
+      "totalOrders": "Total Orders",
+      "activeProducts": "Active Products",
+      "customers": "Customers",
+      "totalSales": "Total Sales",
+      "visitors": "Visitors",
+      "conversion": "Conversion",
+      "completed": "Completed",
+      "waiting": "Waiting"
+    },
+    "banner": {
+      "unlock": "Unlock Full Potential",
+      "upgradeSubtitle": "Upgrade to a subscription plan to start selling, access analytics, and remove limits.",
+      "pending": "Subscription Pending",
+      "pendingSubtitle": "You have selected the {planName} plan. Please complete your payment to activate all features.",
+      "choosePlan": "Choose Plan",
+      "completePayment": "Complete Payment"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "addProducts": "Add Products",
+      "listItems": "List items for sale",
+      "createCoupon": "Create Coupon",
+      "runPromotion": "Run a sales promotion",
+      "legalPolicies": "Legal Policies",
+      "termsPrivacy": "Terms, Privacy & Refunds"
+    },
+    "storeDetails": {
+      "title": "Store Details",
+      "plan": "Plan",
+      "currency": "Currency",
+      "subdomain": "Subdomain",
+      "editSettings": "Edit Store Settings"
+    },
+    "onboarding": {
+      "title": "Setup Checklist",
+      "progress": "Progress",
+      "complete": "Complete",
+      "addProduct": "Add your first product",
+      "setupPayment": "Setup payment methods",
+      "customizeBranding": "Customize branding",
+      "publishStore": "Publish your store"
+    },
+    "publish": {
+      "title": "Launch {storeName}",
+      "subtitle": "Ready to take your business live? Once published, customers can visit your store and place orders.",
+      "notReady": "Wait! Your store isn't quite ready yet:",
+      "allReady": "All systems go! Your store meets all requirements for launch.",
+      "previewUrl": "Preview URL",
+      "maybeLater": "Maybe Later",
+      "goLive": "Go Live Now",
+      "launching": "Launching...",
+      "success": "Your Store is Live!",
+      "successMessage": "Congratulations! {storeName} is officially open for business.",
+      "copyUrl": "Copy Store URL",
+      "shareStore": "Share Store",
+      "viewLive": "View Live Store",
+      "closeAndContinue": "Close and continue managing"
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "NEXT-GEN E-COMMERCE",
+      "title": "Build Your Store in",
+      "titleHighlight": "Minutes.",
+      "subtitle": "The all-in-one multi-tenant SaaS platform for modern merchants in Egypt. Accept Instapay, VCash, and grow your brand effortlessly.",
+      "ctaPrimary": "Start Selling Now",
+      "ctaSecondary": "View Demo"
+    },
+    "social": {
+      "trusted": "Trusted by 500+ merchants in Egypt"
+    },
+    "features": {
+      "title": "Everything you need to succeed",
+      "subtitle": "Powerful features designed specifically for the Egyptian market.",
+      "instantSetup": {
+        "title": "Instant Setup",
+        "description": "Sign up and launch your store in under 2 minutes. No technical skills required."
+      },
+      "securePayments": {
+        "title": "Secure Local Payments",
+        "description": "Verify Instapay and VCash receipts with our specialized activation workflow."
+      },
+      "customDomains": {
+        "title": "Custom Domains",
+        "description": "Connect your own .com or .shop domain to build your professional brand."
+      },
+      "exploreAll": "Explore All Features"
+    }
+  },
+  "features": {
+    "hero": {
+      "badge": "POWERFUL FEATURES",
+      "title": "Everything You Need to",
+      "titleHighlight": "Succeed Online",
+      "subtitle": "Discover the complete toolkit designed to help Egyptian merchants build, manage, and grow their online stores effortlessly."
+    },
+    "coreFeatures": {
+      "title": "Core Features",
+      "subtitle": "Essential tools for your e-commerce success",
+      "instantSetup": {
+        "title": "Instant Setup",
+        "description": "Launch your store in under 2 minutes with our intuitive setup wizard. No coding required."
+      },
+      "customDomains": {
+        "title": "Custom Domains",
+        "description": "Connect your own domain or use our free subdomain to establish your brand identity."
+      },
+      "themeBuilder": {
+        "title": "Theme Builder",
+        "description": "Customize your store's look with our drag-and-drop theme builder. No design skills needed."
+      },
+      "mobileOptimized": {
+        "title": "Mobile Optimized",
+        "description": "Your store looks perfect on all devices. Responsive design built-in by default."
+      }
+    },
+    "payments": {
+      "title": "Local Payment Solutions",
+      "subtitle": "Accept payments the Egyptian way",
+      "instapay": {
+        "title": "Instapay Integration",
+        "description": "Seamlessly accept Instapay transfers with automatic verification and order confirmation."
+      },
+      "vcash": {
+        "title": "VCash Support",
+        "description": "Accept Vodafone Cash payments with our specialized receipt verification system."
+      },
+      "cashOnDelivery": {
+        "title": "Cash on Delivery",
+        "description": "Offer traditional COD payment option for customers who prefer it."
+      }
+    },
+    "management": {
+      "title": "Store Management",
+      "subtitle": "Powerful tools to run your business",
+      "inventory": {
+        "title": "Inventory Management",
+        "description": "Track stock levels, get low-stock alerts, and manage variants effortlessly."
+      },
+      "orders": {
+        "title": "Order Processing",
+        "description": "Manage orders from placement to delivery with our streamlined workflow."
+      },
+      "analytics": {
+        "title": "Analytics & Reports",
+        "description": "Get insights into sales, customers, and performance with detailed analytics."
+      },
+      "multiStore": {
+        "title": "Multi-Store Support",
+        "description": "Manage multiple stores from one dashboard. Perfect for growing businesses."
+      }
+    },
+    "cta": {
+      "title": "Ready to Get Started?",
+      "subtitle": "Join hundreds of successful merchants in Egypt today.",
+      "button": "Start Your Free Trial"
+    }
+  },
+  "about": {
+    "hero": {
+      "badge": "OUR STORY",
+      "title": "Empowering the Next Generation of",
+      "titleHighlight": "Egyptian Merchants",
+      "subtitle": "Buildora is a localized multi-tenant SaaS platform built to solve the unique challenges of the Egyptian e-commerce market."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "description": "To provide every entrepreneur in Egypt with the professional tools they need to launch, manage, and scale their business online without any technical complexity.",
+      "goal1": "Democratize E-commerce",
+      "goal2": "Support Local Payments",
+      "goal3": "Foster Growth"
+    },
+    "story": {
+      "title": "How it Started",
+      "p1": "Buildora began with a simple observation: Egyptian merchants were struggling to find e-commerce platforms that truly understood their local needs.",
+      "p2": "The challenges were clear: complex international payment setups, lack of localized support, and tools that didn't account for how business is actually done on the ground in Egypt.",
+      "p3": "We built Buildora (under the QuickStore engine) to bridge this gap. By focusing on local integrations like Instapay and VCash, we've enabled hundreds of merchants to transition from social media selling to professional store ownership."
+    },
+    "values": {
+      "title": "Our Values",
+      "innovation": {
+        "title": "Innovation",
+        "description": "We constanty adapt our technology to meet the evolving needs of the Egyptian market."
+      },
+      "accessibility": {
+        "title": "Accessibility",
+        "description": "We believe professional e-commerce should be accessible to everyone, regardless of technical skill."
+      },
+      "integrity": {
+        "title": "Integrity",
+        "description": "Transparent pricing and honest business practices are at the core of everything we do."
+      }
+    },
+    "cta": {
+      "title": "Join the Buildora Community",
+      "subtitle": "Be part of the revolution of Egyptian e-commerce.",
+      "button": "Start Your Journey"
+    }
+  },
+  "contact": {
+    "hero": {
+      "badge": "GET IN TOUCH",
+      "title": "We're Here to",
+      "titleHighlight": "Help You Succeed",
+      "subtitle": "Have questions? Need support? Want to share feedback? Our team is ready to assist you."
+    },
+    "form": {
+      "title": "Send Us a Message",
+      "subtitle": "Fill out the form below and we'll get back to you within 24 hours.",
+      "name": {
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "email": {
+        "label": "Email Address",
+        "placeholder": "your@email.com"
+      },
+      "subject": {
+        "label": "Subject",
+        "placeholder": "What is this regarding?"
+      },
+      "message": {
+        "label": "Message",
+        "placeholder": "Tell us how we can help you..."
+      },
+      "submit": "Send Message",
+      "sending": "Sending..."
+    },
+    "info": {
+      "title": "Contact Information",
+      "email": {
+        "label": "Email",
+        "value": "support@buildora.com"
+      },
+      "phone": {
+        "label": "Phone",
+        "value": "+20 123 456 7890"
+      },
+      "hours": {
+        "label": "Business Hours",
+        "value": "Sunday - Thursday: 9AM - 6PM"
+      }
+    },
+    "faq": {
+      "title": "Quick Answers",
+      "subtitle": "Common questions answered",
+      "q1": {
+        "question": "How quickly can I get started?",
+        "answer": "You can launch your store in under 2 minutes after signing up."
+      },
+      "q2": {
+        "question": "Do you offer customer support?",
+        "answer": "Yes! We provide email support and live chat during business hours."
+      },
+      "q3": {
+        "question": "Can I use my own domain?",
+        "answer": "Absolutely! You can connect your custom domain or use our free subdomain."
+      }
+    }
+  },
+  "pricing": {
+    "hero": {
+      "badge": "FLEXIBLE PLANS",
+      "title": "Pricing Built for Your",
+      "titleHighlight": "Growth",
+      "subtitle": "No hidden fees. No complicated contracts. Scale your business in Egypt with predictable pricing."
+    },
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "price": "EGP 0",
+        "period": "Forever",
+        "description": "Perfect for testing your idea and small creators starting out.",
+        "button": "Start for Free",
+        "features": [
+          "1 Online Store",
+          "Up to 10 Products",
+          "Community Support",
+          "Buildora Subdomain (.buildora.com)",
+          "Standard Themes"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "price": "EGP 499",
+        "period": "Per month",
+        "description": "Best for growing businesses needing custom branding and advanced tools.",
+        "button": "Get Started",
+        "popular": "MOST POPULAR",
+        "features": [
+          "Unlimited Stores",
+          "Unlimited Products",
+          "Priority Email Support",
+          "Custom Domain Support",
+          "Premium Themes & Builder",
+          "Instapay & VCash Integration",
+          "Advanced Analytics"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Custom",
+        "period": "Tailored",
+        "description": "For high-volume merchants needing dedicated resources and custom solutions.",
+        "button": "Talk to Sales",
+        "features": [
+          "Dedicated Account Manager",
+          "Custom Integration Support",
+          "SLA & Priority Chat Support",
+          "Advanced Security Features",
+          "Custom Feature Development",
+          "Highest Performance Servers"
+        ]
+      }
+    },
+    "faq": {
+      "title": "Pricing FAQ",
+      "subtitle": "Common questions about our billing",
+      "q1": {
+        "question": "Can I upgrade or downgrade anytime?",
+        "answer": "Yes, you can change your plan at any time from your dashboard. Changes apply immediately."
+      },
+      "q2": {
+        "question": "Are there transaction fees?",
+        "answer": "Buildora does not charge transaction fees. However, third-party payment providers might have their own fees."
+      },
+      "q3": {
+        "question": "Do I need a credit card to start?",
+        "answer": "No, you can start with the Starter plan without any credit card information."
+      }
+    },
+    "cta": {
+      "title": "Start Your Business Today",
+      "subtitle": "Join many Egyptian brands scaling with Buildora.",
+      "button": "Create Your Account"
+    }
+  },
+  "support": {
+    "hero": {
+      "badge": "HELP CENTER",
+      "title": "How Can We",
+      "titleHighlight": "Assist You?",
+      "subtitle": "Find answers to your questions, explore our documentation, or get in touch with our dedicated support team."
+    },
+    "channels": {
+      "title": "Support Channels",
+      "email": {
+        "title": "Email Support",
+        "description": "Send us an email and we'll reply within 24 hours.",
+        "button": "Email Us"
+      },
+      "chat": {
+        "title": "Live Chat",
+        "description": "Chat with our team during business hours.",
+        "button": "Start Chat"
+      },
+      "phone": {
+        "title": "Phone Support",
+        "description": "Available for Professional & Enterprise plans.",
+        "button": "Call Support"
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "q1": {
+        "question": "How do I verify Instapay or VCash payments?",
+        "answer": "Go to your Orders dashboard, click the pending order, and check the attached receipt. Once verified, click 'Confirm Payment' to activate the order."
+      },
+      "q2": {
+        "question": "Can I connect my .eg or .com.eg domain?",
+        "answer": "Yes, we support all domain extensions. Consult our domain setup guide for step-by-step instructions."
+      },
+      "q3": {
+        "question": "What happens if I reach my product limit?",
+        "answer": "On the Starter plan, you'll need to upgrade to the Professional plan to add more than 10 products."
+      }
+    },
+    "contact": {
+      "title": "Still Need Help?",
+      "subtitle": "If you couldn't find what you were looking for, don't hesitate to reach out.",
+      "button": "Contact Our Team"
+    }
+  },
+  "merchant": {
+    "plans": {
+      "badge": "Premium SaaS Tiers",
+      "title": "Scale with Confidence",
+      "subtitle": "Select a plan that fits your volume. Transaction fees apply per order depending on your plan.",
+      "currency": "EGP/mo",
+      "bestValue": "Best Value",
+      "currentTier": "Current Tier",
+      "switchToFree": "Switch to Free",
+      "upgradeNow": "Upgrade Now",
+      "insufficientBalance": "Insufficient wallet balance",
+      "enterpriseTitle": "Enterprise Solution?",
+      "enterpriseSubtitle": "For multiseller networks with 50+ stores, we offer custom infrastructure and dedicated account managers.",
+      "talkToSales": "Talk to sales",
+      "managedStores": "{count} Managed Store(s)",
+      "unlimitedManagedStores": "Unlimited Managed Stores",
+      "globalProducts": "{count} Global Products",
+      "unlimitedGlobalProducts": "Unlimited Global Products",
+      "secureWallet": "Secure Wallet Integration",
+      "customDomain": "Custom Domain Support",
+      "dropshipping": "Dropshipping Ecosystem",
+      "orderFee": "{amount} EGP fee per order"
+    },
+    "dashboard": {
+      "welcome": "Welcome back, {name}!",
+      "subtitle": "Manage your e-commerce empire from a single dashboard.",
+      "billingAndPlans": "Billing & Plans",
+      "createNewStore": "Create New Store",
+      "logout": "Logout",
+      "logoutConfirm": "Are you sure you want to logout?",
+      "activeStores": "Active Stores",
+      "myStores": "My Online Stores",
+      "searchPlaceholder": "Search by store name..."
+    },
+    "storeDashboard": {
+      "loading": "Loading amazing tools for {name}...",
+      "storeNotFound": "Store not found.",
+      "launchStore": "Launch Store",
+      "viewLive": "View Live",
+      "settings": "Settings",
+      "statusDraftTitle": "Your store is currently in draft mode",
+      "statusDraftDescription": "Complete the setup checklist below to reveal your store to the world. Once published, your customers can browse products and checkout.",
+      "stats": {
+        "revenue": "Revenue",
+        "confirmedRevenue": "Confirmed (Paid/Delivered)",
+        "grossRevenue": "Gross Total",
+        "orders": "Total Orders",
+        "activeProducts": "Active Products",
+        "customers": "Customers"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "addProductsTitle": "Add Products",
+        "addProductsDesc": "List items for sale",
+        "createCouponTitle": "Create Coupon",
+        "createCouponDesc": "Run a sales promotion",
+        "legalPoliciesTitle": "Legal Policies",
+        "legalPoliciesDesc": "Terms, Privacy & Refunds"
+      },
+      "details": {
+        "title": "Store Details",
+        "plan": "Plan",
+        "currency": "Currency",
+        "subdomain": "Subdomain",
+        "editBtn": "Edit Store Settings"
+      },
+      "help": {
+        "title": "Need Help?",
+        "description": "Check out our tutorial on how to grow your sales or contact our support team.",
+        "guideBtn": "View Guide →"
+      },
+      "nav": {
+        "mainMenu": "Main Menu",
+        "storeSettings": "Store Settings",
+        "allDashboards": "All Dashboards",
+        "createNewStore": "Create New Store",
+        "storeManager": "Store Manager",
+        "logout": "Logout",
+        "logoutConfirm": "Are you sure you want to logout?",
+        "items": {
+          "dashboard": "Dashboard",
+          "products": "Products",
+          "orders": "Orders",
+          "customers": "Customers",
+          "marketing": "Marketing",
+          "analytics": "Analytics",
+          "general": "General",
+          "appearance": "Appearance",
+          "payments": "Payments",
+          "shipping": "Shipping",
+          "domain": "Domain",
+          "policies": "Policies"
+        }
+      },
+      "checklist": {
+        "title": "Store Setup Progress",
+        "setupBtn": "Setup",
+        "steps": {
+          "storeInfo": "Store Information",
+          "branding": "Brand Identity",
+          "products": "Add Products ({current}/{target})",
+          "payment": "Payment Setup",
+          "shipping": "Shipping Zones",
+          "policies": "Legal Policies"
+        }
+      },
+      "publishModal": {
+        "title": "Launch {name}",
+        "description": "Ready to take your business live? Once published, customers can visit your store and place orders.",
+        "notReady": "Wait! Your store isn't quite ready yet:",
+        "ready": "All systems go! Your store meets all requirements for launch.",
+        "previewUrl": "Preview URL",
+        "maybeLater": "Maybe Later",
+        "goLive": "Go Live Now",
+        "launching": "Launching...",
+        "successTitle": "Your Store is Live!",
+        "successDesc": "Congratulations! {name} is officially open for business.",
+        "copyUrl": "Copy Store URL",
+        "shareStore": "Share Store",
+        "viewLiveBtn": "View Live Store",
+        "closeBtn": "Close and continue managing",
+        "copied": "Link copied to clipboard!",
+        "shareText": "Check out my new store on Buildora!"
+      }
+    },
+    "billing": {
+      "title": "Billing & Wallet",
+      "subtitle": "Single source of truth for your financial activity.",
+      "upgradePlan": "Upgrade Plan",
+      "resolveNow": "Resolve Now",
+      "availableBalance": "Available Balance",
+      "recharge": "Recharge",
+      "rechargePlaceholder": "Amount",
+      "rechargeNote": "Instant recharge via Paymob Secure Gateway",
+      "planTitle": "{name} Plan",
+      "activeStatus": "Active Status",
+      "storesCapacity": "Stores Capacity",
+      "productsActive": "Products Active",
+      "timeline": "Timeline",
+      "milestones": "Subscription milestones",
+      "nextRenewal": "Next Renewal",
+      "transactionHistory": "Transaction History",
+      "features": {
+        "dashboard": "Merchant Dashboard"
+      },
+      "ledger": {
+        "date": "Date",
+        "type": "Type",
+        "reason": "Reason",
+        "amount": "Amount",
+        "receipt": "Receipt",
+        "noActivity": "No financial activity recorded yet.",
+        "credit": "Credit",
+        "debit": "Debit"
+      },
+      "blocking": {
+        "expiredTitle": "Subscription Blocked",
+        "expiredSubtitle": "Your subscription is expired or past due. Please renew to keep your store active.",
+        "lowBalanceTitle": "Low Wallet Balance",
+        "lowBalanceSubtitle": "Your balance is too low to maintain Free plan visibility. Minimum 250 EGP required."
+      },
+      "reasons": {
+        "recharge": "Wallet Recharge",
+        "subscription_payment": "Subscription Payment",
+        "order_fee": "Order Transaction Fee",
+        "refund": "Refund",
+        "manual_adjustment": "Manual Adjustment",
+        "gift": "Welcome Gift"
+      }
+    },
+    "settings": {
+      "title": "Account Settings",
+      "tabs": {
+        "billing": "Billing Info",
+        "subscription": "Subscription"
+      },
+      "billing": {
+        "title": "Billing Information",
+        "description": "Address and Tax ID used for invoices.",
+        "form": {
+          "fullName": "Full Name / Company Name",
+          "billingEmail": "Billing Email",
+          "addressLine1": "Address Line 1",
+          "city": "City",
+          "state": "State / Province",
+          "postalCode": "Postal Code",
+          "taxId": "Tax ID (Optional)",
+          "save": "Save Changes",
+          "saving": "Saving..."
+        },
+        "messages": {
+          "success": "Billing profile updated",
+          "error": "Failed to update profile",
+          "loadError": "Failed to load settings"
+        }
+      },
+      "subscription": {
+        "title": "Current Subscription",
+        "description": "Manage your plan and payment methods.",
+        "renewsOn": "Renews on {date}",
+        "expiresOn": "Expires on {date}",
+        "manage": "Manage Plan",
+        "status": "Status",
+        "noActive": "You have no active subscription.",
+        "subscribeNow": "Subscribe Now"
+      }
+    },
+    "products": {
+      "title": "Products",
+      "subtitle": "Manage your inventory, prices and variants.",
+      "addProduct": "Add Product",
+      "searchPlaceholder": "Search products by name or SKU...",
+      "allStatus": "All Status",
+      "status": {
+        "active": "Active",
+        "draft": "Draft",
+        "archived": "Archived"
+      },
+      "refresh": "Refresh",
+      "loading": "Fetching your catalog...",
+      "empty": {
+        "title": "No products found",
+        "filterResults": "No products match your current filters. Try clearing them.",
+        "getStarted": "Start by adding your first product to your store catalog.",
+        "createBtn": "Create Product"
+      },
+      "table": {
+        "product": "Product",
+        "status": "Status",
+        "inventory": "Inventory",
+        "price": "Price",
+        "actions": "Actions",
+        "inStock": "{count} in stock",
+        "lowStock": "Low Stock"
+      },
+      "pagination": {
+        "showing": "Showing {start} to {end} of {total} products",
+        "page": "Page {current} of {total}"
+      },
+      "deleteConfirm": "Are you sure you want to delete this product?",
+      "deleteSuccess": "Product deleted successfully",
+      "deleteError": "Failed to delete product",
+      "loadError": "Failed to load products",
+      "new": {
+        "title": "Add New Product",
+        "subtitle": "List a new item in your store catalog.",
+        "back": "Back to Products"
+      },
+      "form": {
+        "general": "General Information",
+        "name": "Product Name",
+        "namePlaceholder": "Blue Denim Jacket",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe your product...",
+        "media": "Media",
+        "upload": "Click to Upload",
+        "uploading": "Uploading images...",
+        "uploadSuccess": "Images uploaded",
+        "uploadError": "Failed to upload images",
+        "variants": {
+          "title": "Variants",
+          "addOption": "Add Option",
+          "empty": "No variants for this product yet. Add options like Size or Color.",
+          "name": "Option Name",
+          "namePlaceholder": "e.g. Color",
+          "values": "Options Values (comma separated)",
+          "valuesPlaceholder": "e.g. Red, Blue, Green"
+        },
+        "pricing": {
+          "title": "Pricing & Inventory",
+          "price": "Price (EGP)",
+          "compareAt": "Compare at Price",
+          "cost": "Cost per Item (for profit calc)",
+          "sku": "SKU (Stock Keeping Unit)",
+          "skuPlaceholder": "e.g. SHIRT-BLU-S",
+          "barcode": "Barcode (ISBN, UPC, GTIN)",
+          "trackInventory": "Track Inventory Quantity",
+          "available": "Available Quantity"
+        },
+        "organization": {
+          "title": "Organization",
+          "category": "Category",
+          "categoryPlaceholder": "Clothing",
+          "status": "Product Status"
+        },
+        "save": "Publish Product",
+        "update": "Update Product",
+        "saving": "Saving...",
+        "success": "Product created",
+        "successUpdate": "Product updated",
+        "error": "Failed to save product"
+      }
+    },
+    "orders": {
+      "title": "Orders",
+      "subtitle": "Track and manage your customer orders.",
+      "export": "Export",
+      "searchPlaceholder": "Search by order # or customer...",
+      "allStatuses": "All Statuses",
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "shipped": "Shipped",
+        "delivered": "Delivered",
+        "cancelled": "Cancelled"
+      },
+      "noOrdersFound": "No orders found",
+      "noOrdersSubtitle": "When a customer places an order, it will appear here.",
+      "table": {
+        "order": "Order",
+        "date": "Date",
+        "customer": "Customer",
+        "total": "Total",
+        "status": "Status",
+        "action": "Action",
+        "view": "View"
+      },
+      "pagination": "Page {page} of {pages}",
+      "loadError": "Failed to load orders"
+    },
+    "orderDetails": {
+      "back": "Back to Orders",
+      "notFound": "Order not found",
+      "placedOn": "Placed on {date}",
+      "updateStatus": "Update Status",
+      "updateSuccess": "Order status updated to {status}",
+      "updateError": "Failed to update status",
+      "loadError": "Failed to load order details",
+      "orderItems": "Order Items",
+      "qty": "Qty",
+      "summary": "Financial Summary",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "tax": "Tax",
+      "total": "Total",
+      "customerInfo": "Customer Info",
+      "customerId": "ID",
+      "shippingAddress": "Shipping Address",
+      "payment": "Payment",
+      "paymentMethod": "Method",
+      "paymentStatus": "Status"
+    },
+    "customers": {
+      "title": "Customers",
+      "subtitle": "View and manage your store customers.",
+      "addCustomer": "Add Customer",
+      "searchPlaceholder": "Search customers by name or email...",
+      "filters": "Filters",
+      "noCustomersFound": "No customers found",
+      "noCustomersSubtitle": "People who order from your store will be listed here.",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "orders": "Orders",
+        "joined": "Joined",
+        "actions": "Actions"
+      },
+      "loadError": "Failed to load customers"
+    },
+    "marketing": {
+      "coupons": {
+        "title": "Discount Coupons",
+        "subtitle": "Create and manage discount codes for your customers.",
+        "create": "Create Coupon",
+        "edit": "Edit Coupon",
+        "update": "Update Coupon",
+        "delete": "Delete Coupon",
+        "code": "Coupon Code",
+        "type": "Discount Type",
+        "value": "Value",
+        "maxUsage": "Max Usage",
+        "minOrderAmount": "Min Order Amount (EGP)",
+        "expiresAt": "Expiry Date",
+        "status": "Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "percentage": "Percentage (%)",
+        "fixed": "Fixed Amount (EGP)",
+        "free_shipping": "Free Shipping",
+        "usage": "Usage",
+        "unlimited": "Unlimited",
+        "minAmountRequirement": "Min. Order: EGP {amount}",
+        "noCoupons": "No coupons found. Create your first one!",
+        "successCreate": "Coupon created successfully!",
+        "successUpdate": "Coupon updated successfully!",
+        "successDelete": "Coupon deleted successfully!",
+        "confirmDelete": "Are you sure you want to delete this coupon?",
+        "cancel": "Cancel",
+        "syncing": "Syncing Coupons...",
+        "modalSubtitle": "Set up your discount code parameters below.",
+        "statusSubtitle": "Enable or disable this coupon"
+      },
+      "pixels": {
+        "title": "Tracking Pixels",
+        "subtitle": "Track conversions and optimize your advertising campaigns.",
+        "save": "Save Changes",
+        "saving": "Saving...",
+        "success": "Pixels updated successfully!",
+        "error": "Failed to update pixels",
+        "facebook": "Facebook Pixel ID",
+        "google": "Google Analytics ID",
+        "tiktok": "TikTok Pixel ID",
+        "snapchat": "Snapchat Pixel ID",
+        "facebookPlaceholder": "e.g. 1234567890",
+        "googlePlaceholder": "e.g. G-XXXXXXX",
+        "tiktokPlaceholder": "e.g. CXXXXXXXXXXXXXXXXXXX",
+        "snapPlaceholder": "e.g. XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+        "facebookDesc": "Track events like PageView, AddToCart, and Purchase.",
+        "googleDesc": "Analyze your website traffic and user behavior.",
+        "tiktokDesc": "Track conversions for your TikTok ads.",
+        "snapchatDesc": "Measure the impact of your Snapchat campaigns.",
+        "back": "Back",
+        "loadError": "Failed to load marketing settings"
+      }
+    }
+  },
+  "store": {
+    "product": {
+      "selectOption": "Please select: {options}",
+      "addToCart": "Add to Cart",
+      "addedToCart": "{quantity} x {name} added to cart!",
+      "outOfStock": "Out of Stock",
+      "onlyLeft": "Only {count} left",
+      "noDescription": "No description available for this product.",
+      "genuineProduct": "Genuine Product",
+      "fastDelivery": "Fast Delivery",
+      "easyReturns": "Easy Returns",
+      "relatedProducts": "Related Products",
+      "viewDetails": "View Details"
+    },
+    "home": {
+      "welcome": "Welcome to",
+      "startShopping": "Start Shopping",
+      "ourCollection": "Shop Our Collection",
+      "emptyCatalog": "Our catalog is currently being updated.",
+      "newsletterTitle": "Don't miss our\nexclusive updates.",
+      "newsletterSubtitle": "Be the first to know about new arrivals, sales, and special events.",
+      "emailPlaceholder": "Your email address",
+      "subscribe": "Subscribe",
+      "all": "All"
+    },
+    "checkout": {
+      "empty": "Your cart is empty",
+      "emptySubtitle": "Look like you haven't added anything to your cart yet.",
+      "startShopping": "Start Shopping",
+      "steps": {
+        "cart": "Cart",
+        "info": "Info",
+        "payment": "Payment"
+      },
+      "reviewTitle": "Review Your Cart",
+      "shippingTitle": "Shipping Information",
+      "paymentTitle": "Payment Method",
+      "orderSummary": "Order Summary",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "total": "Total",
+      "continue": "Continue",
+      "placeOrder": "Place Order",
+      "processing": "Processing...",
+      "goBack": "Go Back",
+      "couponPlaceholder": "Coupon Code",
+      "applyCoupon": "Apply",
+      "applied": "Applied",
+      "discount": "Discount",
+      "form": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "address": "Full Address",
+        "city": "City",
+        "zipCode": "Zip Code (Optional)"
+      },
+      "payment": {
+        "cod": "Cash on Delivery",
+        "codSubtitle": "Pay when you receive",
+        "card": "Credit/Debit Card (Coming Soon)",
+        "cardSubtitle": "Powered by Stripe"
+      },
+      "messages": {
+        "success": "Order placed successfully!",
+        "error": "Failed to place order. Please try again.",
+        "couponApplied": "Coupon applied!",
+        "couponRemoved": "Coupon removed",
+        "minAmount": "This coupon requires a minimum order of EGP {amount}"
+      }
+    },
+    "storeContact": {
+      "title": "Get in Touch",
+      "subtitle": "Have a question or need assistance? Our team is here to help you.",
+      "emailUs": "Email Us",
+      "callUs": "Call Us",
+      "whatsapp": "WhatsApp",
+      "instagram": "Instagram",
+      "businessHours": "Business Hours",
+      "monFri": "Monday - Friday",
+      "sat": "Saturday",
+      "sun": "Sunday",
+      "closed": "Closed",
+      "formTitle": "Send a Message",
+      "formSubtitle": "We'll respond to your inquiry within 24 hours.",
+      "labels": {
+        "name": "Your Name",
+        "email": "Email Address",
+        "subject": "Subject",
+        "message": "Message"
+      },
+      "placeholders": {
+        "name": "E.g. John Doe",
+        "email": "E.g. john@example.com",
+        "subject": "How can we help?",
+        "message": "Write your message here..."
+      },
+      "send": "Send Message",
+      "success": "Message sent! We'll get back to you soon."
+    },
+    "trackOrder": {
+      "title": "Track Your Order",
+      "subtitle": "Enter your order number to check the current status and estimated delivery time.",
+      "placeholder": "Order Number (e.g. QS-260120-8230)",
+      "trackNow": "Track Now",
+      "error": "Order not found. Please check the order number and try again.",
+      "orderTitle": "Order {orderNumber}",
+      "placedOn": "Placed on {date}",
+      "totalAmount": "Total Amount",
+      "progress": "Order Progress",
+      "contents": "Order Contents",
+      "details": "Delivery Details",
+      "address": "Shipping Address",
+      "status": "Current Status",
+      "copySuccess": "Order Number copied!",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "total": "Total",
+      "statusReviewed": "Your order is being reviewed.",
+      "statusMsg": "Your order is being {status}."
+    },
+    "layout": {
+      "shop": "Shop",
+      "trackOrder": "Track Order",
+      "contact": "Contact",
+      "shippingPolicy": "Shipping Policy",
+      "refundPolicy": "Refund Policy",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "allRightsReserved": "All rights reserved.",
+      "poweredBy": "POWERED BY BUILDORA"
+    }
+  }
+}

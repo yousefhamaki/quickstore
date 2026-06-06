@@ -337,6 +337,11 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
             { new: true }
         );
 
+        if (updatedStore?.domain?.subdomain) {
+            const { redisClient } = await import('../config/redis');
+            await redisClient.del(`store_customization:${updatedStore.domain.subdomain}`);
+        }
+
         res.json(updatedStore);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });

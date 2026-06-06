@@ -3,6 +3,7 @@ import Product from '../models/Product';
 import Store from '../models/Store';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { redisClient } from '../config/redis';
 
 // @desc    Get all products for a store with pagination and filters
 // @route   GET /api/products?page=1&limit=20&status=active&category=Clothing&search=shirt&stockLevel=low
@@ -56,14 +57,28 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
             ];
         }
 
+        // Redis Caching Logic
+        const cacheKey = `products:store:${store._id}:page:${page}:limit:${limit}:filter:${JSON.stringify(filter)}`;
+        let cachedData = null;
+        try {
+            cachedData = await redisClient.get(cacheKey);
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] GET failed for ${cacheKey}`, redisErr);
+        }
+        
+        if (cachedData) {
+            return res.json(JSON.parse(cachedData));
+        }
+
         const products = await Product.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
         const total = await Product.countDocuments(filter);
-
-        res.json({
+        
+        const responseData = {
             products,
             pagination: {
                 page,
@@ -71,7 +86,16 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
                 total,
                 pages: Math.ceil(total / limit)
             }
-        });
+        };
+
+        // Cache the parsed response for 30 minutes
+        try {
+            await redisClient.setex(cacheKey, 1800, JSON.stringify(responseData));
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] SET failed for ${cacheKey}`, redisErr);
+        }
+
+        res.json(responseData);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
     }
@@ -142,6 +166,9 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
             isActive: isActive !== undefined ? isActive : true,
         });
 
+        // Invalidate store product caches due to new insertion
+        await clearStoreProductCaches(store._id.toString());
+
         res.status(201).json(product);
     } catch (error) {
         console.error('Create Product Error:', error);
@@ -167,8 +194,16 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
         const updatedProduct = await Product.findByIdAndUpdate(
             req.params.id,
             { ...req.body, slug: undefined }, // Prevent slug update for now to avoid URL breaking, or handle carefully
-            { new: true }
+            { new: true, lean: true } // Inject lean on return and new payload
         );
+
+        // Invalidate specific product and store-level list caches
+        try {
+            await redisClient.del(`product:${req.params.id}`);
+        } catch (err) {
+            console.warn(`[Redis Fallback] DEL failed`, err);
+        }
+        await clearStoreProductCaches(store._id.toString());
 
         res.json(updatedProduct);
     } catch (error) {
@@ -192,6 +227,15 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
         }
 
         await product.deleteOne();
+
+        // Invalidate specific product and store-level list caches
+        try {
+            await redisClient.del(`product:${req.params.id}`);
+        } catch (err) {
+            console.warn(`[Redis Fallback] DEL failed`, err);
+        }
+        await clearStoreProductCaches(store._id.toString());
+
         res.json({ message: 'Product removed' });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
@@ -203,10 +247,31 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
 // @access  Public
 export const getProductById = async (req: Request, res: Response) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const cacheKey = `product:${req.params.id}`;
+        let cachedProduct = null;
+        try {
+            cachedProduct = await redisClient.get(cacheKey);
+        } catch (err) {
+            console.warn(`[Redis Fallback] GET failed for ${cacheKey}`);
+        }
+
+        if (cachedProduct) {
+            return res.json(JSON.parse(cachedProduct));
+        }
+
+        const product = await Product.findById(req.params.id).lean(); // Bypass hydration
+        
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
+
+        // Cache product individually for 1 hour
+        try {
+            await redisClient.setex(cacheKey, 3600, JSON.stringify(product));
+        } catch (err) {
+            console.warn(`[Redis Fallback] SET failed for ${cacheKey}`);
+        }
+        
         res.json(product);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
@@ -313,8 +378,36 @@ export const bulkUpdateStatus = async (req: AuthRequest, res: Response) => {
             { $set: { status } }
         );
 
+        // Invalidate individual modified products and the master store cache
+        try {
+            const pipeline = redisClient.pipeline();
+            productIds.forEach((id: string) => pipeline.del(`product:${id}`));
+            productIds.forEach((id: string) => pipeline.unlink(`product:${id}`));
+            await pipeline.exec();
+        } catch (err) {
+            console.warn(`[Redis Fallback] Pipeline EXEC failed`, err);
+        }
+        await clearStoreProductCaches(store._id.toString());
+
         res.json({ message: `${productIds.length} products updated successfully` });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
     }
 };
+
+// Internal Utility to obliterate store-level product list caches upon mutation
+export async function clearStoreProductCaches(storeId: string) {
+    try {
+        // Find all cached cursor keys associated strictly with this store pagination
+        let cursor = '0';
+        do {
+            const [nextCursor, keys] = await redisClient.scan(cursor, 'MATCH', `products:store:${storeId}:*`, 'COUNT', 100);
+            cursor = nextCursor;
+            if (keys.length > 0) {
+                await redisClient.unlink(...keys); // Using non-blocking UNLINK
+            }
+        } while (cursor !== '0');
+    } catch (err) {
+        console.error('Failed to invalidate store product caches:', err);
+    }
+}

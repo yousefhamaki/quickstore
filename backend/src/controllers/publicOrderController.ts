@@ -6,6 +6,10 @@ import Coupon from '../models/Coupon';
 import mongoose from 'mongoose';
 import Customer from '../models/Customer';
 import { processOrderFee } from './billingController';
+import InventoryLog from '../models/InventoryLog';
+import { PaymentFactory } from '../services/payment/PaymentFactory';
+import { clearStoreProductCaches } from './productController';
+import { redisClient } from '../config/redis';
 
 // @desc    Create new order from storefront
 // @route   POST /api/public/orders
@@ -77,17 +81,23 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 return res.status(400).json({ success: false, message: `Product ${item.name} is no longer available.` });
             }
 
-            // Numeric safety check/fix
-            if (typeof product.inventory?.quantity !== 'number') {
-                await Product.collection.updateOne(
-                    { _id: product._id },
-                    { $set: { "inventory.quantity": 0 } }
-                );
-            }
-
             // Stock check (if tracking enabled)
-            if (product.trackInventory && (product.inventory.quantity ?? 0) < item.quantity) {
-                console.warn(`Stock low for ${product.name}: available ${product.inventory.quantity}, requested ${item.quantity}`);
+            if (product.trackInventory) {
+                if (item.variantId) {
+                    const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString());
+                    if (!variant || variant.isDeleted) {
+                        return res.status(400).json({ success: false, message: `Selected variant for ${product.name} no longer exists.` });
+                    }
+                    const available = (variant.inventory || 0) - (variant.reserved || 0);
+                    if (available < item.quantity) {
+                        return res.status(400).json({ success: false, message: `Insufficient stock for ${product.name} (${variant.name}). Only ${available} left.` });
+                    }
+                } else {
+                    const available = (product.inventory.quantity || 0) - (product.inventory.reserved || 0);
+                    if (available < item.quantity) {
+                        return res.status(400).json({ success: false, message: `Insufficient stock for ${product.name}. Only ${available} left.` });
+                    }
+                }
             }
         }
 
@@ -221,14 +231,91 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 $push: { orders: createdOrder._id }
             }, { session: session || undefined });
 
-            // Optional: Decrease inventory with safety checks
+            // Atomic Stock Reservation & Movement Logging
             for (const item of items) {
+                if (item.trackInventory === false) continue;
+
+                let updatedProduct;
+                if (item.variantId) {
+                    // Try to reserve variant-level stock (Atomically move from inventory to reserved)
+                    // We check inventory - reserved >= quantity to be safe even if a previous check passed
+                    updatedProduct = await Product.findOneAndUpdate(
+                        {
+                            _id: item._id,
+                            "variants._id": item.variantId,
+                            "variants.isDeleted": false
+                        },
+                        {
+                            $inc: {
+                                "variants.$.reserved": Number(item.quantity),
+                                "inventory.reserved": Number(item.quantity) // Cache at product level too
+                            }
+                        },
+                        { session: session || undefined, new: true }
+                    );
+                } else {
+                    // Reserve global-level stock
+                    updatedProduct = await Product.findOneAndUpdate(
+                        { _id: item._id },
+                        {
+                            $inc: { "inventory.reserved": Number(item.quantity) }
+                        },
+                        { session: session || undefined, new: true }
+                    );
+                }
+
+                if (updatedProduct) {
+                    const variant = item.variantId
+                        ? updatedProduct.variants.find((v: any) => v._id.toString() === item.variantId.toString())
+                        : null;
+
+                    await InventoryLog.create([{
+                        storeId: oidStoreId,
+                        productId: item._id,
+                        variantId: item.variantId || undefined,
+                        orderId: createdOrder._id,
+                        type: 'RESERVATION',
+                        amount: Number(item.quantity),
+                        previousBalance: item.variantId
+                            ? (variant?.inventory || 0) - (variant?.reserved || 0) + Number(item.quantity)
+                            : (updatedProduct.inventory.quantity || 0) - (updatedProduct.inventory.reserved || 0) + Number(item.quantity),
+                        newBalance: item.variantId
+                            ? (variant?.inventory || 0) - (variant?.reserved || 0)
+                            : (updatedProduct.inventory.quantity || 0) - (updatedProduct.inventory.reserved || 0),
+                        reason: `Order #${orderNumber} reservation`
+                    }], { session: session || undefined });
+
+                    // -- CACHE INVALIDATION (Checkout Sync) --
+                    
+                    // Always wipe individual product cache to reflect exact remaining units on detail page
+                    try {
+                        await redisClient.unlink(`product:${item._id}`);
+                    } catch (e) {
+                        console.warn('Checkout cache wipe failed for individual product:', e);
+                    }
+
+                    // CACHE THRASHING PROTECTION: Only wipe the store list cache if stock drops to exactly 0 (Item Sold Out)
+                    const calculatedNewBalance = item.variantId
+                            ? (variant?.inventory || 0) - (variant?.reserved || 0)
+                            : (updatedProduct.inventory.quantity || 0) - (updatedProduct.inventory.reserved || 0);
+                            
+                    if (calculatedNewBalance === 0) {
+                        await clearStoreProductCaches(storeId);
+                    }
+                }
+            }
+
+            let paymentUrl = null;
+            if (paymentMethod !== 'COD' && store.settings?.payment?.provider && store.settings.payment.provider !== 'manual') {
                 try {
-                    await Product.findByIdAndUpdate(item._id, {
-                        $inc: { "inventory.quantity": -Number(item.quantity) }
-                    }, { session: session || undefined });
-                } catch (invError) {
-                    console.error(`Failed to update inventory for product ${item._id}:`, invError);
+                    const paymentProvider = PaymentFactory.getProvider(store);
+                    const paymentIntent = await paymentProvider.initializePayment(createdOrder, store);
+                    
+                    paymentUrl = paymentIntent.paymentUrl;
+                    createdOrder.transactionId = paymentIntent.transactionId;
+                    await createdOrder.save({ session: session || undefined });
+                } catch (paymentErr) {
+                    console.error('Failed to initialize Strategy payment gateway:', paymentErr);
                 }
             }
 
@@ -237,7 +324,8 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             res.status(201).json({
                 success: true,
                 orderNumber: createdOrder.orderNumber,
-                orderId: createdOrder._id
+                orderId: createdOrder._id,
+                paymentUrl
             });
         } catch (txnError: any) {
             if (session) await session.abortTransaction();

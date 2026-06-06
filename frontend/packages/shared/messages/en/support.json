@@ -1,0 +1,46 @@
+{
+    "hero": {
+        "badge": "HELP CENTER",
+        "title": "How Can We",
+        "titleHighlight": "Assist You?",
+        "subtitle": "Find answers to your questions, explore our documentation, or get in touch with our dedicated support team."
+    },
+    "channels": {
+        "title": "Support Channels",
+        "email": {
+            "title": "Email Support",
+            "description": "Send us an email and we'll reply within 24 hours.",
+            "button": "Email Us"
+        },
+        "chat": {
+            "title": "Live Chat",
+            "description": "Chat with our team during business hours.",
+            "button": "Start Chat"
+        },
+        "phone": {
+            "title": "Phone Support",
+            "description": "Available for Professional & Enterprise plans.",
+            "button": "Call Support"
+        }
+    },
+    "faq": {
+        "title": "Frequently Asked Questions",
+        "q1": {
+            "question": "How do I verify Instapay or VCash payments?",
+            "answer": "Go to your Orders dashboard, click the pending order, and check the attached receipt. Once verified, click 'Confirm Payment' to activate the order."
+        },
+        "q2": {
+            "question": "Can I connect my .eg or .com.eg domain?",
+            "answer": "Yes, we support all domain extensions. Consult our domain setup guide for step-by-step instructions."
+        },
+        "q3": {
+            "question": "What happens if I reach my product limit?",
+            "answer": "On the Starter plan, you'll need to upgrade to the Professional plan to add more than 10 products."
+        }
+    },
+    "contact": {
+        "title": "Still Need Help?",
+        "subtitle": "If you couldn't find what you were looking for, don't hesitate to reach out.",
+        "button": "Contact Our Team"
+    }
+}

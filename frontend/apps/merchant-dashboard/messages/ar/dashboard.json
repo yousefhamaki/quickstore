@@ -1,0 +1,101 @@
+{
+    "sidebar": {
+        "merchantPanel": "لوحة التاجر",
+        "dashboard": "لوحة التحكم",
+        "myStores": "متاجري",
+        "themeBuilder": "منشئ القالب",
+        "billing": "الفواتير والمحفظة",
+        "upgradePlans": "ترقية الخطة",
+        "settings": "الإعدادات",
+        "logout": "تسجيل الخروج",
+        "logoutConfirm": "هل أنت متأكد من تسجيل الخروج؟"
+    },
+    "stores": {
+        "title": "متاجري",
+        "createNew": "إنشاء متجر جديد",
+        "allStores": "جميع المتاجر",
+        "manage": "إدارة",
+        "visitSite": "زيارة الموقع",
+        "finishSetup": "إكمال الإعداد",
+        "pauseStore": "إيقاف المتجر مؤقتاً",
+        "resumeStore": "استئناف المتجر",
+        "products": "المنتجات",
+        "orders": "الطلبات",
+        "revenue": "الإيرادات"
+    },
+    "stats": {
+        "totalRevenue": "إجمالي الإيرادات",
+        "totalOrders": "إجمالي الطلبات",
+        "activeProducts": "المنتجات النشطة",
+        "customers": "العملاء",
+        "totalSales": "إجمالي المبيعات",
+        "visitors": "الزوار",
+        "conversion": "معدل التحويل",
+        "completed": "مكتمل",
+        "waiting": "قيد الانتظار"
+    },
+    "quickActions": {
+        "title": "إجراءات سريعة",
+        "addProducts": "إضافة منتجات",
+        "listItems": "عرض المنتجات للبيع",
+        "createCoupon": "إنشاء كوبون",
+        "runPromotion": "تشغيل عرض ترويجي",
+        "legalPolicies": "السياسات القانونية",
+        "termsPrivacy": "الشروط والخصوصية والاسترجاع"
+    },
+    "storeDetails": {
+        "title": "تفاصيل المتجر",
+        "plan": "الخطة",
+        "currency": "العملة",
+        "subdomain": "النطاق الفرعي",
+        "editSettings": "تعديل إعدادات المتجر"
+    },
+    "onboarding": {
+        "title": "قائمة الإعداد",
+        "progress": "التقدم",
+        "complete": "مكتمل",
+        "addProduct": "أضف منتجك الأول",
+        "setupPayment": "إعداد طرق الدفع",
+        "customizeBranding": "تخصيص العلامة التجارية",
+        "publishStore": "نشر متجرك"
+    },
+    "publish": {
+        "title": "إطلاق {storeName}",
+        "subtitle": "هل أنت مستعد لبدء عملك؟ بمجرد النشر، يمكن للعملاء زيارة متجرك وتقديم الطلبات.",
+        "notReady": "انتظر! متجرك ليس جاهزاً تماماً بعد:",
+        "allReady": "كل شيء جاهز! متجرك يلبي جميع متطلبات الإطلاق.",
+        "previewUrl": "رابط المعاينة",
+        "maybeLater": "ربما لاحقاً",
+        "goLive": "انطلق الآن",
+        "launching": "جاري الإطلاق...",
+        "success": "متجرك الآن مباشر!",
+        "successMessage": "تهانينا! {storeName} مفتوح رسمياً للعمل.",
+        "copyUrl": "نسخ رابط المتجر",
+        "shareStore": "مشاركة المتجر",
+        "viewLive": "عرض المتجر المباشر",
+        "closeAndContinue": "إغلاق ومتابعة الإدارة"
+    },
+    "banner": {
+        "unlock": "أطلق العنان لكامل إمكاناتك",
+        "upgradeSubtitle": "قم بالترقية إلى خطة اشتراك لبدء البيع والوصول إلى التحليلات وإزالة الحدود.",
+        "pending": "الاشتراك قيد الانتظار",
+        "pendingSubtitle": "لقد اخترت خطة {planName}. يرجى إكمال الدفع لتفعيل جميع الميزات.",
+        "choosePlan": "اختر الخطة",
+        "completePayment": "إكمال الدفع"
+    },
+    "home": {
+        "title": "لوحة التحكم",
+        "subtitle": "إدارة وتنمية عملك التجاري عبر الإنترنت",
+        "visitStore": "زيارة المتجر",
+        "manageStores": "إدارة متاجرك",
+        "manageStoresSubtitle": "انتقل إلى لوحة التحكم الشاملة لإدارة المنتجات والطلبات والإعدادات لجميع متاجرك في مكان واحد.",
+        "viewAllStores": "عرض جميع المتاجر",
+        "subscriptionInfo": "معلومات الاشتراك",
+        "status": "الحالة",
+        "plan": "الخطة",
+        "renews": "يتجدد في",
+        "quickLinks": "روابط سريعة",
+        "manageSubscription": "إدارة الاشتراك",
+        "upgradePlan": "ترقية الخطة"
+    }
+}

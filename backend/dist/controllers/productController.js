@@ -46,15 +46,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.bulkUpdateStatus = exports.getCategories = exports.deleteProductImage = exports.uploadProductImages = exports.getProductById = exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProducts = void 0;
+exports.clearStoreProductCaches = clearStoreProductCaches;
 const Product_1 = __importDefault(require("../models/Product"));
 const Store_1 = __importDefault(require("../models/Store"));
-const User_1 = __importDefault(require("../models/User"));
+const redis_1 = require("../config/redis");
 // @desc    Get all products for a store with pagination and filters
 // @route   GET /api/products?page=1&limit=20&status=active&category=Clothing&search=shirt&stockLevel=low
 // @access  Private/Merchant
 const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        let store;
+        // If storeId is provided in query, use it (Multi-store support)
+        if (req.query.storeId) {
+            store = yield Store_1.default.findOne({ _id: req.query.storeId, ownerId: req.user._id });
+        }
+        else {
+            // Fallback to legacy behavior (finding first store of user)
+            store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        }
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -86,12 +95,25 @@ const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 { sku: { $regex: req.query.search, $options: 'i' } }
             ];
         }
+        // Redis Caching Logic
+        const cacheKey = `products:store:${store._id}:page:${page}:limit:${limit}:filter:${JSON.stringify(filter)}`;
+        let cachedData = null;
+        try {
+            cachedData = yield redis_1.redisClient.get(cacheKey);
+        }
+        catch (redisErr) {
+            console.warn(`[Redis Fallback] GET failed for ${cacheKey}`, redisErr);
+        }
+        if (cachedData) {
+            return res.json(JSON.parse(cachedData));
+        }
         const products = yield Product_1.default.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
         const total = yield Product_1.default.countDocuments(filter);
-        res.json({
+        const responseData = {
             products,
             pagination: {
                 page,
@@ -99,7 +121,15 @@ const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 total,
                 pages: Math.ceil(total / limit)
             }
-        });
+        };
+        // Cache the parsed response for 30 minutes
+        try {
+            yield redis_1.redisClient.setex(cacheKey, 1800, JSON.stringify(responseData));
+        }
+        catch (redisErr) {
+            console.warn(`[Redis Fallback] SET failed for ${cacheKey}`, redisErr);
+        }
+        res.json(responseData);
     }
     catch (error) {
         res.status(500).json({ message: 'Server Error', error });
@@ -114,22 +144,6 @@ const createProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
-        }
-        // Check subscription status on User
-        const user = yield User_1.default.findById(req.user._id).populate('subscriptionPlan');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        if (user.subscriptionStatus !== 'active') {
-            return res.status(403).json({ message: 'Subscription not active. Please upgrade to add products.' });
-        }
-        // Check product limits
-        const currentProductCount = yield Product_1.default.countDocuments({ storeId: store._id });
-        const plan = user.subscriptionPlan;
-        if (plan && plan.productLimit !== -1 && currentProductCount >= plan.productLimit) {
-            return res.status(403).json({
-                message: `Product limit reached for your ${plan.name} plan. Please upgrade to add more products.`
-            });
         }
         const { name, description, shortDescription, price, compareAtPrice, costPerItem, sku, barcode, trackInventory, inventory, images, options, variants, category, tags, status, seo, isActive } = req.body;
         // Generate slug from name
@@ -163,6 +177,8 @@ const createProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             seo,
             isActive: isActive !== undefined ? isActive : true,
         });
+        // Invalidate store product caches due to new insertion
+        yield clearStoreProductCaches(store._id.toString());
         res.status(201).json(product);
     }
     catch (error) {
@@ -176,7 +192,7 @@ exports.createProduct = createProduct;
 // @access  Private/Merchant
 const updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -185,7 +201,16 @@ const updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             return res.status(404).json({ message: 'Product not found' });
         }
         const updatedProduct = yield Product_1.default.findByIdAndUpdate(req.params.id, Object.assign(Object.assign({}, req.body), { slug: undefined }), // Prevent slug update for now to avoid URL breaking, or handle carefully
-        { new: true });
+        { new: true, lean: true } // Inject lean on return and new payload
+        );
+        // Invalidate specific product and store-level list caches
+        try {
+            yield redis_1.redisClient.del(`product:${req.params.id}`);
+        }
+        catch (err) {
+            console.warn(`[Redis Fallback] DEL failed`, err);
+        }
+        yield clearStoreProductCaches(store._id.toString());
         res.json(updatedProduct);
     }
     catch (error) {
@@ -198,7 +223,7 @@ exports.updateProduct = updateProduct;
 // @access  Private/Merchant
 const deleteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -207,6 +232,14 @@ const deleteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             return res.status(404).json({ message: 'Product not found' });
         }
         yield product.deleteOne();
+        // Invalidate specific product and store-level list caches
+        try {
+            yield redis_1.redisClient.del(`product:${req.params.id}`);
+        }
+        catch (err) {
+            console.warn(`[Redis Fallback] DEL failed`, err);
+        }
+        yield clearStoreProductCaches(store._id.toString());
         res.json({ message: 'Product removed' });
     }
     catch (error) {
@@ -219,9 +252,27 @@ exports.deleteProduct = deleteProduct;
 // @access  Public
 const getProductById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const product = yield Product_1.default.findById(req.params.id);
+        const cacheKey = `product:${req.params.id}`;
+        let cachedProduct = null;
+        try {
+            cachedProduct = yield redis_1.redisClient.get(cacheKey);
+        }
+        catch (err) {
+            console.warn(`[Redis Fallback] GET failed for ${cacheKey}`);
+        }
+        if (cachedProduct) {
+            return res.json(JSON.parse(cachedProduct));
+        }
+        const product = yield Product_1.default.findById(req.params.id).lean(); // Bypass hydration
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
+        }
+        // Cache product individually for 1 hour
+        try {
+            yield redis_1.redisClient.setex(cacheKey, 3600, JSON.stringify(product));
+        }
+        catch (err) {
+            console.warn(`[Redis Fallback] SET failed for ${cacheKey}`);
         }
         res.json(product);
     }
@@ -256,7 +307,7 @@ exports.uploadProductImages = uploadProductImages;
 // @access  Private/Merchant
 const deleteProductImage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -287,7 +338,7 @@ exports.deleteProductImage = deleteProductImage;
 // @access  Private/Merchant
 const getCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -304,7 +355,7 @@ exports.getCategories = getCategories;
 // @access  Private/Merchant
 const bulkUpdateStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ merchantId: req.user._id });
+        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -316,6 +367,17 @@ const bulkUpdateStatus = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return res.status(400).json({ message: 'Invalid status' });
         }
         yield Product_1.default.updateMany({ _id: { $in: productIds }, storeId: store._id }, { $set: { status } });
+        // Invalidate individual modified products and the master store cache
+        try {
+            const pipeline = redis_1.redisClient.pipeline();
+            productIds.forEach((id) => pipeline.del(`product:${id}`));
+            productIds.forEach((id) => pipeline.unlink(`product:${id}`));
+            yield pipeline.exec();
+        }
+        catch (err) {
+            console.warn(`[Redis Fallback] Pipeline EXEC failed`, err);
+        }
+        yield clearStoreProductCaches(store._id.toString());
         res.json({ message: `${productIds.length} products updated successfully` });
     }
     catch (error) {
@@ -323,3 +385,22 @@ const bulkUpdateStatus = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.bulkUpdateStatus = bulkUpdateStatus;
+// Internal Utility to obliterate store-level product list caches upon mutation
+function clearStoreProductCaches(storeId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            // Find all cached cursor keys associated strictly with this store pagination
+            let cursor = '0';
+            do {
+                const [nextCursor, keys] = yield redis_1.redisClient.scan(cursor, 'MATCH', `products:store:${storeId}:*`, 'COUNT', 100);
+                cursor = nextCursor;
+                if (keys.length > 0) {
+                    yield redis_1.redisClient.unlink(...keys); // Using non-blocking UNLINK
+                }
+            } while (cursor !== '0');
+        }
+        catch (err) {
+            console.error('Failed to invalidate store product caches:', err);
+        }
+    });
+}

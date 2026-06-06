@@ -1,0 +1,69 @@
+{
+    "hero": {
+        "badge": "POWERFUL FEATURES",
+        "title": "Everything You Need to",
+        "titleHighlight": "Succeed Online",
+        "subtitle": "Discover the complete toolkit designed to help Egyptian merchants build, manage, and grow their online stores effortlessly."
+    },
+    "coreFeatures": {
+        "title": "Core Features",
+        "subtitle": "Essential tools for your e-commerce success",
+        "instantSetup": {
+            "title": "Instant Setup",
+            "description": "Launch your store in under 2 minutes with our intuitive setup wizard. No coding required."
+        },
+        "customDomains": {
+            "title": "Custom Domains",
+            "description": "Connect your own domain or use our free subdomain to establish your brand identity."
+        },
+        "themeBuilder": {
+            "title": "Theme Builder",
+            "description": "Customize your store's look with our drag-and-drop theme builder. No design skills needed."
+        },
+        "mobileOptimized": {
+            "title": "Mobile Optimized",
+            "description": "Your store looks perfect on all devices. Responsive design built-in by default."
+        }
+    },
+    "payments": {
+        "title": "Local Payment Solutions",
+        "subtitle": "Accept payments the Egyptian way",
+        "instapay": {
+            "title": "Instapay Integration",
+            "description": "Seamlessly accept Instapay transfers with automatic verification and order confirmation."
+        },
+        "vcash": {
+            "title": "VCash Support",
+            "description": "Accept Vodafone Cash payments with our specialized receipt verification system."
+        },
+        "cashOnDelivery": {
+            "title": "Cash on Delivery",
+            "description": "Offer traditional COD payment option for customers who prefer it."
+        }
+    },
+    "management": {
+        "title": "Store Management",
+        "subtitle": "Powerful tools to run your business",
+        "inventory": {
+            "title": "Inventory Management",
+            "description": "Track stock levels, get low-stock alerts, and manage variants effortlessly."
+        },
+        "orders": {
+            "title": "Order Processing",
+            "description": "Manage orders from placement to delivery with our streamlined workflow."
+        },
+        "analytics": {
+            "title": "Analytics & Reports",
+            "description": "Get insights into sales, customers, and performance with detailed analytics."
+        },
+        "multiStore": {
+            "title": "Multi-Store Support",
+            "description": "Manage multiple stores from one dashboard. Perfect for growing businesses."
+        }
+    },
+    "cta": {
+        "title": "Ready to Get Started?",
+        "subtitle": "Join hundreds of successful merchants in Egypt today.",
+        "button": "Start Your Free Trial"
+    }
+}

@@ -8,6 +8,7 @@ export interface IProductImage {
 
 export interface IInventory {
     quantity: number;
+    reserved: number;
     lowStockThreshold: number;
 }
 
@@ -21,11 +22,14 @@ export interface ISEO {
 }
 
 export interface IProductVariant {
+    _id?: mongoose.Types.ObjectId;
     name: string;
     options: Record<string, string>;
     sku?: string;
     price: number;
     inventory: number;
+    reserved: number;
+    isDeleted: boolean;
     image?: {
         url: string;
         publicId: string;
@@ -78,16 +82,20 @@ const ProductSchema: Schema = new Schema(
         barcode: { type: String },
         trackInventory: { type: Boolean, default: true },
         inventory: {
-            quantity: { type: Number, default: 0 },
+            quantity: { type: Number, default: 0, index: true },
+            reserved: { type: Number, default: 0 },
             lowStockThreshold: { type: Number, default: 5 },
         },
         variants: [
             {
+                _id: { type: Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() },
                 name: { type: String },
                 options: { type: Map, of: String },
-                sku: { type: String },
+                sku: { type: String, index: true },
                 price: { type: Number },
                 inventory: { type: Number, default: 0 },
+                reserved: { type: Number, default: 0 },
+                isDeleted: { type: Boolean, default: false, index: true },
                 image: {
                     url: { type: String },
                     publicId: { type: String },
@@ -120,9 +128,39 @@ const ProductSchema: Schema = new Schema(
     { timestamps: true }
 );
 
+// Enable virtuals
+ProductSchema.set('toJSON', { virtuals: true });
+ProductSchema.set('toObject', { virtuals: true });
+
+// Derived stock virtuals
+ProductSchema.virtual('totalStock').get(function (this: IProduct) {
+    if (this.variants && this.variants.length > 0) {
+        return this.variants.reduce((sum: number, v: IProductVariant) => v.isDeleted ? sum : sum + (v.inventory || 0), 0);
+    }
+    return this.inventory.quantity;
+});
+
+ProductSchema.virtual('totalReserved').get(function (this: IProduct) {
+    if (this.variants && this.variants.length > 0) {
+        return this.variants.reduce((sum: number, v: IProductVariant) => v.isDeleted ? sum : sum + (v.reserved || 0), 0);
+    }
+    return this.inventory.reserved || 0;
+});
+
+ProductSchema.virtual('totalAvailable').get(function (this: IProduct) {
+    if (this.variants && this.variants.length > 0) {
+        return this.variants.reduce((sum: number, v: IProductVariant) => {
+            if (v.isDeleted) return sum;
+            return sum + ((v.inventory || 0) - (v.reserved || 0));
+        }, 0);
+    }
+    return (this.inventory.quantity || 0) - (this.inventory.reserved || 0);
+});
+
 ProductSchema.index({ storeId: 1, slug: 1 }, { unique: true });
 ProductSchema.index({ storeId: 1, status: 1 });
 ProductSchema.index({ storeId: 1, category: 1 });
 ProductSchema.index({ storeId: 1, name: 'text', description: 'text', tags: 'text' });
+ProductSchema.index({ "variants.sku": 1 }, { sparse: true });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

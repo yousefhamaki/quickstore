@@ -7,11 +7,12 @@ const express_1 = __importDefault(require("express"));
 const productController_1 = require("../controllers/productController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const cloudinary_1 = require("../config/cloudinary");
+const billingMiddleware_1 = require("../middleware/billingMiddleware");
 const router = express_1.default.Router();
 router
     .route('/')
     .get(authMiddleware_1.protect, (0, authMiddleware_1.authorize)('merchant'), productController_1.getProducts)
-    .post(authMiddleware_1.protect, (0, authMiddleware_1.authorize)('merchant'), productController_1.createProduct);
+    .post(authMiddleware_1.protect, (0, authMiddleware_1.authorize)('merchant'), billingMiddleware_1.billingContext, billingMiddleware_1.protectProductLimit, productController_1.createProduct);
 router.post('/upload', authMiddleware_1.protect, (0, authMiddleware_1.authorize)('merchant'), cloudinary_1.upload.array('images', 10), productController_1.uploadProductImages);
 router.get('/categories', authMiddleware_1.protect, (0, authMiddleware_1.authorize)('merchant'), productController_1.getCategories);
 router.post('/bulk-update', authMiddleware_1.protect, (0, authMiddleware_1.authorize)('merchant'), productController_1.bulkUpdateStatus);

@@ -65,6 +65,15 @@ const OrderSchema = new mongoose_1.Schema({
         default: 'pending',
     },
     paymentMethod: { type: String, required: true },
+    transactionId: { type: String },
+    shippingProvider: { type: String },
+    trackingNumber: { type: String },
+    waybillUrl: { type: String },
+    shippingStatus: {
+        type: String,
+        enum: ['pending', 'ready_for_pickup', 'picked_up', 'in_transit', 'delivered', 'returned'],
+        default: 'pending',
+    },
     shippingAddress: {
         fullName: { type: String },
         phone: { type: String },
@@ -85,6 +94,8 @@ const OrderSchema = new mongoose_1.Schema({
     },
     customerNote: { type: String },
     merchantNote: { type: String },
+    couponCode: { type: String },
+    transactionFee: { type: Number, default: 0 },
     timeline: [
         {
             status: { type: String },
@@ -94,6 +105,7 @@ const OrderSchema = new mongoose_1.Schema({
     ],
 }, { timestamps: true });
 OrderSchema.index({ storeId: 1, customerId: 1 });
+OrderSchema.index({ storeId: 1, status: 1, paymentStatus: 1 });
 OrderSchema.index({ storeId: 1, createdAt: -1 });
 OrderSchema.index({ storeId: 1, orderNumber: 1 }, { unique: true });
 exports.default = mongoose_1.default.model('Order', OrderSchema);

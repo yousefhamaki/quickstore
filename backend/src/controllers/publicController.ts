@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Store from '../models/Store';
 import Product from '../models/Product';
 import Coupon from '../models/Coupon';
+import { redisClient } from '../config/redis';
 
 // @desc    Get store by subdomain
 // @route   GET /api/public/stores/:subdomain
@@ -9,11 +10,21 @@ import Coupon from '../models/Coupon';
 export const getStoreBySubdomain = async (req: Request, res: Response) => {
     try {
         const { subdomain } = req.params;
-        const store = await Store.findOne({ 'domain.subdomain': subdomain, status: 'live' });
+        const cacheKey = `store_customization:${subdomain}`;
+        
+        const cachedStore = await redisClient.get(cacheKey);
+        if (cachedStore) {
+            return res.json(JSON.parse(cachedStore));
+        }
+
+        const store = await Store.findOne({ 'domain.subdomain': subdomain, status: 'live' }).lean(); // Huge performance hydration bypass
 
         if (!store) {
             return res.status(404).json({ message: 'Store not found or not published' });
         }
+
+        // Cache settings in redis for 1 hour to prevent DB spikes from viral stores
+        await redisClient.setex(cacheKey, 3600, JSON.stringify(store));
 
         res.json(store);
     } catch (error) {
@@ -41,8 +52,26 @@ export const trackStoreVisit = async (req: Request, res: Response) => {
 export const getStoreProducts = async (req: Request, res: Response) => {
     try {
         const { storeId } = req.params;
-        const products = await Product.find({ storeId, status: 'active' })
-            .sort({ createdAt: -1 });
+        const cacheKey = `products:store:${storeId}:public:list`;
+        
+        let cachedData = null;
+        try {
+            cachedData = await redisClient.get(cacheKey);
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] GET failed for ${cacheKey}`, redisErr);
+        }
+
+        if (cachedData) {
+            return res.json(JSON.parse(cachedData));
+        }
+
+        const products = await Product.find({ storeId, status: 'active' }).sort({ createdAt: -1 });
+
+        try {
+            await redisClient.setex(cacheKey, 1800, JSON.stringify(products)); // 30 min cache
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] SET failed for ${cacheKey}`, redisErr);
+        }
 
         res.json(products);
     } catch (error) {
@@ -56,10 +85,29 @@ export const getStoreProducts = async (req: Request, res: Response) => {
 export const getProductDetails = async (req: Request, res: Response) => {
     try {
         const { productId } = req.params;
+        const cacheKey = `product:${productId}`;
+        
+        let cachedProduct = null;
+        try {
+            cachedProduct = await redisClient.get(cacheKey);
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] GET failed for ${cacheKey}`);
+        }
+
+        if (cachedProduct) {
+            return res.json(JSON.parse(cachedProduct));
+        }
+
         const product = await Product.findOne({ _id: productId, status: 'active' });
 
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
+        }
+
+        try {
+            await redisClient.setex(cacheKey, 3600, JSON.stringify(product)); // 1 hour cache
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] SET failed for ${cacheKey}`);
         }
 
         res.json(product);
