@@ -55,7 +55,16 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    const merchantDashboardUrl = process.env.MERCHANT_DASHBOARD_URL || 'http://localhost:3001';
+    let merchantDashboardUrl = process.env.MERCHANT_DASHBOARD_URL || 'http://localhost:3001';
+    
+    // Auto-sanitize formatting errors:
+    // 1. Ensure it starts with http:// or https://
+    if (!merchantDashboardUrl.startsWith('http://') && !merchantDashboardUrl.startsWith('https://')) {
+      merchantDashboardUrl = `https://${merchantDashboardUrl}`;
+    }
+    // 2. Remove any trailing slashes
+    merchantDashboardUrl = merchantDashboardUrl.replace(/\/+$/, '');
+
     return [
       {
         source: '/:locale(en|ar)/merchant/:path*',
