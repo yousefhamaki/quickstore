@@ -43,6 +43,7 @@ function StoreSkeleton() {
 
 // 2. The Asynchronous Data Resolution Component
 async function StoreContent({ subdomain, locale }: { subdomain: string; locale: string }) {
+    console.log(`[Store Page] StoreContent executing for subdomain: "${subdomain}" | locale: "${locale}"`);
     const t = await getTranslations({ locale, namespace: 'store.home' });
     let store: any = null;
     let products: any[] = [];
@@ -50,8 +51,11 @@ async function StoreContent({ subdomain, locale }: { subdomain: string; locale: 
 
     try {
         store = await getPublicStore(subdomain);
+        console.log(`[Store Page] getPublicStore returned:`, store ? `Found "${store.name}"` : 'null');
         products = await getStoreProducts(store?._id || store?.id) as any[];
+        console.log(`[Store Page] getStoreProducts fetched:`, products ? `${products.length} products` : 'null/undefined');
     } catch (error: any) {
+        console.error(`[Store Page] Fetch error:`, error?.message || error);
         fetchError = error.message || String(error);
     }
 
@@ -194,6 +198,7 @@ async function StoreContent({ subdomain, locale }: { subdomain: string; locale: 
 export default async function StoreHome({ params }: { params: Promise<{ locale: string; subdomain: string }> }) {
     // Crucially resolved without blocking any backend DB network layer
     const { subdomain, locale } = await params;
+    console.log(`[Store Page] StoreHome executing for subdomain: "${subdomain}" | locale: "${locale}"`);
 
     return (
         <Suspense fallback={<StoreSkeleton />}>

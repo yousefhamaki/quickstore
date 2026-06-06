@@ -22,6 +22,16 @@ const nextConfig: NextConfig = {
   },
 
   transpilePackages: ['@quickstore/shared'],
+  // Allow subdomain dev origins — wildcards are unreliable, list explicitly
+  allowedDevOrigins: [
+    'localhost:3000',
+    'quickstore.test:3000',
+    'hamaki.quickstore.test:3000',
+    'yousef.quickstore.test:3000',
+    'quickstore.test',
+    'hamaki.quickstore.test',
+    'yousef.quickstore.test',
+  ],
   // Enable React strict mode for better performance warnings
   reactStrictMode: true,
   async headers() {

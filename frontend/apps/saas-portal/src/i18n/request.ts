@@ -1,13 +1,24 @@
 import { notFound } from 'next/navigation';
 import { getRequestConfig } from 'next-intl/server';
+import { headers } from 'next/headers';
 
 const locales = ['en', 'ar'];
 
 export default getRequestConfig(async ({ requestLocale }) => {
-    const locale = await requestLocale;
+    const headersList = await headers();
+    const headerLocale = headersList.get('x-locale') || headersList.get('x-next-intl-locale');
+
+    let locale = await requestLocale;
+    console.log(`[i18n request.ts] requestLocale resolved to: "${locale}" | headerLocale: "${headerLocale}"`);
+
+    if (!locale && headerLocale) {
+        locale = headerLocale;
+        console.log(`[i18n request.ts] Using headerLocale fallback: "${locale}"`);
+    }
 
     // Validate that the incoming `locale` parameter is valid
     if (!locale || !locales.includes(locale as any)) {
+        console.log(`[i18n request.ts] Validation failed for locale "${locale}" — calling notFound()`);
         notFound();
     }
 

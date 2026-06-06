@@ -44,12 +44,20 @@ export async function generateMetadata({ params }: { params: Promise<{ subdomain
 async function StoreLayoutContent({ children, subdomain, locale }: { children: ReactNode; subdomain: string; locale: string }) {
     const t = await getTranslations({ locale, namespace: 'store.layout' });
     let store: any;
+    
+    console.log(`[Store Layout] Fetching store for subdomain: "${subdomain}" | API URL: "${process.env.NEXT_PUBLIC_API_URL}"`);
+    
     try {
         store = await getStoreCached(subdomain);
-    } catch (error) {
+        console.log(`[Store Layout] Fetch result: ${store ? `Found store "${store.name}" (id: ${store._id || store.id})` : 'null/undefined'}`);
+    } catch (error: any) {
+        console.error(`[Store Layout] Fetch FAILED for "${subdomain}":`, error?.message || error, error?.response?.status, error?.response?.data);
         notFound();
     }
-    if (!store) notFound();
+    if (!store) {
+        console.error(`[Store Layout] Store is null/undefined for "${subdomain}" — calling notFound()`);
+        notFound();
+    }
 
     const branding = store.branding || {};
     const primaryColor = branding.primaryColor || "#3B82F6";

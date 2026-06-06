@@ -7,20 +7,31 @@ const handleI18nRouting = createMiddleware(routing);
 export default function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Skip middleware for Next.js internals, API routes, and static files
+    // ================================================================
+    // 1. EARLY EXIT — Protect ALL static assets from being rewritten.
+    //    This is the FIRST check and the most important.
+    //    Without it, CSS/JS/fonts get rewritten to
+    //    /en/store/hamaki/_next/static/... which causes 404s.
+    // ================================================================
     if (
         pathname.startsWith('/_next') ||
         pathname.startsWith('/api') ||
-        pathname.match(/\.(ico|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot)$/)
+        pathname.startsWith('/static') ||
+        pathname.startsWith('/public') ||
+        pathname === '/favicon.ico' ||
+        pathname === '/manifest.webmanifest' ||
+        // Catch ALL file extensions: css, js, fonts, images, maps, json
+        /\.(?:css|js|ico|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot|map|json)$/i.test(pathname)
     ) {
         return NextResponse.next();
     }
 
-    const token = request.cookies.get('token')?.value;
     const host = request.headers.get('host') || '';
     const hostname = host.split(':')[0]; // Normalize by removing port
 
-    // Define main domains
+    // ================================================================
+    // 2. DOMAIN CLASSIFICATION — Identify main (landing) vs store domains
+    // ================================================================
     const mainDomains = [
         'localhost',
         '127.0.0.1',
@@ -38,17 +49,26 @@ export default function proxy(request: NextRequest) {
 
     const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
 
-    // Handle subdomain/custom domain routing (storefront)
+    // ================================================================
+    // 3. SUBDOMAIN ROUTING — Rewrite store requests
+    //    e.g. hamaki.quickstore.test:3000/products/abc
+    //      -> /en/store/hamaki/products/abc
+    // ================================================================
     if (!isMainDomain) {
-        // Precise extraction logic:
+        // --- Extract subdomain ---
         let subdomain = '';
-        if (hostname.endsWith('.quickstore.live') || hostname.endsWith('.quickstore.com') || hostname.endsWith('.quickstore.test') || hostname.endsWith('.buildora.live')) {
+        if (
+            hostname.endsWith('.quickstore.live') ||
+            hostname.endsWith('.quickstore.com') ||
+            hostname.endsWith('.quickstore.test') ||
+            hostname.endsWith('.buildora.live')
+        ) {
             subdomain = hostname.split('.')[0];
         } else if (hostname.includes('.') && !mainDomains.includes(hostname)) {
-            // This is a custom domain mapped to the storefront!
+            // Custom domain mapped to the storefront
             subdomain = hostname;
         } else {
-            // Local dev testing fallback (e.g. hamaki.localhost:3000)
+            // Local dev fallback (e.g. hamaki.localhost:3000)
             const parts = hostname.split('.');
             if (parts.length > 1) {
                 subdomain = parts[0];
@@ -57,39 +77,71 @@ export default function proxy(request: NextRequest) {
 
         if (subdomain && subdomain !== 'www') {
             const segments = pathname.split('/');
+            // segments[0] is always '' (before the leading /)
+            // segments[1] could be a locale ('en', 'ar') or a page ('products', 'checkout', etc.)
             const isLocaleInPath = ['en', 'ar'].includes(segments[1]);
 
-            // Check if we are already in the store path or a system path
-            const pathToCheck = isLocaleInPath ? '/' + segments.slice(2).join('/') : pathname;
-            const isSystemPath = ['/auth', '/merchant', '/dashboard', '/admin', '/api', '/_next'].some(p => pathToCheck.startsWith(p));
-            const isAlreadyStorePath = isLocaleInPath ? segments[2] === 'store' : segments[1] === 'store';
+            // Determine the "real" path after stripping locale prefix
+            const pathAfterLocale = isLocaleInPath
+                ? '/' + segments.slice(2).join('/')
+                : pathname;
 
+            // Check if we're already in /store/... or on a system path
+            const isAlreadyStorePath = isLocaleInPath
+                ? segments[2] === 'store'
+                : segments[1] === 'store';
+
+            const isSystemPath = ['/auth', '/merchant', '/dashboard', '/admin', '/api', '/_next'].some(
+                (p) => pathAfterLocale.startsWith(p)
+            );
+
+            // Only rewrite if NOT already a store path and NOT a system path
             if (!isAlreadyStorePath && !isSystemPath) {
                 const locale = isLocaleInPath ? segments[1] : 'en';
+
+                // Build the clean sub-path (everything after the locale, or the full path if no locale)
+                // For "/" this becomes "", for "/products/abc" this stays "/products/abc"
                 const cleanPathname = isLocaleInPath
-                    ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '/')
-                    : pathname;
+                    ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '')
+                    : (pathname === '/' ? '' : pathname);
 
-                // Rewrite to the storefront dynamic route, preserving query parameters and protocol
-                const targetPath = `/${locale}/store/${subdomain}${cleanPathname === '/' ? '' : cleanPathname}${request.nextUrl.search}`;
-                
-                // Keep it protocol-agnostic. We detect the original protocol (http or https)
-                // from request headers (x-forwarded-proto) or request.nextUrl.protocol, default to http.
-                const requestProtocol = (request.headers.get('x-forwarded-proto') || request.nextUrl.protocol || 'http').replace(':', '');
-                const targetUrlStr = `${requestProtocol}://${host}${targetPath}`;
+                // ============================================================
+                // PROTOCOL-SAFE REWRITE using clone()
+                // clone() preserves the original protocol (http), host, port,
+                // and search params — no manual URL string construction needed.
+                // ============================================================
+                const rewriteUrl = request.nextUrl.clone();
+                rewriteUrl.pathname = `/${locale}/store/${subdomain}${cleanPathname}`;
+                // search params are already preserved by clone()
 
-                console.log(`[Middleware Rewrite] Original Proto: "${request.nextUrl.protocol}" | Resolved Proto: "${requestProtocol}" | Host: "${host}" | Path: "${pathname}" -> "${targetPath}" | Target URL: "${targetUrlStr}"`);
+                console.log(
+                    `[Middleware Rewrite] "${pathname}" -> "${rewriteUrl.pathname}" | host="${host}" | proto="${rewriteUrl.protocol}"`
+                );
 
-                return NextResponse.rewrite(new URL(targetUrlStr));
+                const requestHeaders = new Headers(request.headers);
+                requestHeaders.set('x-locale', locale);
+                requestHeaders.set('x-next-intl-locale', locale);
+
+                return NextResponse.rewrite(rewriteUrl, {
+                    request: {
+                        headers: requestHeaders,
+                    }
+                });
             }
         }
     }
 
-    // Handle i18n routing
+    // ================================================================
+    // 4. FALLBACK — i18n routing for main domain pages
+    // ================================================================
     return handleI18nRouting(request);
 }
 
 export const config = {
-    // Exclude static resources and framework internals, but process dynamic files like robots.txt and sitemap.xml
-    matcher: ['/((?!_next|static|public|favicon.ico|api|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|css|js)).*)']
+    // Pre-filter at the framework level: exclude static resources.
+    // This runs BEFORE the middleware function, so excluded paths
+    // never even enter the proxy() function above.
+    matcher: [
+        '/((?!_next|static|public|favicon\\.ico|api|.*\\.(?:css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|map|json)).*)',
+    ],
 };
