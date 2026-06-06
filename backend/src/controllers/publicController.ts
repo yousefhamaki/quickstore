@@ -12,7 +12,13 @@ export const getStoreBySubdomain = async (req: Request, res: Response) => {
         const { subdomain } = req.params;
         const cacheKey = `store_customization:${subdomain}`;
         
-        const cachedStore = await redisClient.get(cacheKey);
+        let cachedStore = null;
+        try {
+            cachedStore = await redisClient.get(cacheKey);
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] GET failed for ${cacheKey}`, redisErr);
+        }
+
         if (cachedStore) {
             return res.json(JSON.parse(cachedStore));
         }
@@ -24,7 +30,11 @@ export const getStoreBySubdomain = async (req: Request, res: Response) => {
         }
 
         // Cache settings in redis for 1 hour to prevent DB spikes from viral stores
-        await redisClient.setex(cacheKey, 3600, JSON.stringify(store));
+        try {
+            await redisClient.setex(cacheKey, 3600, JSON.stringify(store));
+        } catch (redisErr) {
+            console.warn(`[Redis Fallback] SET failed for ${cacheKey}`, redisErr);
+        }
 
         res.json(store);
     } catch (error) {
