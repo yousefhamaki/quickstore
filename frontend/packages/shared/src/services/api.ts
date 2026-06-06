@@ -49,5 +49,21 @@ api.interceptors.response.use(
     }
 );
 
+// Verbose Axios Debug Logger to trace failed backend calls during SSR/Vercel deployments
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error && error.isAxiosError) {
+            console.error(`================ [AXIOS ERROR DEBUG] ===============`);
+            console.error(`URL: ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
+            console.error(`Status: ${error.response?.status} (${error.response?.statusText})`);
+            console.error(`Response Body:`, JSON.stringify(error.response?.data, null, 2));
+            console.error(`Request Headers:`, error.config?.headers);
+            console.error(`====================================================`);
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;
 

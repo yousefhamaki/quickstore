@@ -2,12 +2,12 @@ import api from './api';
 import { Store } from '@shared/types/store';
 
 export const getPublicStore = async (subdomain: string): Promise<Store> => {
-    const response = await api.get<Store>(`/public/stores/${subdomain}`);
+    const response = await api.get<Store>(`/public/stores/${subdomain}?_cb=${Date.now()}`);
     return response.data;
 };
 
 export const getStoreProducts = async (storeId: string) => {
-    const response = await api.get(`/public/stores/${storeId}/products`);
+    const response = await api.get(`/public/stores/${storeId}/products?_cb=${Date.now()}`);
     return response.data;
 };
 
