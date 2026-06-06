@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 
 export default async function PolicyPage({ params }: { params: Promise<{ subdomain: string, type: string }> }) {
     const { subdomain, type } = await params;
-    const store = await getPublicStore(subdomain) as any;
+    let store: any;
+    try {
+        store = await getPublicStore(subdomain);
+    } catch (error) {
+        notFound();
+    }
 
     if (!store) notFound();
 

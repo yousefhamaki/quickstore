@@ -3,6 +3,7 @@ import { Plus, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
+import { notFound } from "next/navigation";
 
 // 1. The Instant UI Skeleton
 function StoreSkeleton() {
@@ -43,8 +44,14 @@ function StoreSkeleton() {
 // 2. The Asynchronous Data Resolution Component
 async function StoreContent({ subdomain, locale }: { subdomain: string; locale: string }) {
     const t = await getTranslations({ locale, namespace: 'store.home' });
-    const store = await getPublicStore(subdomain) as any;
-    const products = await getStoreProducts(store._id) as any[];
+    let store: any;
+    let products: any[] = [];
+    try {
+        store = await getPublicStore(subdomain);
+        products = await getStoreProducts(store._id) as any[];
+    } catch (error) {
+        notFound();
+    }
 
     const primaryColor = store.branding?.primaryColor || "#3B82F6";
 
