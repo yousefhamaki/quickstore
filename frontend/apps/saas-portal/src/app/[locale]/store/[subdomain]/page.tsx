@@ -44,13 +44,32 @@ function StoreSkeleton() {
 // 2. The Asynchronous Data Resolution Component
 async function StoreContent({ subdomain, locale }: { subdomain: string; locale: string }) {
     const t = await getTranslations({ locale, namespace: 'store.home' });
-    let store: any;
+    let store: any = null;
     let products: any[] = [];
+    let fetchError: string | null = null;
+
     try {
         store = await getPublicStore(subdomain);
-        products = await getStoreProducts(store._id) as any[];
-    } catch (error) {
-        notFound();
+        products = await getStoreProducts(store?._id || store?.id) as any[];
+    } catch (error: any) {
+        fetchError = error.message || String(error);
+    }
+
+    // --- FORCE-RENDER DIAGNOSTIC SCREEN ON ERROR ---
+    if (fetchError || !store) {
+        return (
+            <div className="p-12 max-w-4xl mx-auto space-y-6 bg-red-50 rounded-3xl border border-red-200 mt-20 font-mono text-xs text-red-700">
+                <h1 className="text-xl font-bold">⚠️ Storefront Diagnostic Output</h1>
+                <p><strong>Subdomain Queried:</strong> "{subdomain}"</p>
+                <p><strong>Error Encountered:</strong> {fetchError || "Store returned null from database"}</p>
+                <div>
+                    <strong>Fetched Store Data Payload:</strong>
+                    <pre className="p-4 bg-white rounded-xl border mt-2 overflow-auto max-h-60 text-gray-800">
+                        {JSON.stringify(store, null, 2)}
+                    </pre>
+                </div>
+            </div>
+        );
     }
 
     const primaryColor = store.branding?.primaryColor || "#3B82F6";
@@ -134,7 +153,7 @@ async function StoreContent({ subdomain, locale }: { subdomain: string; locale: 
                                 <div className="px-2 space-y-1">
                                     <h3 className="font-bold text-lg group-hover:text-primary transition-colors duration-300">{product.name}</h3>
                                     <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">{product.category}</p>
-                                    <p className="text-lg font-black mt-2">EGP {product.price.toLocaleString()}</p>
+                                    <p className="text-lg font-black mt-2">EGP {(product.price ?? 0).toLocaleString()}</p>
                                 </div>
                             </Link>
                         ))
