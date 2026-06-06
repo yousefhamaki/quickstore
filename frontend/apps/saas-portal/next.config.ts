@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://images.simplycodes.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://images.simplycodes.com; font-src 'self' https://fonts.gstatic.com https://images.simplycodes.com; connect-src 'self' http://localhost:5000 https://images.simplycodes.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://images.simplycodes.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://images.simplycodes.com https://res.cloudinary.com; font-src 'self' https://fonts.gstatic.com https://images.simplycodes.com; connect-src 'self' http://localhost:5000 https://images.simplycodes.com https://*.onrender.com https://*.buildora.live https://*.buildora.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;",
           },
           {
             key: 'Strict-Transport-Security',
