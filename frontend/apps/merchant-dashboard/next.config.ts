@@ -4,6 +4,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
+  assetPrefix: '/merchant-assets',
   images: {
     remotePatterns: [
       {
@@ -29,11 +30,12 @@ const nextConfig: NextConfig = {
 
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://images.simplycodes.com",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://images.simplycodes.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' blob: data: https://images.simplycodes.com https://res.cloudinary.com",
       "font-src 'self' https://fonts.gstatic.com https://images.simplycodes.com",
       "connect-src 'self' http://localhost:5000 https://images.simplycodes.com https://*.onrender.com https://*.buildora.live https://*.buildora.com",
+      "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

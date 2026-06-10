@@ -101,6 +101,12 @@ const nextConfig: NextConfig = {
     const routes = ['merchant', 'dashboard', 'admin', 'auth', 'verify-email'];
     const rules = [];
 
+    // Rewrite Merchant Dashboard static assets
+    rules.push({
+      source: '/merchant-assets/_next/:path*',
+      destination: `${merchantDashboardUrl}/_next/:path*`,
+    });
+
     // 1. Locale-prefixed rules
     for (const route of routes) {
       // Exact path rule (no trailing slash)
