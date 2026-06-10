@@ -26,11 +26,59 @@ export default function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
+    // ================================================================
+    // 2. MERCHANT DASHBOARD ROUTING (Multi-Zone Rewrite)
+    //    Route dashboard/merchant/admin/auth/verify-email paths to the Merchant App.
+    // ================================================================
+    const segments = pathname.split('/');
+    const isLocaleInPath = ['en', 'ar'].includes(segments[1]);
+    const pathAfterLocale = isLocaleInPath
+        ? '/' + segments.slice(2).join('/')
+        : pathname;
+
+    const routes = ['/merchant', '/dashboard', '/admin', '/auth', '/verify-email'];
+    const isMerchantRoute = routes.some(
+        (p) => pathAfterLocale.startsWith(p)
+    );
+
+    if (isMerchantRoute) {
+        // Strip trailing slash to prevent Next.js trailing slash redirect loops
+        let cleanPath = pathname;
+        if (cleanPath.endsWith('/') && cleanPath !== '/') {
+            cleanPath = cleanPath.slice(0, -1);
+        }
+
+        // Always ensure locale prefix is present for the target to avoid next-intl redirects on the Merchant App
+        const locale = isLocaleInPath ? segments[1] : 'en';
+        const targetPath = isLocaleInPath ? cleanPath : `/en${cleanPath}`;
+
+        let merchantDashboardUrl = process.env.MERCHANT_DASHBOARD_URL || 'http://localhost:3001';
+        if (!merchantDashboardUrl.startsWith('http://') && !merchantDashboardUrl.startsWith('https://')) {
+            merchantDashboardUrl = `https://${merchantDashboardUrl}`;
+        }
+        merchantDashboardUrl = merchantDashboardUrl.replace(/\/+$/, '');
+
+        const rewriteUrl = new URL(targetPath, merchantDashboardUrl);
+        rewriteUrl.search = request.nextUrl.search;
+
+        console.log(`[Merchant Multi-Zone Rewrite] "${pathname}" -> "${rewriteUrl.toString()}"`);
+
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set('x-locale', locale);
+        requestHeaders.set('x-next-intl-locale', locale);
+
+        return NextResponse.rewrite(rewriteUrl, {
+            request: {
+                headers: requestHeaders,
+            }
+        });
+    }
+
     const host = request.headers.get('host') || '';
     const hostname = host.split(':')[0]; // Normalize by removing port
 
     // ================================================================
-    // 2. DOMAIN CLASSIFICATION — Identify main (landing) vs store domains
+    // 3. DOMAIN CLASSIFICATION — Identify main (landing) vs store domains
     // ================================================================
     const mainDomains = [
         'localhost',
@@ -50,7 +98,7 @@ export default function proxy(request: NextRequest) {
     const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
 
     // ================================================================
-    // 3. SUBDOMAIN ROUTING — Rewrite store requests
+    // 4. SUBDOMAIN ROUTING — Rewrite store requests
     //    e.g. hamaki.quickstore.test:3000/products/abc
     //      -> /en/store/hamaki/products/abc
     // ================================================================
@@ -76,17 +124,6 @@ export default function proxy(request: NextRequest) {
         }
 
         if (subdomain && subdomain !== 'www') {
-            const segments = pathname.split('/');
-            // segments[0] is always '' (before the leading /)
-            // segments[1] could be a locale ('en', 'ar') or a page ('products', 'checkout', etc.)
-            const isLocaleInPath = ['en', 'ar'].includes(segments[1]);
-
-            // Determine the "real" path after stripping locale prefix
-            const pathAfterLocale = isLocaleInPath
-                ? '/' + segments.slice(2).join('/')
-                : pathname;
-
-            // Check if we're already in /store/... or on a system path
             const isAlreadyStorePath = isLocaleInPath
                 ? segments[2] === 'store'
                 : segments[1] === 'store';
@@ -100,22 +137,16 @@ export default function proxy(request: NextRequest) {
                 const locale = isLocaleInPath ? segments[1] : 'en';
 
                 // Build the clean sub-path (everything after the locale, or the full path if no locale)
-                // For "/" this becomes "", for "/products/abc" this stays "/products/abc"
                 const cleanPathname = isLocaleInPath
                     ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '')
                     : (pathname === '/' ? '' : pathname);
 
-                // ============================================================
                 // PROTOCOL-SAFE REWRITE using clone()
-                // clone() preserves the original protocol (http), host, port,
-                // and search params — no manual URL string construction needed.
-                // ============================================================
                 const rewriteUrl = request.nextUrl.clone();
                 rewriteUrl.pathname = `/${locale}/store/${subdomain}${cleanPathname}`;
-                // search params are already preserved by clone()
 
                 console.log(
-                    `[Middleware Rewrite] "${pathname}" -> "${rewriteUrl.pathname}" | host="${host}" | proto="${rewriteUrl.protocol}"`
+                    `[Storefront Rewrite] "${pathname}" -> "${rewriteUrl.pathname}"`
                 );
 
                 const requestHeaders = new Headers(request.headers);
@@ -132,15 +163,13 @@ export default function proxy(request: NextRequest) {
     }
 
     // ================================================================
-    // 4. FALLBACK — i18n routing for main domain pages
+    // 5. FALLBACK — i18n routing for main domain pages
     // ================================================================
     return handleI18nRouting(request);
 }
 
 export const config = {
     // Pre-filter at the framework level: exclude static resources.
-    // This runs BEFORE the middleware function, so excluded paths
-    // never even enter the proxy() function above.
     matcher: [
         '/((?!_next|static|public|favicon\\.ico|api|.*\\.(?:css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|map|json)).*)',
     ],

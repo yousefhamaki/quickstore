@@ -98,32 +98,38 @@ const nextConfig: NextConfig = {
     // 2. Remove any trailing slashes
     merchantDashboardUrl = merchantDashboardUrl.replace(/\/+$/, '');
 
-    return [
-      {
-        source: '/:locale(en|ar)/merchant/:path*',
-        destination: `${merchantDashboardUrl}/:locale/merchant/:path*`,
-      },
-      {
-        source: '/:locale(en|ar)/dashboard/:path*',
-        destination: `${merchantDashboardUrl}/:locale/dashboard/:path*`,
-      },
-      {
-        source: '/:locale(en|ar)/admin/:path*',
-        destination: `${merchantDashboardUrl}/:locale/admin/:path*`,
-      },
-      {
-        source: '/merchant/:path*',
-        destination: `${merchantDashboardUrl}/merchant/:path*`,
-      },
-      {
-        source: '/dashboard/:path*',
-        destination: `${merchantDashboardUrl}/dashboard/:path*`,
-      },
-      {
-        source: '/admin/:path*',
-        destination: `${merchantDashboardUrl}/admin/:path*`,
-      },
-    ];
+    const routes = ['merchant', 'dashboard', 'admin', 'auth', 'verify-email'];
+    const rules = [];
+
+    // 1. Locale-prefixed rules
+    for (const route of routes) {
+      // Exact path rule (no trailing slash)
+      rules.push({
+        source: `/:locale(en|ar)/${route}`,
+        destination: `${merchantDashboardUrl}/:locale/${route}`,
+      });
+      // Subpath rule (using :path+ to prevent matching empty and adding trailing slashes)
+      rules.push({
+        source: `/:locale(en|ar)/${route}/:path+`,
+        destination: `${merchantDashboardUrl}/:locale/${route}/:path+`,
+      });
+    }
+
+    // 2. Non-locale prefixed rules
+    for (const route of routes) {
+      // Exact path rule
+      rules.push({
+        source: `/${route}`,
+        destination: `${merchantDashboardUrl}/${route}`,
+      });
+      // Subpath rule
+      rules.push({
+        source: `/${route}/:path+`,
+        destination: `${merchantDashboardUrl}/${route}/:path+`,
+      });
+    }
+
+    return rules;
   },
 };
 

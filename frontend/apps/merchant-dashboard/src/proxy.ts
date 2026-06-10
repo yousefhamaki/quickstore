@@ -18,9 +18,6 @@ export default function proxy(request: NextRequest) {
 
     const token = request.cookies.get('token')?.value;
 
-    // Ignore wildcard subdomains as those are explicitly for the SaaS-Portal storefront apps.
-    // If we land here, assume dashboard logic only.
-
     // Extract locale from pathname
     const pathnameLocale = pathname.split('/')[1];
     const isLocaleInPath = ['en', 'ar'].includes(pathnameLocale);
