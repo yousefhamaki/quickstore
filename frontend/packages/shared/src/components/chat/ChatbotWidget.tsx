@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, User, Mail, ChevronRight, CheckCircle, HelpCircle, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -25,9 +26,42 @@ const generateSessionId = () => {
 
 export function ChatbotWidget() {
     const locale = useLocale();
+    const pathname = usePathname();
     const t = useTranslations('chatbot');
     const [isOpen, setIsOpen] = useState(false);
     const [sessionId] = useState(generateSessionId());
+    const [shouldRender, setShouldRender] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        
+        const hostname = window.location.hostname;
+        
+        const mainDomains = [
+            'localhost',
+            '127.0.0.1',
+            '[::1]',
+            'quickstore.com',
+            'quickstore.live',
+            'quickstore.test',
+            'www.quickstore.com',
+            'www.quickstore.live',
+            'www.quickstore.test',
+            'buildora.live',
+            'www.buildora.live',
+        ];
+        
+        const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
+        
+        const segments = pathname ? pathname.split('/') : [];
+        const isStorePath = segments.includes('store');
+        
+        if (isMainDomain && !isStorePath) {
+            setShouldRender(true);
+        } else {
+            setShouldRender(false);
+        }
+    }, [pathname]);
     
     const [messages, setMessages] = useState<Message[]>([
         { role: 'bot', text: locale === 'ar' ? 'مرحباً! كيف يمكنني مساعدتك اليوم؟' : 'Hi there! How can I help you today?' }
@@ -229,6 +263,8 @@ export function ChatbotWidget() {
             setIsSubmittingTicket(false);
         }
     };
+
+    if (!shouldRender) return null;
 
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end shrink-0">
