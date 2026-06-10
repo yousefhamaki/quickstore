@@ -19,7 +19,7 @@ const Subscription_1 = __importDefault(require("../models/Subscription"));
 const auth_1 = require("../utils/auth");
 const crypto_1 = __importDefault(require("crypto"));
 const google_auth_library_1 = require("google-auth-library");
-const email_1 = require("../utils/email");
+const emailService_1 = require("../services/emailService");
 const billingController_1 = require("./billingController");
 const client = new google_auth_library_1.OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // @desc    Register a new user
@@ -64,7 +64,8 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                     console.error('Auto-subscription after signup failed:', subError);
                 }
             }
-            yield (0, email_1.sendVerificationEmail)(user.email, verificationToken);
+            const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+            yield (0, emailService_1.sendBuyerVerificationEmail)(user.email, 'Buildora', verifyUrl);
             res.status(201).json({
                 _id: user._id,
                 name: user.name,
@@ -139,7 +140,24 @@ const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         user.emailVerificationTokenHash = undefined;
         user.emailVerificationExpiresAt = undefined;
         yield user.save();
-        res.json({ message: 'Email verified successfully', token: (0, auth_1.generateToken)(user._id.toString(), user.role, user.isVerified, user.authProvider, user.email) });
+        // Send onboarding welcome email to new merchant asynchronously
+        if (user.role === 'merchant') {
+            const dashboardLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`;
+            (0, emailService_1.sendMerchantWelcomeEmail)(user.email, user.name, dashboardLink).catch(err => {
+                console.error('[AuthController] Failed to send welcome email:', err);
+            });
+        }
+        res.json({
+            message: 'Email verified successfully',
+            token: (0, auth_1.generateToken)(user._id.toString(), user.role, user.isVerified, user.authProvider, user.email),
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isVerified: user.isVerified
+            }
+        });
     }
     catch (error) {
         res.status(500).json({ message: 'Server error during verification' });

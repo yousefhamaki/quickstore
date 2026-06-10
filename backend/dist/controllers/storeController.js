@@ -403,6 +403,19 @@ exports.updateStore = updateStore;
 // @access  Private/Merchant
 const deleteStore = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ message: 'Password is required to confirm store deletion.' });
+        }
+        const user = yield User_1.default.findById(req.user._id);
+        if (!user || !user.passwordHash) {
+            return res.status(400).json({ message: 'User verification failed.' });
+        }
+        const bcrypt = yield Promise.resolve().then(() => __importStar(require('bcryptjs')));
+        const isMatch = yield bcrypt.default.compare(password, user.passwordHash);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Incorrect account password. Store deletion denied.' });
+        }
         const store = yield Store_1.default.findOne({
             _id: req.params.id,
             ownerId: req.user._id

@@ -1,0 +1,53 @@
+{{#> layout 
+    title=(concat "Invoice - " storeName) 
+    accentColor="#3182ce" 
+    logoUrl="https://www.quickstore.live/logo.png" 
+    logoFallbackUrl="https://placehold.co/180x48/3182ce/ffffff?text=Buildora" 
+    brandingName="Buildora" 
+    showFooterPoweredBy=false 
+    footerText=(concat "If you have questions about this transaction, please reply directly to this email to contact " storeName ".")
+}}
+    <h1 class="title">Receipt from {{storeName}}</h1>
+    <p class="subtitle" style="font-size: 14px; color: #718096; text-align: center; margin-bottom: 30px;">Thank you for your order, {{buyerName}}!</p>
+
+    <div class="meta-grid">
+        <div class="meta-row">
+            <div class="meta-col label">Invoice #</div>
+            <div class="meta-col">{{invoiceNumber}}</div>
+        </div>
+        <div class="meta-row">
+            <div class="meta-col label">Date</div>
+            <div class="meta-col">{{formatDate date}}</div>
+        </div>
+        <div class="meta-row">
+            <div class="meta-col label">Paid Via</div>
+            <div class="meta-col">{{paymentMethod}}</div>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th class="items-th">Description</th>
+                <th class="items-th items-th-center">Qty</th>
+                <th class="items-th items-th-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each items}}
+            <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #4a5568;">{{name}}</td>
+                <td style="padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #4a5568; text-align: center;">{{quantity}}</td>
+                <td style="padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #1a202c; text-align: right; font-weight: 600;">{{formatCurrency price ../currency}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+
+    <div class="total-container">
+        <div class="total-row">
+            <div class="total-col label">Total Paid</div>
+            <div class="total-col value" style="color: #3182ce;">{{formatCurrency amount currency}}</div>
+        </div>
+    </div>
+{{/layout}}

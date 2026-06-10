@@ -41,19 +41,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (storedToken) {
             setToken(storedToken);
+
+            // Decode the JWT payload to get the user ID embedded in the token.
+            // This is NOT a security check (no signature verification), it is
+            // purely used to detect a stale localStorage user from a different account.
+            let tokenUserId: string | null = null;
+            try {
+                const payloadBase64 = storedToken.split('.')[1];
+                if (payloadBase64) {
+                    const decoded = JSON.parse(atob(payloadBase64)) as { id?: string; sub?: string };
+                    tokenUserId = decoded.id || decoded.sub || null;
+                }
+            } catch {
+                // Malformed token — will be rejected by the server anyway
+            }
+
+            let cachedUser: User | null = null;
             if (storedUser) {
                 try {
-                    setUser(JSON.parse(storedUser));
+                    cachedUser = JSON.parse(storedUser) as User;
                 } catch (e) {
                     console.error('Failed to parse stored user:', e);
                 }
             }
 
-            // Only sync with server if we don't have user data
-            // This prevents unnecessary API calls on every route change
-            if (!storedUser) {
+            // Only trust the cached user when the token's ID matches.
+            // If there is a mismatch the stale entry belongs to a different account.
+            const cacheIsValid = cachedUser && tokenUserId && cachedUser._id === tokenUserId;
+
+            if (cacheIsValid && cachedUser) {
+                setUser(cachedUser);
+            } else {
+                // Clear any stale/mismatched user data and fetch fresh profile.
+                if (!cacheIsValid) {
+                    localStorage.removeItem('user');
+                }
                 api.get('/auth/profile').then(res => {
-                    const userData = res.data as any;
+                    const userData = res.data as User;
                     setUser(userData);
                     localStorage.setItem('user', JSON.stringify(userData));
                 }).catch(() => {

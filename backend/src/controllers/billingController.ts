@@ -9,6 +9,7 @@ import BillingProfile from '../models/BillingProfile';
 import mongoose from 'mongoose';
 import axios from 'axios';
 import Transaction from '../models/Transaction';
+import { sendInvoiceEmail } from '../services/emailService';
 
 /**
  * Idempotent Wallet Creation Helper
@@ -150,6 +151,29 @@ export const paySubscriptionWithWallet = async (req: AuthRequest, res: Response)
             }], { session });
 
             await session.commitTransaction();
+
+            // Trigger invoice email notification asynchronously
+            if (req.user && req.user.email) {
+                const invoiceDetails = {
+                    invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
+                    buyerName: req.user.name || 'Merchant',
+                    amount: price,
+                    currency: 'EGP',
+                    date: new Date().toISOString(),
+                    paymentMethod: 'Buildora Wallet',
+                    items: [
+                        {
+                            name: `${plan.name} Subscription - ${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}`,
+                            quantity: 1,
+                            price: price
+                        }
+                    ]
+                };
+                sendInvoiceEmail(req.user.email, 'Buildora SaaS', invoiceDetails).catch(err => {
+                    console.error('[BillingController] Failed to send subscription payment invoice email:', err);
+                });
+            }
+
             res.json({ message: 'Subscription paid successfully from wallet', subscription: sub });
         } catch (error) {
             await session.abortTransaction();
@@ -386,6 +410,28 @@ export const subscribe = async (req: AuthRequest, res: Response) => {
                 await session.commitTransaction();
                 session.endSession();
 
+                // Trigger invoice email notification asynchronously
+                if (req.user && req.user.email) {
+                    const invoiceDetails = {
+                        invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
+                        buyerName: req.user.name || 'Merchant',
+                        amount: price,
+                        currency: 'EGP',
+                        date: new Date().toISOString(),
+                        paymentMethod: 'Buildora Wallet',
+                        items: [
+                            {
+                                name: `${plan.name} Subscription - ${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}`,
+                                quantity: 1,
+                                price: price
+                            }
+                        ]
+                    };
+                    sendInvoiceEmail(req.user.email, 'Buildora SaaS', invoiceDetails).catch(err => {
+                        console.error('[BillingController] Failed to send auto-subscribe invoice email:', err);
+                    });
+                }
+
                 return res.json({
                     message: 'Subscription updated and paid successfully from wallet',
                     subscription,
@@ -508,7 +554,7 @@ export const rechargeWallet = async (req: AuthRequest, res: Response) => {
                 newBalance: wallet?.balance
             });
         } else if (!apiKey) {
-           return res.status(500).json({ message: 'Payment gateway not configured correctly' });
+            return res.status(500).json({ message: 'Payment gateway not configured correctly' });
         }
 
         const integrationIds: Record<string, string> = {
@@ -593,7 +639,7 @@ export const rechargeWallet = async (req: AuthRequest, res: Response) => {
                 },
                 payment_token: paymentToken
             });
-            
+
             // For Fawry, the ref code is typically in data.bill_reference
             let referenceCode = '';
             if (payRes.data.data && payRes.data.data.bill_reference) {

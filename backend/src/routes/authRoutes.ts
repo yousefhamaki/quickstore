@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerUser, loginUser, getUserProfile, verifyEmail, googleLogin } from '../controllers/authController';
+import { registerUser, loginUser, getUserProfile, verifyEmail, googleLogin, resendVerificationEmail } from '../controllers/authController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -12,5 +12,7 @@ router.post('/verify-email', verifyEmail);
 // @ts-ignore
 router.post('/google', googleLogin);
 router.get('/profile', protect, getUserProfile);
+// @ts-ignore
+router.post('/resend-verification', resendVerificationEmail);
 
 export default router;

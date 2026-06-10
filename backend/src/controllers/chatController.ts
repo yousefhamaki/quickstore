@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Article from '../models/Article';
 import SupportTicket from '../models/SupportTicket';
 import ChatLog from '../models/ChatLog';
-import { sendSupportTicketEmail } from '../utils/email';
+import { sendSupportTicketEmail } from '../services/emailService';
 
 // @desc    Ask a question to the bot
 // @route   POST /api/chat/ask

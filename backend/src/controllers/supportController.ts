@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import SupportTicket from '../models/SupportTicket';
-import { sendSupportTicketEmail } from '../utils/email';
+import { sendSupportTicketEmail } from '../services/emailService';
 
 // @desc    Submit a support ticket from Contact Us page
 // @route   POST /api/support/ticket

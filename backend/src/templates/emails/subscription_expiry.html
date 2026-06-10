@@ -1,0 +1,29 @@
+{{#> layout 
+    title="Action Required: Your Buildora subscription is expiring soon" 
+    accentColor="#dd6b20" 
+    logoUrl="https://www.quickstore.live/logo.png" 
+    logoFallbackUrl="https://placehold.co/180x48/dd6b20/ffffff?text=Buildora" 
+    brandingName="Buildora" 
+    showFooterPoweredBy=false 
+    footerText="You received this email because you are a registered merchant on the Buildora SaaS platform."
+}}
+    <h1 class="title">Renew Your Subscription</h1>
+    <p class="description">
+        Hello {{merchantName}}, we wanted to let you know that your Buildora merchant subscription will expire on <strong>{{formatDate expiryDate}}</strong>.
+    </p>
+    
+    <div class="warning-box">
+        <p class="warning-text">
+            ⚠️ To avoid any disruption to your stores and checkout features, please renew your subscription before the expiration date.
+        </p>
+    </div>
+
+    <div class="btn-container">
+        <a href="{{renewLink}}" target="_blank" class="btn" style="background-color: #dd6b20; box-shadow: 0 10px 15px -3px rgba(221, 107, 32, 0.3);">Renew Subscription</a>
+    </div>
+    
+    <p class="description" style="font-size: 14px; color: #718096; margin-bottom: 0;">
+        If the button above does not work, please navigate to your Buildora billing dashboard or copy this link into your browser:<br>
+        <a href="{{renewLink}}" target="_blank" style="color: #dd6b20; text-decoration: none; word-break: break-all;">{{renewLink}}</a>
+    </p>
+{{/layout}}

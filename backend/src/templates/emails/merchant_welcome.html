@@ -1,0 +1,41 @@
+{{#> layout 
+    title="Welcome to Buildora!" 
+    accentColor="#3182ce" 
+    logoUrl="https://www.quickstore.live/logo.png" 
+    logoFallbackUrl="https://placehold.co/180x48/3182ce/ffffff?text=Buildora" 
+    brandingName="Buildora" 
+    showFooterPoweredBy=false 
+    footerText="You received this email because you signed up as a merchant on Buildora SaaS platform."
+}}
+    <h1 class="title">Welcome to Buildora, {{merchantName}}!</h1>
+    <p class="subtitle" style="font-size: 16px; color: #718096; text-align: center; margin-bottom: 30px;">Your multi-store e-commerce empire starts today.</p>
+    
+    <p class="description">
+        We're excited to have you on board! Buildora is equipped with the tools you need to build, launch, and grow your local e-commerce business in Egypt.
+    </p>
+
+    <ul class="feature-list" style="margin: 30px 0; padding: 0; list-style: none;">
+        <li class="feature-item" style="display: flex; align-items: flex-start; margin-bottom: 16px;">
+            <span class="feature-icon" style="font-size: 20px; margin-right: 12px; margin-top: 2px;">✨</span>
+            <div class="feature-text" style="font-size: 15px; color: #4a5568; line-height: 1.5;">
+                <strong>Instant Store Builder:</strong> Launch your digital storefront in under 2 minutes.
+            </div>
+        </li>
+        <li class="feature-item" style="display: flex; align-items: flex-start; margin-bottom: 16px;">
+            <span class="feature-icon" style="font-size: 20px; margin-right: 12px; margin-top: 2px;">💳</span>
+            <div class="feature-text" style="font-size: 15px; color: #4a5568; line-height: 1.5;">
+                <strong>Local Payments Integration:</strong> Accept Instapay and Vodafone Cash with built-in receipt verification hooks.
+            </div>
+        </li>
+        <li class="feature-item" style="display: flex; align-items: flex-start; margin-bottom: 16px;">
+            <span class="feature-icon" style="font-size: 20px; margin-right: 12px; margin-top: 2px;">🌐</span>
+            <div class="feature-text" style="font-size: 15px; color: #4a5568; line-height: 1.5;">
+                <strong>Custom Domain:</strong> Connect your own professional dot-com or dot-shop domain instantly.
+            </div>
+        </li>
+    </ul>
+
+    <div class="btn-container" style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+        <a href="{{dashboardLink}}" target="_blank" class="btn" style="background-color: #3182ce; box-shadow: 0 10px 15px -3px rgba(49, 130, 206, 0.3);">Launch Merchant Portal</a>
+    </div>
+{{/layout}}

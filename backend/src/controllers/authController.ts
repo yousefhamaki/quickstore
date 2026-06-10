@@ -6,7 +6,7 @@ import { generateToken, generateRefreshToken } from '../utils/auth';
 
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
-import { sendVerificationEmail } from '../utils/email';
+import { sendBuyerVerificationEmail, sendMerchantWelcomeEmail } from '../services/emailService';
 import { ensureWallet, autoSubscribeRecord } from './billingController';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -61,7 +61,8 @@ export const registerUser = async (req: Request, res: Response) => {
                 }
             }
 
-            await sendVerificationEmail(user.email, verificationToken);
+            const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+            await sendBuyerVerificationEmail(user.email, 'Buildora', verifyUrl);
 
             res.status(201).json({
                 _id: user._id,
@@ -141,7 +142,25 @@ export const verifyEmail = async (req: Request, res: Response) => {
         user.emailVerificationExpiresAt = undefined;
         await user.save();
 
-        res.json({ message: 'Email verified successfully', token: generateToken((user._id as any).toString(), user.role, user.isVerified, user.authProvider, user.email) });
+        // Send onboarding welcome email to new merchant asynchronously
+        if (user.role === 'merchant') {
+            const dashboardLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`;
+            sendMerchantWelcomeEmail(user.email, user.name, dashboardLink).catch(err => {
+                console.error('[AuthController] Failed to send welcome email:', err);
+            });
+        }
+
+        res.json({ 
+            message: 'Email verified successfully', 
+            token: generateToken((user._id as any).toString(), user.role, user.isVerified, user.authProvider, user.email),
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isVerified: user.isVerified
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error during verification' });
     }
@@ -269,5 +288,43 @@ export const getUserProfile = async (req: any, res: Response) => {
         });
     } else {
         res.status(404).json({ message: 'User not found' });
+    }
+};
+
+// @desc    Resend email verification link
+// @route   POST /api/auth/resend-verification
+// @access  Public (requires email in body)
+export const resendVerificationEmail = async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+
+        // Always return 200 to avoid user enumeration
+        if (!user || user.isVerified) {
+            return res.status(200).json({ message: 'If your account exists and is unverified, a new link has been sent.' });
+        }
+
+        // Generate a fresh token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const emailVerificationTokenHash = crypto
+            .createHash('sha256')
+            .update(verificationToken)
+            .digest('hex');
+
+        user.emailVerificationTokenHash = emailVerificationTokenHash;
+        user.emailVerificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+        await user.save();
+
+        const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+        await sendBuyerVerificationEmail(user.email, 'Buildora', verifyUrl);
+
+        res.status(200).json({ message: 'If your account exists and is unverified, a new link has been sent.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
     }
 };

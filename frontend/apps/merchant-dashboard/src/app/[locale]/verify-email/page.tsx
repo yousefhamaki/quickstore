@@ -29,14 +29,9 @@ function VerifyEmailContent() {
                 const response = await api.post('/auth/verify-email', { token });
                 setStatus('success');
                 setMessage('Your email has been successfully verified! You can now access all features.');
-                // Optional: Auto-login if token returned
-                if ((response.data as any).token) {
-                    // We might need user data too, but the endpoint currently returns token.
-                    // The backend endpoint I wrote: res.json({ message: '...', token: '...' }); 
-                    // It doesn't return the user object.
-                    // So we cannot auto-login fully unless we fetch profile or update backend.
-                    // Let's just redirect to login for safety or fetch profile.
-                    // Given the context, redirecting to login is safer and cleaner.
+                const data = response.data as any;
+                if (data.token && data.user) {
+                    login(data.token, data.user);
                 }
             } catch (err: any) {
                 setStatus('error');

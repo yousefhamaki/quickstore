@@ -41,6 +41,8 @@ export interface BillingOverview {
     wallet: Wallet;
     plan: {
         name: string;
+        name_en?: string;
+        name_ar?: string;
         type: 'free' | 'paid';
         monthlyPrice: number;
         features: {

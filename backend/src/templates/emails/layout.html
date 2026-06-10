@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f7fafc;
+            color: #2d3748;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-height: 48px;
+            width: auto;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 2px solid #edf2f7;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1a202c;
+            margin-top: 0;
+            margin-bottom: 16px;
+            line-height: 1.25;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #718096;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #4a5568;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        .btn-container {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .btn {
+            display: inline-block;
+            color: #ffffff !important;
+            font-weight: 700;
+            font-size: 16px;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 14px;
+            transition: all 0.2s ease;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #a0aec0;
+            line-height: 1.5;
+        }
+        .footer a {
+            color: #718096;
+            text-decoration: underline;
+        }
+        
+        /* Layout Specific CSS definitions */
+        .feature-list {
+            margin: 30px 0;
+            padding: 0;
+            list-style: none;
+        }
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        .feature-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            margin-top: 2px;
+        }
+        .feature-text {
+            font-size: 15px;
+            color: #4a5568;
+            line-height: 1.5;
+        }
+        
+        /* Invoice styling definitions */
+        .meta-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f7fafc;
+            padding-bottom: 15px;
+        }
+        .meta-row {
+            display: table-row;
+        }
+        .meta-col {
+            display: table-cell;
+            font-size: 14px;
+            color: #4a5568;
+            padding: 4px 0;
+        }
+        .meta-col.label {
+            font-weight: bold;
+            color: #718096;
+            width: 120px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .items-th {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: #a0aec0;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 10px;
+            text-align: left;
+        }
+        .items-th-center {
+            text-align: center;
+        }
+        .items-th-right {
+            text-align: right;
+        }
+        .total-container {
+            border-top: 2px solid #edf2f7;
+            padding-top: 15px;
+            display: table;
+            width: 100%;
+        }
+        .total-row {
+            display: table-row;
+        }
+        .total-col {
+            display: table-cell;
+            font-size: 18px;
+            font-weight: 800;
+            color: #1a202c;
+        }
+        .total-col.label {
+            text-align: left;
+        }
+        .total-col.value {
+            text-align: right;
+        }
+        
+        /* Expiry specific styles */
+        .warning-box {
+            background-color: #fffaf0;
+            border: 1px solid #feebc8;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .warning-text {
+            font-size: 15px;
+            color: #c05621;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        /* Mobile responsive adjustments */
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 10px auto;
+                padding: 10px;
+            }
+            .card {
+                padding: 24px;
+                border-radius: 16px;
+            }
+            .title {
+                font-size: 20px;
+            }
+            .btn {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 14px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{logoUrl}}" alt="{{brandingName}} Logo" class="logo" onerror="this.src='{{logoFallbackUrl}}'">
+        </div>
+        <div class="card" style="border-top: 6px solid {{accentColor}};">
+            {{> @partial-block }}
+        </div>
+        {{#if showFooterPoweredBy}}
+        <div class="header" style="margin-top: 30px; margin-bottom: 0;">
+            <p style="font-size: 14px; color: #718096; font-weight: 600; margin: 0;">Powered by <span style="color: #3182ce;">Buildora</span></p>
+        </div>
+        {{/if}}
+        <div class="footer">
+            <p>{{footerText}}</p>
+            <p>&copy; 2026 Buildora powered by QuickStore. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
