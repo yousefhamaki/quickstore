@@ -30,11 +30,12 @@ const nextConfig: NextConfig = {
 
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://images.simplycodes.com",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://accounts.google.com https://vercel.live https://images.simplycodes.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' blob: data: https://images.simplycodes.com https://res.cloudinary.com",
+      "img-src 'self' blob: data: https://lh3.googleusercontent.com https://images.simplycodes.com https://res.cloudinary.com",
       "font-src 'self' https://fonts.gstatic.com https://images.simplycodes.com",
-      "connect-src 'self' http://localhost:5000 https://images.simplycodes.com https://*.onrender.com https://*.buildora.live https://*.buildora.com",
+      "connect-src 'self' http://localhost:5000 https://vercel.live https://*.vercel.live https://images.simplycodes.com https://*.onrender.com https://*.buildora.live https://*.buildora.com",
+      "frame-src 'self' https://accounts.google.com https://vercel.live",
       "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",

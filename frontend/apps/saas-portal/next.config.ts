@@ -114,10 +114,10 @@ const nextConfig: NextConfig = {
         source: `/:locale(en|ar)/${route}`,
         destination: `${merchantDashboardUrl}/:locale/${route}`,
       });
-      // Subpath rule (using :path+ to prevent matching empty and adding trailing slashes)
+      // Subpath rule (using :path* to ensure wildcard matching and RSC data requests work)
       rules.push({
-        source: `/:locale(en|ar)/${route}/:path+`,
-        destination: `${merchantDashboardUrl}/:locale/${route}/:path+`,
+        source: `/:locale(en|ar)/${route}/:path*`,
+        destination: `${merchantDashboardUrl}/:locale/${route}/:path*`,
       });
     }
 
@@ -130,8 +130,8 @@ const nextConfig: NextConfig = {
       });
       // Subpath rule
       rules.push({
-        source: `/${route}/:path+`,
-        destination: `${merchantDashboardUrl}/${route}/:path+`,
+        source: `/${route}/:path*`,
+        destination: `${merchantDashboardUrl}/${route}/:path*`,
       });
     }
 
