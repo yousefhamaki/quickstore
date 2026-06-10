@@ -32,7 +32,11 @@ export async function generateMetadata({ params }: { params: Promise<{ subdomain
             openGraph: {
                 title: store.name,
                 description: store.description,
-                images: store.logo ? [store.logo] : []
+                images: store.logo?.url ? [store.logo.url] : []
+            },
+            icons: {
+                icon: store.favicon?.url || '/favicon.ico',
+                apple: store.logo?.url || '/apple-touch-icon.png',
             }
         };
     } catch {
@@ -92,8 +96,8 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
                 <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b">
                     <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                         <Link href="/" className="flex items-center gap-2">
-                            {store.logo ? (
-                                <img src={store.logo} alt={store.name} className="h-8 w-auto" />
+                            {store.logo?.url ? (
+                                <img src={store.logo.url} alt={store.name} className="h-8 w-auto object-contain" />
                             ) : (
                                 <span className="text-xl font-black tracking-tighter" style={{ color: primaryColor }}>
                                     {store.name.toUpperCase()}

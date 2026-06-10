@@ -34,4 +34,12 @@ export const updateStoreSchema = z.object({
     category: z.string().optional(),
     branding: storeBrandingSchema.partial().optional(),
     contact: storeContactSchema.partial().optional(),
+    logo: z.object({
+        url: z.string(),
+        publicId: z.string(),
+    }).nullable().optional(),
+    favicon: z.object({
+        url: z.string(),
+        publicId: z.string(),
+    }).nullable().optional(),
 });

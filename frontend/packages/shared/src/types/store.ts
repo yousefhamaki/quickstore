@@ -45,6 +45,7 @@ export interface Store {
     category?: string;
     status: StoreStatus;
     logo?: StoreLogo;
+    favicon?: StoreLogo;
     domain: StoreDomain;
     branding: StoreBranding;
     contact: StoreContact;

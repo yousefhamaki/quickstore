@@ -11,11 +11,13 @@ import {
     resumeStore,
     generatePreviewToken,
     checkSubdomainAvailability,
-    getOnboardingChecklist
+    getOnboardingChecklist,
+    uploadStoreLogo
 } from '../controllers/storeController';
 import { protect, authorize } from '../middleware/authMiddleware';
 import { checkVerification } from '../middleware/verificationMiddleware';
 import { billingContext, protectStoreLimit, protectStorePublish, checkServiceAvailability } from '../middleware/billingMiddleware';
+import { upload } from '../config/cloudinary';
 
 const router = express.Router();
 
@@ -26,6 +28,9 @@ router.use(authorize('merchant'));
 // Store CRUD
 router.route('/').get(getStores).post(checkVerification, billingContext, protectStoreLimit, createStore);
 router.route('/:id').get(getStore).put(updateStore).delete(deleteStore);
+
+// Store Logo Upload
+router.post('/:id/upload-logo', upload.single('logo'), uploadStoreLogo);
 
 // Store Publishing
 router.post('/:id/publish', billingContext, protectStorePublish, publishStore);

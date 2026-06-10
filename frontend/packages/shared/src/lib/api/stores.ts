@@ -54,3 +54,12 @@ export const getStoreChecklist = async (id: string): Promise<OnboardingChecklist
     const { data } = await api.get<OnboardingChecklist>(`/stores/${id}/checklist`);
     return data;
 };
+
+export const uploadStoreLogo = async (id: string, formData: FormData): Promise<{ message: string; logo: any; favicon: any }> => {
+    const { data } = await api.post<{ message: string; logo: any; favicon: any }>(`/stores/${id}/upload-logo`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return data;
+};

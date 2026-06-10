@@ -1,10 +1,12 @@
 'use client';
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useStore, useUpdateStore } from "@shared/lib/hooks/useStore";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateStoreSchema } from "@shared/lib/schemas/store";
+import { uploadStoreLogo } from "@shared/lib/api/stores";
+import { toast } from "sonner";
 import {
     Card,
     CardContent,
@@ -25,7 +27,10 @@ import {
     Globe,
     Palette,
     Mail,
-    Info
+    Info,
+    Upload,
+    X,
+    Image as ImageIcon
 } from "lucide-react";
 import { usePauseStore, useResumeStore } from "@shared/lib/hooks/useStore";
 import { Separator } from "@shared/components/ui/separator";
@@ -36,8 +41,9 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
     const updateMutation = useUpdateStore(storeId);
     const pauseMutation = usePauseStore(storeId);
     const resumeMutation = useResumeStore(storeId);
+    const [isUploading, setIsUploading] = useState(false);
 
-    const { register, handleSubmit, watch, formState: { errors, isDirty } } = useForm({
+    const { register, handleSubmit, watch, setValue, formState: { errors, isDirty } } = useForm({
         resolver: zodResolver(updateStoreSchema),
         values: store ? {
             name: store.name,
@@ -49,8 +55,43 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                 fontFamily: store.branding.fontFamily,
             },
             contact: store.contact,
+            logo: store.logo ? { url: store.logo.url, publicId: store.logo.publicId } : null,
+            favicon: store.favicon ? { url: store.favicon.url, publicId: store.favicon.publicId } : null,
         } : undefined
     });
+
+    const logoValue = watch("logo");
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const toastId = toast.loading('Uploading logo...');
+        setIsUploading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            const response = await uploadStoreLogo(storeId, formData);
+            
+            setValue('logo', response.logo, { shouldDirty: true });
+            setValue('favicon', response.favicon, { shouldDirty: true });
+            
+            toast.success('Logo uploaded successfully', { id: toastId });
+        } catch (error: any) {
+            console.error('Logo upload error:', error);
+            toast.error(error.response?.data?.message || 'Failed to upload logo', { id: toastId });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleRemoveLogo = () => {
+        setValue('logo', null, { shouldDirty: true });
+        setValue('favicon', null, { shouldDirty: true });
+        toast.success('Logo removed');
+    };
 
     const onSubmit = handleSubmit(async (data) => {
         await updateMutation.mutateAsync(data);
@@ -118,6 +159,46 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
                                 <div className="space-y-2">
+                                    <Label>Store Logo</Label>
+                                    <div className="flex items-center gap-4">
+                                        {logoValue?.url ? (
+                                            <div className="relative w-20 h-20 rounded-2xl border-2 overflow-hidden bg-muted flex items-center justify-center group shadow-sm transition-all hover:border-red-500">
+                                                <img src={logoValue.url} alt="Store Logo" className="w-full h-full object-contain p-1" />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemoveLogo}
+                                                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <label className="w-20 h-20 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 hover:border-primary transition-all bg-muted/20">
+                                                {isUploading ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                                                ) : (
+                                                    <>
+                                                        <Upload className="w-5 h-5 text-muted-foreground mb-1" />
+                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Upload</span>
+                                                    </>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleLogoUpload}
+                                                    disabled={isUploading}
+                                                />
+                                            </label>
+                                        )}
+                                        <div className="space-y-0.5">
+                                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Logo Image</p>
+                                            <p className="text-[10px] text-muted-foreground max-w-[200px]">Used in the store design header & as the tab icon (favicon).</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label>Primary Color</Label>
                                     <div className="flex gap-2">
                                         <Input type="color" className="p-1 h-10 w-12 rounded-lg" {...register("branding.primaryColor")} />
@@ -144,10 +225,14 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                             <div className="space-y-4">
                                 <Label>Store Preview Snapshot</Label>
                                 <div
-                                    className="h-40 rounded-3xl border-4 border-dashed p-6 flex flex-col justify-center gap-2 transition-all"
+                                    className="h-40 rounded-3xl border-4 border-dashed p-6 flex flex-col justify-center items-start gap-2 transition-all relative overflow-hidden bg-white"
                                     style={{ borderColor: watch("branding.primaryColor"), fontFamily: watch("branding.fontFamily") }}
                                 >
-                                    <h4 className="text-2xl font-bold" style={{ color: watch("branding.primaryColor") }}>{watch("name")}</h4>
+                                    {logoValue?.url ? (
+                                        <img src={logoValue.url} alt="Preview Logo" className="h-8 w-auto object-contain mb-1" />
+                                    ) : (
+                                        <h4 className="text-2xl font-bold" style={{ color: watch("branding.primaryColor") }}>{watch("name")}</h4>
+                                    )}
                                     <div className="flex gap-2">
                                         <div className="h-2 w-16 rounded-full" style={{ backgroundColor: watch("branding.primaryColor") }} />
                                         <div className="h-2 w-10 rounded-full" style={{ backgroundColor: watch("branding.secondaryColor") }} />

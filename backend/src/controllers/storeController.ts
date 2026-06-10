@@ -337,9 +337,20 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
             { new: true }
         );
 
-        if (updatedStore?.domain?.subdomain) {
+        if (updatedStore) {
             const { redisClient } = await import('../config/redis');
-            await redisClient.del(`store_customization:${updatedStore.domain.subdomain}`);
+            if (updatedStore.status === 'live') {
+                const cachePayload = JSON.stringify(updatedStore.toObject());
+                await redisClient.setex(`store_customization:${updatedStore.domain.subdomain}`, 3600, cachePayload);
+                if (updatedStore.domain.customDomain) {
+                    await redisClient.setex(`store_customization:${updatedStore.domain.customDomain}`, 3600, cachePayload);
+                }
+            } else {
+                await redisClient.del(`store_customization:${updatedStore.domain.subdomain}`);
+                if (updatedStore.domain.customDomain) {
+                    await redisClient.del(`store_customization:${updatedStore.domain.customDomain}`);
+                }
+            }
         }
 
         res.json(updatedStore);
@@ -628,6 +639,58 @@ export const getOnboardingChecklist = async (req: AuthRequest, res: Response) =>
             }
         });
     } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+// @desc    Upload store logo and generate favicon
+// @route   POST /api/stores/:id/upload-logo
+// @access  Private/Merchant
+export const uploadStoreLogo = async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await Store.findOne({ _id: req.params.id, ownerId: req.user._id });
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const logoUrl = req.file.path;
+        const logoPublicId = req.file.filename;
+
+        // Dynamic Cloudinary URL transform: 32x32 fill crop, auto format/quality
+        // Regex replacement handles optional version tags (e.g. /upload/v12345/ or just /upload/)
+        const faviconUrl = logoUrl.replace(/\/upload\/(v\d+\/)?/, '/upload/w_32,h_32,c_fill,g_auto,q_auto,f_png/$1');
+
+        store.logo = { url: logoUrl, publicId: logoPublicId };
+        store.favicon = { url: faviconUrl, publicId: logoPublicId };
+
+        await store.save();
+
+        // Zero Cache-Miss: Overwrite Redis cache if store is live, otherwise ensure it is deleted
+        const { redisClient } = await import('../config/redis');
+        if (store.status === 'live') {
+            const cachePayload = JSON.stringify(store.toObject());
+            await redisClient.setex(`store_customization:${store.domain.subdomain}`, 3600, cachePayload);
+            if (store.domain.customDomain) {
+                await redisClient.setex(`store_customization:${store.domain.customDomain}`, 3600, cachePayload);
+            }
+        } else {
+            await redisClient.del(`store_customization:${store.domain.subdomain}`);
+            if (store.domain.customDomain) {
+                await redisClient.del(`store_customization:${store.domain.customDomain}`);
+            }
+        }
+
+        res.json({
+            message: 'Logo uploaded successfully',
+            logo: store.logo,
+            favicon: store.favicon
+        });
+    } catch (error) {
+        console.error('Upload Logo Error:', error);
         res.status(500).json({ message: 'Server Error', error });
     }
 };

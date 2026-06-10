@@ -56,7 +56,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOnboardingChecklist = exports.checkSubdomainAvailability = exports.generatePreviewToken = exports.resumeStore = exports.pauseStore = exports.unpublishStore = exports.publishStore = exports.deleteStore = exports.updateStore = exports.createStore = exports.getStore = exports.getStores = void 0;
+exports.uploadStoreLogo = exports.getOnboardingChecklist = exports.checkSubdomainAvailability = exports.generatePreviewToken = exports.resumeStore = exports.pauseStore = exports.unpublishStore = exports.publishStore = exports.deleteStore = exports.updateStore = exports.createStore = exports.getStore = exports.getStores = void 0;
 const Store_1 = __importDefault(require("../models/Store"));
 const User_1 = __importDefault(require("../models/User"));
 const Product_1 = __importDefault(require("../models/Product"));
@@ -364,7 +364,6 @@ exports.createStore = createStore;
 // @route   PUT /api/stores/:id
 // @access  Private/Merchant
 const updateStore = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const store = yield Store_1.default.findOne({
             _id: req.params.id,
@@ -374,11 +373,23 @@ const updateStore = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(404).json({ message: 'Store not found' });
         }
         // Don't allow changing slug or ownerId
-        const _b = req.body, { slug, ownerId } = _b, updateData = __rest(_b, ["slug", "ownerId"]);
+        const _a = req.body, { slug, ownerId } = _a, updateData = __rest(_a, ["slug", "ownerId"]);
         const updatedStore = yield Store_1.default.findByIdAndUpdate(req.params.id, updateData, { new: true });
-        if ((_a = updatedStore === null || updatedStore === void 0 ? void 0 : updatedStore.domain) === null || _a === void 0 ? void 0 : _a.subdomain) {
+        if (updatedStore) {
             const { redisClient } = yield Promise.resolve().then(() => __importStar(require('../config/redis')));
-            yield redisClient.del(`store_customization:${updatedStore.domain.subdomain}`);
+            if (updatedStore.status === 'live') {
+                const cachePayload = JSON.stringify(updatedStore.toObject());
+                yield redisClient.setex(`store_customization:${updatedStore.domain.subdomain}`, 3600, cachePayload);
+                if (updatedStore.domain.customDomain) {
+                    yield redisClient.setex(`store_customization:${updatedStore.domain.customDomain}`, 3600, cachePayload);
+                }
+            }
+            else {
+                yield redisClient.del(`store_customization:${updatedStore.domain.subdomain}`);
+                if (updatedStore.domain.customDomain) {
+                    yield redisClient.del(`store_customization:${updatedStore.domain.customDomain}`);
+                }
+            }
         }
         res.json(updatedStore);
     }
@@ -643,3 +654,50 @@ const getOnboardingChecklist = (req, res) => __awaiter(void 0, void 0, void 0, f
     }
 });
 exports.getOnboardingChecklist = getOnboardingChecklist;
+// @desc    Upload store logo and generate favicon
+// @route   POST /api/stores/:id/upload-logo
+// @access  Private/Merchant
+const uploadStoreLogo = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const store = yield Store_1.default.findOne({ _id: req.params.id, ownerId: req.user._id });
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+        const logoUrl = req.file.path;
+        const logoPublicId = req.file.filename;
+        // Dynamic Cloudinary URL transform: 32x32 fill crop, auto format/quality
+        // Regex replacement handles optional version tags (e.g. /upload/v12345/ or just /upload/)
+        const faviconUrl = logoUrl.replace(/\/upload\/(v\d+\/)?/, '/upload/w_32,h_32,c_fill,g_auto,q_auto,f_png/$1');
+        store.logo = { url: logoUrl, publicId: logoPublicId };
+        store.favicon = { url: faviconUrl, publicId: logoPublicId };
+        yield store.save();
+        // Zero Cache-Miss: Overwrite Redis cache if store is live, otherwise ensure it is deleted
+        const { redisClient } = yield Promise.resolve().then(() => __importStar(require('../config/redis')));
+        if (store.status === 'live') {
+            const cachePayload = JSON.stringify(store.toObject());
+            yield redisClient.setex(`store_customization:${store.domain.subdomain}`, 3600, cachePayload);
+            if (store.domain.customDomain) {
+                yield redisClient.setex(`store_customization:${store.domain.customDomain}`, 3600, cachePayload);
+            }
+        }
+        else {
+            yield redisClient.del(`store_customization:${store.domain.subdomain}`);
+            if (store.domain.customDomain) {
+                yield redisClient.del(`store_customization:${store.domain.customDomain}`);
+            }
+        }
+        res.json({
+            message: 'Logo uploaded successfully',
+            logo: store.logo,
+            favicon: store.favicon
+        });
+    }
+    catch (error) {
+        console.error('Upload Logo Error:', error);
+        res.status(500).json({ message: 'Server Error', error });
+    }
+});
+exports.uploadStoreLogo = uploadStoreLogo;
