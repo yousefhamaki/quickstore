@@ -21,8 +21,8 @@ export const updateStore = async (id: string, storeData: Partial<Store>): Promis
     return data;
 };
 
-export const deleteStore = async (id: string): Promise<void> => {
-    await api.delete(`/stores/${id}`);
+export const deleteStore = async ({ id, password }: { id: string; password?: string }): Promise<void> => {
+    await api.delete(`/stores/${id}`, { data: { password } });
 };
 
 export const publishStore = async (id: string): Promise<{ message: string; store: Store; storeUrl: string }> => {

@@ -13,6 +13,12 @@ export interface Plan {
         customDomain: boolean;
     };
     isActive: boolean;
+    name_en?: string;
+    name_ar?: string;
+    description_en?: string;
+    description_ar?: string;
+    features_en?: string[];
+    features_ar?: string[];
 }
 
 export interface Subscription {
@@ -49,6 +55,7 @@ export interface BillingOverview {
         trialExpiresAt?: string;
         gracePeriodEnd?: string;
         renewalDate: string;
+        billingCycle?: 'monthly' | 'yearly';
     };
     usage: {
         storesUsed: number;
@@ -95,8 +102,8 @@ export const rechargeWallet = async (amount: number, method: string, walletNumbe
     return data as { paymentUrl?: string; referenceCode?: string; success: boolean; message?: string };
 };
 
-export const subscribeToPlan = async (planId: string): Promise<any> => {
-    const { data } = await api.post('/billing/subscribe', { planId });
+export const subscribeToPlan = async (planId: string, billingCycle?: 'monthly' | 'yearly'): Promise<any> => {
+    const { data } = await api.post('/billing/subscribe', { planId, billingCycle });
     return data;
 };
 

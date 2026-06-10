@@ -1,6 +1,6 @@
 'use client';
 
-import { useBillingOverview, useRechargeWallet, useTransactions } from "@shared/lib/hooks/useBilling";
+import { useBillingOverview, useRechargeWallet, useTransactions, usePayFromWallet } from "@shared/lib/hooks/useBilling";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@shared/components/ui/card";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -36,6 +36,7 @@ export default function MerchantBillingPage() {
     const { data: transactionData, isLoading: transLoading } = useTransactions(page, 5);
     const [isRechargeModalOpen, setRechargeModalOpen] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+    const payFromWallet = usePayFromWallet();
 
     if (overviewLoading) return <BillingSkeleton />;
 
@@ -143,6 +144,35 @@ export default function MerchantBillingPage() {
                                 <Progress value={billing.usage.productLimit === -1 ? 100 : (billing.usage.productsUsed / billing.usage.productLimit) * 100} className="h-2" />
                             </div>
                         </div>
+
+                        {billing.subscription.status === 'inactive' && billing.plan.type === 'paid' && (() => {
+                            const isYearly = billing.subscription.billingCycle === 'yearly';
+                            const basePrice = billing.plan.monthlyPrice || 0;
+                            const planPrice = isYearly ? basePrice * 12 * 0.8 : basePrice;
+                            return (
+                                <div className="pt-4 border-t border-dashed space-y-3">
+                                    <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                        <span>{locale === 'ar' ? 'تكلفة الاشتراك' : 'Subscription Cost'}</span>
+                                        <span>{planPrice.toFixed(0)} {billing.wallet.currency}</span>
+                                    </div>
+                                    <Button
+                                        onClick={async () => {
+                                            try {
+                                                await payFromWallet.mutateAsync();
+                                            } catch (e) {}
+                                        }}
+                                        disabled={payFromWallet.isPending || billing.wallet.balance < planPrice}
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black h-11"
+                                    >
+                                        {payFromWallet.isPending 
+                                            ? (locale === 'ar' ? 'جاري الدفع...' : 'Processing...') 
+                                            : billing.wallet.balance < planPrice 
+                                                ? (locale === 'ar' ? 'رصيد غير كافٍ' : 'Insufficient Balance')
+                                                : (locale === 'ar' ? 'تفعيل الاشتراك الآن' : 'Pay & Activate Now')}
+                                    </Button>
+                                </div>
+                            );
+                        })()}
                     </CardContent>
                 </Card>
 

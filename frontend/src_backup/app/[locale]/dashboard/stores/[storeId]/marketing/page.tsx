@@ -81,7 +81,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
             <Button
                 size="sm"
                 className="rounded-xl font-bold uppercase tracking-widest h-9 px-4 text-[10px]"
-                onClick={() => router.push(`/dashboard/billing`)}
+                onClick={() => router.push(`/merchant/subscribe`)}
             >
                 Upgrade Now
             </Button>

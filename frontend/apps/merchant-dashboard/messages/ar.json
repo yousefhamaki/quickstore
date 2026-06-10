@@ -588,7 +588,21 @@
       "secureWallet": "تكامل محفظة آمن",
       "customDomain": "دومين مخصص",
       "dropshipping": "نظام الدروبشيبينغ",
-      "orderFee": "{amount} ج.م رسوم للطلب"
+      "orderFee": "{amount} ج.م رسوم للطلب",
+      "confirmUpgradeTitle": "تأكيد ترقية الاشتراك",
+      "confirmUpgradeWarning": "تحذير: أنت حالياً على <highlight>{current}</highlight>. المتابعة ستستبدل فوراً اشتراكك النشط بـ <highlight>{new}</highlight> وستخصم <highlight>{price} {currency}</highlight> من محفظتك. هل تريد المتابعة؟",
+      "confirmDowngradeTitle": "تأكيد تخفيض الاشتراك",
+      "confirmDowngradeWarning": "تحذير: أنت حالياً على <highlight>{current}</highlight>. المتابعة ستستبدل فوراً اشتراكك النشط بـ <highlight>{new}</highlight> وستخصم <highlight>{price} {currency}</highlight> من محفظتك. هل تريد المتابعة؟",
+      "monthly": "شهرياً",
+      "yearly": "سنوياً",
+      "savePercent": "وفر {percent}%",
+      "yearlyPeriod": "ج.م/سنوياً",
+      "monthlyPeriod": "ج.م/شهرياً",
+      "downgradeNow": "تخفيض الاشتراك الآن",
+      "downgrade": "تخفيض",
+      "upgrade": "ترقية",
+      "cancel": "إلغاء",
+      "confirmAndPay": "تأكيد ودفع"
     },
     "dashboard": {
       "welcome": "مرحباً بعودتك، {name}!",

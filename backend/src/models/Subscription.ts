@@ -8,6 +8,7 @@ export interface ISubscription extends Document {
     expiresAt: Date;
     trialExpiresAt?: Date;
     gracePeriodEnd?: Date;
+    billingCycle?: 'monthly' | 'yearly';
 }
 
 const SubscriptionSchema: Schema = new Schema({
@@ -17,6 +18,11 @@ const SubscriptionSchema: Schema = new Schema({
         type: String,
         enum: ['inactive', 'active', 'past_due', 'canceled', 'expired'],
         default: 'inactive'
+    },
+    billingCycle: {
+        type: String,
+        enum: ['monthly', 'yearly'],
+        default: 'monthly'
     },
     startedAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true },

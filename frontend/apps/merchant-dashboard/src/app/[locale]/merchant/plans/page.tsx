@@ -21,6 +21,7 @@ export default function PlansPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [pendingCheckoutPlanId, setPendingCheckoutPlanId] = useState<string | null>(null);
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
     useEffect(() => {
         const autoSubscribeId = searchParams.get('autoSubscribe');
@@ -30,7 +31,8 @@ export default function PlansPage() {
             
             if (targetPlan && currentPlanName !== targetPlan.name) {
                 // If it's a paid plan, check balance first to avoid errors
-                const isInsufficient = targetPlan.type === 'paid' && billing.wallet.balance < targetPlan.monthlyPrice;
+                const targetPrice = billingCycle === 'yearly' ? targetPlan.monthlyPrice * 12 * 0.8 : targetPlan.monthlyPrice;
+                const isInsufficient = targetPlan.type === 'paid' && billing.wallet.balance < targetPrice;
                 if (!isInsufficient) {
                     setPendingCheckoutPlanId(autoSubscribeId);
                 }
@@ -38,19 +40,21 @@ export default function PlansPage() {
             // Clear parameter so it doesn't repeatedly try
             router.replace('/merchant/plans');
         }
-    }, [searchParams, plans, billing, subscribeMutation, router]);
+    }, [searchParams, plans, billing, subscribeMutation, router, billingCycle]);
 
     if (plansLoading || billingLoading) return <PlansSkeleton />;
 
     const currentPlanName = billing?.plan?.name;
+    const currentBillingCycle = billing?.subscription?.billingCycle || 'monthly';
     const currentPlanObj = plans?.find(p => p.name === currentPlanName);
+    const localizedCurrentPlanName = billing?.plan
+        ? locale === 'ar'
+            ? billing.plan.name_ar || billing.plan.name
+            : billing.plan.name_en || billing.plan.name
+        : '';
 
-    // Smart Filtering: Display only the current plan OR plans with a strictly higher monthlyPrice
-    const filteredPlans = plans?.filter(plan => {
-        if (plan.name === currentPlanName) return true;
-        if (!currentPlanObj) return true; // Safety fallback
-        return plan.monthlyPrice > currentPlanObj.monthlyPrice;
-    });
+    // List all plans dynamically to support both upgrade and downgrade actions
+    const filteredPlans = plans;
 
     return (
         <div className="container mx-auto p-6 max-w-7xl space-y-16 pb-20">
@@ -67,16 +71,73 @@ export default function PlansPage() {
                 <p className="text-xl text-muted-foreground font-medium">
                     {t('subtitle')}
                 </p>
+
+                {/* Billing Cycle Toggle */}
+                <div className="flex justify-center items-center mt-6">
+                    <div className="relative flex items-center p-1 bg-gray-100 rounded-2xl border border-gray-200 shadow-inner">
+                        <button
+                            onClick={() => setBillingCycle('monthly')}
+                            className={`relative z-10 px-8 py-3 text-sm font-black rounded-xl transition-all duration-300 ${
+                                billingCycle === 'monthly'
+                                    ? 'bg-white text-gray-900 shadow-md scale-105'
+                                    : 'text-gray-500 hover:text-gray-900'
+                            }`}
+                        >
+                            {t('monthly')}
+                        </button>
+                        <button
+                            onClick={() => setBillingCycle('yearly')}
+                            className={`relative z-10 px-8 py-3 text-sm font-black rounded-xl transition-all duration-300 flex items-center gap-2 ${
+                                billingCycle === 'yearly'
+                                    ? 'bg-white text-gray-900 shadow-md scale-105'
+                                    : 'text-gray-500 hover:text-gray-900'
+                            }`}
+                        >
+                            {t('yearly')}
+                            <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-emerald-500 text-white ${billingCycle === 'yearly' ? 'animate-bounce' : ''}`}>
+                                {t('savePercent', { percent: 20 })}
+                            </span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {filteredPlans?.map((plan) => {
-                    const isCurrent = currentPlanName === plan.name;
+                    const isFree = plan.type === 'free';
                     const isPopular = plan.name === 'Pro';
-                    const isInsufficient = plan.type === 'paid' && billing && billing.wallet.balance < plan.monthlyPrice;
+
+                    const monthlyPriceCalculated = isFree ? 0 : (billingCycle === 'yearly' ? plan.monthlyPrice * 0.8 : plan.monthlyPrice);
+                    const yearlyPriceCalculated = isFree ? 0 : plan.monthlyPrice * 12 * 0.8;
+                    const priceLabel = isFree 
+                        ? '0'
+                        : (billingCycle === 'yearly' ? yearlyPriceCalculated.toFixed(0) : plan.monthlyPrice);
+                    const periodLabel = isFree 
+                        ? '' 
+                        : (billingCycle === 'yearly' ? t('yearlyPeriod') : t('monthlyPeriod'));
+
+                    const isCurrent = plan.name === currentPlanName && (isFree || currentBillingCycle === billingCycle);
+                    const targetPrice = billingCycle === 'yearly' ? plan.monthlyPrice * 12 * 0.8 : plan.monthlyPrice;
+                    const isInsufficient = plan.type === 'paid' && billing && billing.wallet.balance < targetPrice;
 
                     // Support localized names/descriptions if available in the database
                     const localizedName = locale === 'ar' ? (plan as any).name_ar || plan.name : (plan as any).name_en || plan.name;
+
+                    let actionText = '';
+                    if (isCurrent) {
+                        actionText = t('currentTier');
+                    } else if (isFree) {
+                        actionText = t('switchToFree');
+                    } else if (!currentPlanObj) {
+                        actionText = t('upgradeNow');
+                    } else {
+                        const currentPrice = currentPlanObj.monthlyPrice * (currentBillingCycle === 'yearly' ? 12 * 0.8 : 1);
+                        if (targetPrice > currentPrice) {
+                            actionText = t('upgradeNow');
+                        } else {
+                            actionText = t('downgradeNow');
+                        }
+                    }
 
                     return (
                         <Card
@@ -98,9 +159,18 @@ export default function PlansPage() {
                                     {getPlanIcon(plan.name)}
                                 </div>
                                 <CardTitle className="text-3xl font-black tracking-tight">{localizedName}</CardTitle>
-                                <div className="flex items-baseline gap-1 mt-4">
-                                    <span className="text-5xl font-black">{plan.monthlyPrice}</span>
-                                    <span className="text-muted-foreground font-bold tracking-tight">{t('currency')}</span>
+                                <div className="flex flex-col mt-4">
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-5xl font-black">{priceLabel}</span>
+                                        {plan.monthlyPrice > 0 && <span className="text-muted-foreground font-bold tracking-tight"> {periodLabel}</span>}
+                                    </div>
+                                    {billingCycle === 'yearly' && plan.monthlyPrice > 0 && (
+                                        <span className="text-xs text-emerald-600 font-bold mt-1">
+                                            {locale === 'ar' 
+                                                ? `(أي ما يعادل ${monthlyPriceCalculated.toFixed(0)} ج.م/شهرياً)`
+                                                : `(equiv. ${monthlyPriceCalculated.toFixed(0)} EGP/mo)`}
+                                        </span>
+                                    )}
                                 </div>
                             </CardHeader>
 
@@ -116,28 +186,40 @@ export default function PlansPage() {
                                     />
                                     <FeatureItem icon={Zap} label={t('orderFee', { amount: plan.orderFee.toFixed(2) })} />
                                     <FeatureItem icon={ShieldCheck} label={t('secureWallet')} />
-                                    <FeatureItem icon={plan.features.customDomain ? Check : Star} label={t('customDomain')} enabled={plan.features.customDomain} />
-                                    <FeatureItem icon={plan.features.dropshipping ? Check : Rocket} label={t('dropshipping')} enabled={plan.features.dropshipping} />
+                                    
+                                    {/* Dynamic features array from database */}
+                                    {(locale === 'ar' ? plan.features_ar : plan.features_en)?.map((feature, idx) => (
+                                        <FeatureItem key={idx} icon={Check} label={feature} />
+                                    ))}
                                 </div>
                             </CardContent>
 
                             <CardFooter className="p-10 pt-0">
                                 <div className="w-full space-y-3">
-                                    <Button
-                                        className={cn(
-                                            "w-full h-16 rounded-[24px] font-black text-sm uppercase tracking-widest transition-all shadow-xl",
-                                            isCurrent ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" : ""
-                                        )}
-                                        variant={isCurrent ? "default" : (isPopular ? "default" : "outline")}
-                                        onClick={() => !isCurrent && setPendingCheckoutPlanId(plan._id)}
-                                        disabled={subscribeMutation.isPending || isCurrent}
-                                    >
-                                        {subscribeMutation.isPending && subscribeMutation.variables === plan._id ? (
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                        ) : (
-                                            isCurrent ? t('currentTier') : (plan.type === 'free' ? t('switchToFree') : t('upgradeNow'))
-                                        )}
-                                    </Button>
+                                    {(() => {
+                                        const isMutatingThisPlan = subscribeMutation.isPending && (
+                                            typeof subscribeMutation.variables === 'string'
+                                                ? subscribeMutation.variables === plan._id
+                                                : subscribeMutation.variables?.planId === plan._id
+                                        );
+                                        return (
+                                            <Button
+                                                className={cn(
+                                                    "w-full h-16 rounded-[24px] font-black text-sm uppercase tracking-widest transition-all shadow-xl",
+                                                    isCurrent ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" : ""
+                                                )}
+                                                variant={isCurrent ? "default" : (isPopular ? "default" : "outline")}
+                                                onClick={() => !isCurrent && setPendingCheckoutPlanId(plan._id)}
+                                                disabled={subscribeMutation.isPending || isCurrent}
+                                            >
+                                                {isMutatingThisPlan ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                ) : (
+                                                    actionText
+                                                )}
+                                            </Button>
+                                        );
+                                    })()}
                                     {isInsufficient && !isCurrent && (
                                         <div className="flex items-center gap-2 text-amber-600 font-bold text-[10px] uppercase tracking-widest px-2">
                                             <AlertCircle className="w-3 h-3" />
@@ -167,21 +249,41 @@ export default function PlansPage() {
             <Dialog open={!!pendingCheckoutPlanId} onOpenChange={(open) => !open && setPendingCheckoutPlanId(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-black">{t('confirmUpgradeTitle', { fallback: 'Confirm Subscription Upgrade' })}</DialogTitle>
+                        <DialogTitle className="text-2xl font-black">
+                            {(() => {
+                                const targetPlan = plans?.find(p => p._id === pendingCheckoutPlanId);
+                                if (!targetPlan || !currentPlanObj) return t('confirmUpgradeTitle');
+                                const currentPrice = currentPlanObj.monthlyPrice * (currentBillingCycle === 'yearly' ? 12 * 0.8 : 1);
+                                const targetPrice = targetPlan.monthlyPrice * (billingCycle === 'yearly' ? 12 * 0.8 : 1);
+                                return targetPrice > currentPrice ? t('confirmUpgradeTitle') : t('confirmDowngradeTitle');
+                            })()}
+                        </DialogTitle>
                         <DialogDescription className="pt-4 text-base">
                             {(() => {
                                 const targetPlan = plans?.find(p => p._id === pendingCheckoutPlanId);
                                 if (!targetPlan) return null;
                                 const localizedPlanName = locale === 'ar' ? (targetPlan as any).name_ar || targetPlan.name : (targetPlan as any).name_en || targetPlan.name;
+                                const targetPrice = billingCycle === 'yearly' ? targetPlan.monthlyPrice * 12 * 0.8 : targetPlan.monthlyPrice;
+                                const cycleLabel = billingCycle === 'yearly' ? (locale === 'ar' ? 'السنوية' : 'yearly') : (locale === 'ar' ? 'الشهرية' : 'monthly');
                                 return (
                                     <span className="block bg-amber-50 border-2 border-amber-200 text-amber-900 p-6 rounded-2xl font-medium mt-2 leading-relaxed">
-                                        {t.rich('confirmUpgradeWarning', {
-                                            current: currentPlanName || '',
-                                            new: localizedPlanName,
-                                            price: targetPlan.monthlyPrice,
-                                            currency: billing?.wallet?.currency || 'EGP',
-                                            highlight: (chunks) => <strong className="font-black text-amber-950 px-1">{chunks}</strong>
-                                        })}
+                                        {locale === 'ar' ? (
+                                            <>
+                                                {localizedCurrentPlanName ? (
+                                                    <>تحذير: أنت حالياً على الخطة <strong>{localizedCurrentPlanName}</strong>. المتابعة ستستبدل فوراً اشتراكك النشط بالخطة <strong>{localizedPlanName} ({cycleLabel})</strong> وستخصم <strong>{targetPrice.toFixed(0)} {billing?.wallet?.currency || 'ج.م'}</strong> من محفظتك.</>
+                                                ) : (
+                                                    <>المتابعة ستشترك بالخطة <strong>{localizedPlanName} ({cycleLabel})</strong> وستخصم <strong>{targetPrice.toFixed(0)} {billing?.wallet?.currency || 'ج.م'}</strong> من محفظتك.</>
+                                                )} هل تريد المتابعة؟
+                                            </>
+                                        ) : (
+                                            <>
+                                                {localizedCurrentPlanName ? (
+                                                    <>Warning: You are currently on the <strong>{localizedCurrentPlanName}</strong>. Proceeding will immediately replace your active subscription with the <strong>{localizedPlanName} ({cycleLabel})</strong> and deduct <strong>{targetPrice.toFixed(0)} {billing?.wallet?.currency || 'EGP'}</strong> from your wallet.</>
+                                                ) : (
+                                                    <>Proceeding will subscribe you to the <strong>{localizedPlanName} ({cycleLabel})</strong> and deduct <strong>{targetPrice.toFixed(0)} {billing?.wallet?.currency || 'EGP'}</strong> from your wallet.</>
+                                                )} Do you want to proceed?
+                                            </>
+                                        )}
                                     </span>
                                 );
                             })()}
@@ -189,20 +291,20 @@ export default function PlansPage() {
                     </DialogHeader>
                     <DialogFooter className="mt-6 flex gap-3 sm:justify-end">
                         <Button variant="outline" className="rounded-xl font-bold h-11 px-6 border-2" onClick={() => setPendingCheckoutPlanId(null)}>
-                            {t('cancel', { fallback: 'Cancel' })}
+                            {t('cancel')}
                         </Button>
                         <Button 
                             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black h-11 px-6 shadow-xl shadow-emerald-500/20"
                             onClick={() => {
                                 if (pendingCheckoutPlanId) {
-                                    subscribeMutation.mutate(pendingCheckoutPlanId);
+                                    subscribeMutation.mutate({ planId: pendingCheckoutPlanId, billingCycle });
                                     setPendingCheckoutPlanId(null);
                                 }
                             }}
                             disabled={subscribeMutation.isPending}
                         >
                             {subscribeMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ShieldCheck className="w-5 h-5 mr-2" />}
-                            {t('confirmAndPay', { fallback: 'Confirm & Pay' })}
+                            {t('confirmAndPay')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

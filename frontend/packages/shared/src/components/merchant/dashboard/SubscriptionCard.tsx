@@ -7,15 +7,22 @@ import { Button } from '@shared/components/ui/button';
 import { Badge } from '@shared/components/ui/badge';
 import { NavLink } from '@shared/components/NavLink';
 import { CreditCard, Settings, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 const SubscriptionCard = memo(() => {
     const { data: billing } = useBillingOverview();
     const t = useTranslations('dashboard.home');
+    const locale = useLocale();
 
     const subscription = billing?.subscription;
     const plan = billing?.plan;
     const hasSelectedPlan = plan && plan.name !== 'No Plan';
+
+    const localizedPlanName = plan
+        ? locale === 'ar'
+            ? plan.name_ar || plan.name
+            : plan.name_en || plan.name
+        : '';
 
     const getStatusBadge = () => {
         if (!subscription) return <Badge variant="secondary">No Active Plan</Badge>;
@@ -43,7 +50,7 @@ const SubscriptionCard = memo(() => {
                 {plan && (
                     <div className="flex justify-between items-center">
                         <span className="text-gray-500 font-medium">{t('plan')}</span>
-                        <span className="font-bold text-blue-600">{plan.name}</span>
+                        <span className="font-bold text-blue-600">{localizedPlanName}</span>
                     </div>
                 )}
                 {subscription?.expiresAt && (

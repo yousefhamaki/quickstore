@@ -248,7 +248,7 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
                     <Button
                         size="lg"
                         className="rounded-2xl font-black uppercase tracking-widest text-xs px-8"
-                        onClick={() => router.push('/dashboard/billing')}
+                        onClick={() => router.push('/merchant/subscribe')}
                     >
                         Upgrade to {requiredPlan}
                     </Button>

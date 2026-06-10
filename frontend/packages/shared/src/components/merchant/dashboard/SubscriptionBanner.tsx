@@ -5,12 +5,13 @@ import { useBillingOverview, usePayFromWallet } from '@shared/lib/hooks/useBilli
 import { Card, CardContent } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 const SubscriptionBanner = memo(() => {
     const { data: billing } = useBillingOverview();
     const payFromWallet = usePayFromWallet();
     const tBanner = useTranslations('dashboard.banner');
+    const locale = useLocale();
 
     const subscription = billing?.subscription;
     const plan = billing?.plan;
@@ -20,6 +21,12 @@ const SubscriptionBanner = memo(() => {
     const hasSelectedPlan = plan && plan.name !== 'No Plan';
     const planPrice = plan?.monthlyPrice || 0;
     const canPayWithWallet = hasSelectedPlan && wallet && wallet.balance >= planPrice && planPrice > 0;
+
+    const localizedPlanName = plan
+        ? locale === 'ar'
+            ? plan.name_ar || plan.name
+            : plan.name_en || plan.name
+        : '';
 
     const handleWalletPayment = async () => {
         try {
@@ -40,7 +47,7 @@ const SubscriptionBanner = memo(() => {
                     </h2>
                     <p className="text-blue-100 max-w-lg">
                         {subscription?.status === 'inactive' && hasSelectedPlan
-                            ? tBanner('pendingSubtitle', { planName: plan.name })
+                            ? tBanner('pendingSubtitle', { planName: localizedPlanName })
                             : tBanner('upgradeSubtitle')}
                     </p>
                 </div>

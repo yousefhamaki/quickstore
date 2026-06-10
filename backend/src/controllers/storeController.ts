@@ -364,6 +364,22 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const deleteStore = async (req: AuthRequest, res: Response) => {
     try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ message: 'Password is required to confirm store deletion.' });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user || !user.passwordHash) {
+            return res.status(400).json({ message: 'User verification failed.' });
+        }
+
+        const bcrypt = await import('bcryptjs');
+        const isMatch = await bcrypt.default.compare(password, user.passwordHash);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Incorrect account password. Store deletion denied.' });
+        }
+
         const store = await Store.findOne({
             _id: req.params.id,
             ownerId: req.user._id

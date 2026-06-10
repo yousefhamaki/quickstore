@@ -219,7 +219,7 @@ export default function SocialSharingPage({ params }: { params: Promise<{ storeI
                     <Button
                         size="sm"
                         className="rounded-xl font-bold uppercase tracking-widest text-[10px] bg-amber-600 hover:bg-amber-700 text-white border-0 shadow-sm"
-                        onClick={() => router.push('/dashboard/billing')}
+                        onClick={() => router.push('/merchant/subscribe')}
                     >
                         Upgrade Now
                     </Button>
@@ -256,11 +256,10 @@ export default function SocialSharingPage({ params }: { params: Promise<{ storeI
                                                 <div
                                                     key={id}
                                                     onClick={() => handleTogglePlatform(id)}
-                                                    className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer select-none ${
-                                                        isChecked
+                                                    className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer select-none ${isChecked
                                                             ? 'border-primary bg-primary/[0.02]'
                                                             : 'border-muted hover:border-muted-foreground/30 bg-muted/20'
-                                                    } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${platform.bgColor} ${platform.color}`}>

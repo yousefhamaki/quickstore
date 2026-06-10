@@ -33,7 +33,10 @@ import {
     Image as ImageIcon
 } from "lucide-react";
 import { usePauseStore, useResumeStore } from "@shared/lib/hooks/useStore";
+import { useDeleteStore } from "@shared/lib/hooks/useStores";
 import { Separator } from "@shared/components/ui/separator";
+import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
 
 export default function GeneralSettings({ params }: { params: Promise<{ storeId: string }> }) {
     const { storeId } = use(params);
@@ -41,7 +44,21 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
     const updateMutation = useUpdateStore(storeId);
     const pauseMutation = usePauseStore(storeId);
     const resumeMutation = useResumeStore(storeId);
+    const deleteMutation = useDeleteStore();
+    const router = useRouter();
     const [isUploading, setIsUploading] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    const handleDeleteStore = async () => {
+        try {
+            await deleteMutation.mutateAsync({ id: storeId, password: confirmPassword });
+            setIsDeleteDialogOpen(false);
+            router.push('/dashboard');
+        } catch (err) {
+            // Error toast handled by hook
+        }
+    };
 
     const { register, handleSubmit, watch, setValue, formState: { errors, isDirty } } = useForm({
         resolver: zodResolver(updateStoreSchema),
@@ -345,7 +362,7 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                         </CardContent>
                     </Card>
 
-                    <Card className="border-red-200 bg-red-50/10 opacity-50 cursor-not-allowed">
+                    <Card className="border-red-200 bg-red-50/10">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-bold">Delete Store</CardTitle>
                         </CardHeader>
@@ -353,13 +370,69 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                             <p className="text-xs text-muted-foreground mb-4">
                                 Permanently delete all data for this store.
                             </p>
-                            <Button variant="destructive" size="sm" className="w-full" disabled>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => setIsDeleteDialogOpen(true)}
+                            >
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete Permanently
                             </Button>
                         </CardContent>
                     </Card>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                if (!open) setConfirmPassword('');
+                setIsDeleteDialogOpen(open);
+            }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-red-600">Delete Store Permanently</DialogTitle>
+                        <DialogDescription className="pt-4 text-base space-y-4">
+                            <span className="block bg-red-50 border-2 border-red-200 text-red-900 p-6 rounded-2xl font-medium leading-relaxed">
+                                Warning: This action is irreversible. All products, orders, settings, and storefront data associated with this store will be permanently removed.
+                            </span>
+                            <span className="block font-bold text-foreground">
+                                To confirm this deletion, please enter your account password:
+                            </span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="my-4">
+                        <Input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Enter account password"
+                            className="rounded-xl h-11 border-2"
+                        />
+                    </div>
+                    <DialogFooter className="flex gap-3 sm:justify-end">
+                        <Button 
+                            variant="outline" 
+                            className="rounded-xl font-bold h-11 px-6 border-2" 
+                            onClick={() => {
+                                setIsDeleteDialogOpen(false);
+                                setConfirmPassword('');
+                            }}
+                            disabled={deleteMutation.isPending}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="destructive"
+                            className="rounded-xl font-black h-11 px-6 shadow-xl shadow-red-500/20"
+                            onClick={handleDeleteStore}
+                            disabled={!confirmPassword || deleteMutation.isPending}
+                        >
+                            {deleteMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Trash2 className="w-5 h-5 mr-2" />}
+                            Delete Store
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

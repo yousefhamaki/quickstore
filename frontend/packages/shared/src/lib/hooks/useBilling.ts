@@ -42,7 +42,12 @@ export const useRechargeWallet = () => {
 export const useSubscribe = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (planId: string) => billingApi.subscribeToPlan(planId),
+        mutationFn: (variables: string | { planId: string; billingCycle?: 'monthly' | 'yearly' }) => {
+            if (typeof variables === 'string') {
+                return billingApi.subscribeToPlan(variables);
+            }
+            return billingApi.subscribeToPlan(variables.planId, variables.billingCycle);
+        },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['billingOverview'] });
             toast.success(data.message || 'Subscription updated successfully');

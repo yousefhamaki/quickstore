@@ -39,7 +39,7 @@ const FeatureLock = ({ feature, requiredPlan }: { feature: string, requiredPlan:
         <Button
             size="sm"
             className="rounded-xl font-bold uppercase tracking-widest h-9 px-4 text-[10px]"
-            onClick={() => window.location.href = '/dashboard/billing'}
+            onClick={() => window.location.href = '/merchant/subscribe'}
         >
             Upgrade Now
         </Button>
