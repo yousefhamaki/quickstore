@@ -7,21 +7,45 @@ const handleI18nRouting = createMiddleware(routing);
 export default function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
+    const host = request.headers.get('host') || '';
+    const hostname = host.split(':')[0]; // Normalize by removing port
+
+    // ================================================================
+    // 0. DOMAIN CLASSIFICATION — Identify main (landing) vs store domains
+    // ================================================================
+    const mainDomains = [
+        'localhost',
+        '127.0.0.1',
+        '[::1]',
+        'quickstore.com',
+        'quickstore.live',
+        'quickstore.test',
+        'www.quickstore.com',
+        'www.quickstore.live',
+        'www.quickstore.test',
+        'api.quickstore.com',
+        'buildora.live',
+        'www.buildora.live'
+    ];
+
+    const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
+
     // ================================================================
     // 1. EARLY EXIT — Protect ALL static assets from being rewritten.
     //    This is the FIRST check and the most important.
     //    Without it, CSS/JS/fonts get rewritten to
     //    /en/store/hamaki/_next/static/... which causes 404s.
     // ================================================================
+    const isManifestFile = pathname === '/manifest.json' || pathname === '/manifest.webmanifest';
+
     if (
         pathname.startsWith('/_next') ||
         pathname.startsWith('/api') ||
         pathname.startsWith('/static') ||
         pathname.startsWith('/public') ||
         pathname === '/favicon.ico' ||
-        pathname === '/manifest.webmanifest' ||
-        // Catch ALL file extensions: css, js, fonts, images, maps, json
-        /\.(?:css|js|ico|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot|map|json)$/i.test(pathname)
+        (isManifestFile && isMainDomain) || // Only early-exit manifest on main domain
+        (!isManifestFile && /\.(?:css|js|ico|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot|map)$/i.test(pathname))
     ) {
         return NextResponse.next();
     }
@@ -74,28 +98,7 @@ export default function proxy(request: NextRequest) {
         });
     }
 
-    const host = request.headers.get('host') || '';
-    const hostname = host.split(':')[0]; // Normalize by removing port
-
-    // ================================================================
-    // 3. DOMAIN CLASSIFICATION — Identify main (landing) vs store domains
-    // ================================================================
-    const mainDomains = [
-        'localhost',
-        '127.0.0.1',
-        '[::1]',
-        'quickstore.com',
-        'quickstore.live',
-        'quickstore.test',
-        'www.quickstore.com',
-        'www.quickstore.live',
-        'www.quickstore.test',
-        'api.quickstore.com',
-        'buildora.live',
-        'www.buildora.live'
-    ];
-
-    const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
+    // Domain classification variables (host, hostname, isMainDomain) moved to top
 
     // ================================================================
     // 4. SUBDOMAIN ROUTING — Rewrite store requests
@@ -171,6 +174,8 @@ export default function proxy(request: NextRequest) {
 export const config = {
     // Pre-filter at the framework level: exclude static resources.
     matcher: [
-        '/((?!_next|static|public|favicon\\.ico|api|.*\\.(?:css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|map|json)).*)',
+        '/((?!_next|static|public|favicon\\.ico|api|.*\\.(?:css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|map)).*)',
+        '/manifest.json',
+        '/manifest.webmanifest',
     ],
 };

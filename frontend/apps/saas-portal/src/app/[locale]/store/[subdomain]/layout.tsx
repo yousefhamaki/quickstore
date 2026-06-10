@@ -29,6 +29,12 @@ export async function generateMetadata({ params }: { params: Promise<{ subdomain
         return {
             title: store.name,
             description: store.description,
+            manifest: '/manifest.json',
+            appleWebApp: {
+                capable: true,
+                statusBarStyle: 'default',
+                title: store.name,
+            },
             openGraph: {
                 title: store.name,
                 description: store.description,
