@@ -12,6 +12,12 @@ export interface Coupon {
     isActive: boolean;
 }
 
+export interface SocialSharingSettings {
+    enabled: boolean;
+    platforms: string[];
+    defaultMessage?: string;
+}
+
 export interface MarketingSettings {
     facebookPixelId?: string;
     googleAnalyticsId?: string;
@@ -19,6 +25,7 @@ export interface MarketingSettings {
     snapchatPixelId?: string;
     seoTitle?: string;
     seoDescription?: string;
+    socialSharing?: SocialSharingSettings;
 }
 
 export interface MarketingSettingsResponse {
@@ -59,6 +66,16 @@ export const updatePixels = async (data: { storeId: string, [key: string]: any }
 
 export const updateSEO = async (data: { storeId: string, seoTitle: string, seoDescription: string }) => {
     const response = await api.put('/marketing/seo', data);
+    return response.data;
+};
+
+export const updateSocialSharing = async (data: {
+    storeId: string;
+    enabled: boolean;
+    platforms: string[];
+    defaultMessage?: string;
+}) => {
+    const response = await api.put('/marketing/social-sharing', data);
     return response.data;
 };
 

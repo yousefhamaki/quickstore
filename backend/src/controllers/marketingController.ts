@@ -1,6 +1,24 @@
 import { Response } from 'express';
 import Store from '../models/Store';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { redisClient } from '../config/redis';
+import { PLAN_MAPPING, PLAN_NAMES } from '../config/planFeatures';
+
+// Helper for Zero Cache-Miss Redis update
+const overwriteStoreCache = async (store: any) => {
+    try {
+        const plainStore = store.toObject();
+        const cacheKey = `store_customization:${store.domain.subdomain}`;
+        await redisClient.setex(cacheKey, 3600, JSON.stringify(plainStore));
+
+        if (store.domain.customDomain) {
+            const customCacheKey = `store_customization:${store.domain.customDomain}`;
+            await redisClient.setex(customCacheKey, 3600, JSON.stringify(plainStore));
+        }
+    } catch (cacheErr) {
+        console.warn(`[Redis Cache Overwrite Failed]`, cacheErr);
+    }
+};
 
 // @desc    Update store pixels
 // @route   PUT /api/marketing/pixels
@@ -23,9 +41,11 @@ export const updatePixels = async (req: AuthRequest, res: Response) => {
         store.settings.marketing.tiktokPixelId = tiktokPixelId;
         store.settings.marketing.snapchatPixelId = snapchatPixelId;
 
-        // Force mark as modified for nested objects if necessary, though direct assignment usually works
         store.markModified('settings.marketing');
         await store.save();
+
+        // Zero Cache-Miss Overwrite
+        await overwriteStoreCache(store);
 
         res.json({ success: true, marketing: store.settings.marketing });
     } catch (error) {
@@ -55,6 +75,9 @@ export const updateSEO = async (req: AuthRequest, res: Response) => {
         store.markModified('settings.marketing');
         await store.save();
 
+        // Zero Cache-Miss Overwrite
+        await overwriteStoreCache(store);
+
         res.json({ success: true, marketing: store.settings.marketing });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server Error', error });
@@ -77,4 +100,51 @@ export const getMarketingSettings = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server Error', error });
     }
-}
+};
+
+// @desc    Update store Social Sharing settings
+// @route   PUT /api/marketing/social-sharing
+// @access  Private/Merchant
+export const updateSocialSharing = async (req: AuthRequest, res: Response) => {
+    try {
+        const { storeId, enabled, platforms, defaultMessage } = req.body;
+
+        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
+        if (!store) {
+            return res.status(404).json({ success: false, message: 'Store not found or unauthorized' });
+        }
+
+        if (!store.settings.marketing) {
+            store.settings.marketing = {};
+        }
+
+        let finalPlatforms = platforms || [];
+        let finalDefaultMessage = defaultMessage;
+
+        // Perform plan gating checks
+        const planName = req.subscription?.planId ? (req.subscription.planId as any).name : 'Free';
+        const normalizedPlan = PLAN_MAPPING[planName] || PLAN_NAMES.STARTER;
+
+        if (normalizedPlan === PLAN_NAMES.STARTER) {
+            // Starter/Free plan is limited to copyLink & whatsapp, and locked defaultMessage
+            finalPlatforms = finalPlatforms.filter((p: string) => ['copyLink', 'whatsapp'].includes(p));
+            finalDefaultMessage = 'Check out this amazing product!';
+        }
+
+        store.settings.marketing.socialSharing = {
+            enabled: !!enabled,
+            platforms: finalPlatforms,
+            defaultMessage: finalDefaultMessage
+        };
+
+        store.markModified('settings.marketing');
+        await store.save();
+
+        // Zero Cache-Miss Overwrite
+        await overwriteStoreCache(store);
+
+        res.json({ success: true, socialSharing: store.settings.marketing.socialSharing });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error', error });
+    }
+};

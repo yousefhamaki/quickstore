@@ -77,6 +77,12 @@ export interface IPolicies {
     shippingPolicy?: string;
 }
 
+export interface ISocialSharingSettings {
+    enabled: boolean;
+    platforms: string[];
+    defaultMessage?: string;
+}
+
 export interface IMarketingSettings {
     facebookPixelId?: string;
     googleAnalyticsId?: string;
@@ -84,6 +90,7 @@ export interface IMarketingSettings {
     snapchatPixelId?: string;
     seoTitle?: string;
     seoDescription?: string;
+    socialSharing?: ISocialSharingSettings;
 }
 
 export interface ISEOSettings {
@@ -284,7 +291,15 @@ const StoreSchema: Schema = new Schema(
                 tiktokPixelId: { type: String },
                 snapchatPixelId: { type: String },
                 seoTitle: { type: String },
-                seoDescription: { type: String }
+                seoDescription: { type: String },
+                socialSharing: {
+                    enabled: { type: Boolean, default: true },
+                    platforms: {
+                        type: [String],
+                        default: ['facebook', 'twitter', 'whatsapp', 'pinterest', 'copyLink']
+                    },
+                    defaultMessage: { type: String, default: 'Check out this amazing product!' }
+                }
             }
         },
 

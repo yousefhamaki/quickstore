@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { ProductActions } from "@shared/components/storefront/ProductActions";
 import { ProductViewTracker } from "@shared/components/storefront/ProductViewTracker";
 import { getTranslations } from "next-intl/server";
+import { SocialShareButtons } from "@shared/components/storefront/SocialShareButtons";
 
 interface ProductPageProps {
     params: Promise<{
@@ -132,6 +133,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
                     {/* Quantity & Add to Cart */}
                     <ProductActions product={product} />
+
+                    {/* Social Sharing */}
+                    <SocialShareButtons store={store} product={product} />
 
                     <div className="h-px bg-gray-100" />
 

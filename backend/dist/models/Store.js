@@ -141,7 +141,15 @@ const StoreSchema = new mongoose_1.Schema({
             tiktokPixelId: { type: String },
             snapchatPixelId: { type: String },
             seoTitle: { type: String },
-            seoDescription: { type: String }
+            seoDescription: { type: String },
+            socialSharing: {
+                enabled: { type: Boolean, default: true },
+                platforms: {
+                    type: [String],
+                    default: ['facebook', 'twitter', 'whatsapp', 'pinterest', 'copyLink']
+                },
+                defaultMessage: { type: String, default: 'Check out this amazing product!' }
+            }
         }
     },
     // Theme
