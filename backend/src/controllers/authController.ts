@@ -11,11 +11,31 @@ import { ensureWallet, autoSubscribeRecord } from './billingController';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+/**
+ * Normalize an email address to its canonical form to prevent alias abuse.
+ * Examples:
+ *   user+anything@gmail.com  → user@gmail.com
+ *   USER+tag@Gmail.COM       → user@gmail.com
+ *
+ * The `+tag` trick is supported by most major providers (Gmail, Outlook, iCloud).
+ * Stripping it ensures one inbox = one account.
+ */
+function normalizeEmail(raw: string): string {
+    const lower = raw.trim().toLowerCase();
+    const [local, domain] = lower.split('@');
+    if (!local || !domain) return lower; // malformed — return as-is, let validators catch it
+    const canonicalLocal = local.split('+')[0]; // strip everything from '+' onwards
+    return `${canonicalLocal}@${domain}`;
+}
+
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = async (req: Request, res: Response) => {
-    const { name, email, password, role, planId } = req.body;
+    const { name, password, role, planId } = req.body;
+    // Normalize the email to prevent +tag alias abuse (e.g., user+1@gmail.com → user@gmail.com)
+    const email = normalizeEmail(req.body.email || '');
 
     try {
         const userExists = await User.findOne({ email });
@@ -85,7 +105,9 @@ export const registerUser = async (req: Request, res: Response) => {
 // @route   POST /api/auth/login
 // @access  Public
 export const loginUser = async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    // Normalize so users can't use +tag to bypass an account suspension/lookup
+    const email = normalizeEmail(req.body.email || '');
 
     try {
         const user = await User.findOne({ email });
@@ -295,7 +317,8 @@ export const getUserProfile = async (req: any, res: Response) => {
 // @route   POST /api/auth/resend-verification
 // @access  Public (requires email in body)
 export const resendVerificationEmail = async (req: Request, res: Response) => {
-    const { email } = req.body;
+    // Normalize to canonical form so alias variants still find the right account
+    const email = normalizeEmail(req.body.email || '');
 
     if (!email) {
         return res.status(400).json({ message: 'Email is required' });

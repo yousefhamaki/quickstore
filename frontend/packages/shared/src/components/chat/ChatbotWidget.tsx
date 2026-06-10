@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, User, Mail, ChevronRight, CheckCircle, HelpCircle, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
 import api from '@shared/services/api';
 
 type FeedbackType = 'helpful' | 'partial' | 'not_helpful';
@@ -34,9 +35,9 @@ export function ChatbotWidget() {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        
+
         const hostname = window.location.hostname;
-        
+
         const mainDomains = [
             'localhost',
             '127.0.0.1',
@@ -50,36 +51,44 @@ export function ChatbotWidget() {
             'buildora.live',
             'www.buildora.live',
         ];
-        
+
         const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
-        
+
         const segments = pathname ? pathname.split('/') : [];
         const isStorePath = segments.includes('store');
-        
+
         if (isMainDomain && !isStorePath) {
             setShouldRender(true);
         } else {
             setShouldRender(false);
         }
     }, [pathname]);
-    
+
     const [messages, setMessages] = useState<Message[]>([
         { role: 'bot', text: locale === 'ar' ? 'مرحباً! كيف يمكنني مساعدتك اليوم؟' : 'Hi there! How can I help you today?' }
     ]);
     const [inputText, setInputText] = useState('');
     const [lastQueries, setLastQueries] = useState<string[]>([]);
-    
+
     // Feedback and Fallback States
     const [activeLogId, setActiveLogId] = useState<string | null>(null);
     const [isAwaitingFeedback, setIsAwaitingFeedback] = useState(false);
     const [isAwaitingTicketInfo, setIsAwaitingTicketInfo] = useState(false);
     const [fallbackMessage, setFallbackMessage] = useState('');
-    
+
     // Form States
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
+    const [ticketMessage, setTicketMessage] = useState('');
     const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+
+    // Pre-fill ticketMessage from fallbackMessage whenever the ticket form opens
+    useEffect(() => {
+        if (isAwaitingTicketInfo) {
+            setTicketMessage(fallbackMessage);
+        }
+    }, [isAwaitingTicketInfo]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -112,8 +121,8 @@ export function ChatbotWidget() {
         setIsAwaitingFeedback(false);
 
         // Smart Repetition Detection
-        const isRepeated = lastQueries.some(q => 
-            q === normalizedQuery || 
+        const isRepeated = lastQueries.some(q =>
+            q === normalizedQuery ||
             (normalizedQuery.length > 10 && q.includes(normalizedQuery)) ||
             (q.length > 10 && normalizedQuery.includes(q))
         );
@@ -124,23 +133,24 @@ export function ChatbotWidget() {
         try {
             if (isRepeated) {
                 trackEvent('chatbot_repeated_query', { query: normalizedQuery });
-                const { data } = await api.post<any>('/chat/ask', { 
-                    message: queryText, 
-                    locale, 
-                    sessionId, 
-                    status: 'repeated' 
+                const { data } = await api.post<any>('/chat/ask', {
+                    message: queryText,
+                    locale,
+                    sessionId,
+                    status: 'repeated'
                 });
-                
+
                 setMessages((prev) => [
                     ...prev,
-                    { 
-                        role: 'bot', 
-                        text: locale === 'ar' ? 
-                            "يبدو أنك سألت هذا من قبل ولم تكن الإجابة كافية. هل تود التحدث إلى فريق الدعم مباشرة؟" : 
+                    {
+                        role: 'bot',
+                        text: locale === 'ar' ?
+                            "يبدو أنك سألت هذا من قبل ولم تكن الإجابة كافية. هل تود التحدث إلى فريق الدعم مباشرة؟" :
                             "It looks like you've asked this before and the answer wasn't enough. Would you like to talk to our support team directly?",
                         logId: data.logId
                     }
                 ]);
+                console.log(queryText)
                 setFallbackMessage(queryText);
                 setActiveLogId(data.logId);
                 triggerFeedbackPrompt(data.logId);
@@ -152,7 +162,7 @@ export function ChatbotWidget() {
 
             if (data.answered && data.article) {
                 trackEvent('chatbot_answered', { logId: data.logId, isConversational: data.isConversational });
-                
+
                 if (data.isConversational) {
                     setMessages((prev) => [...prev, { role: 'bot', text: data.article.content, logId: data.logId }]);
                 } else {
@@ -174,8 +184,8 @@ export function ChatbotWidget() {
                     ...prev,
                     {
                         role: 'bot',
-                        text: locale === 'ar' ? 
-                            "لم أجد إجابة دقيقة لسؤالك. هل تود فتح تذكرة دعم لمساعدتك؟" : 
+                        text: locale === 'ar' ?
+                            "لم أجد إجابة دقيقة لسؤالك. هل تود فتح تذكرة دعم لمساعدتك؟" :
                             "I couldn't find an exact answer to your question. Would you like to open a support ticket?",
                         logId: data.logId
                     }
@@ -184,9 +194,9 @@ export function ChatbotWidget() {
                 triggerFeedbackPrompt(data.logId);
             }
         } catch (error) {
-            setMessages((prev) => [...prev, { 
-                role: 'bot', 
-                text: locale === 'ar' ? 'عذراً، حدث خطأ أثناء المعالجة.' : 'Sorry, I encountered an error while processing.' 
+            setMessages((prev) => [...prev, {
+                role: 'bot',
+                text: locale === 'ar' ? 'عذراً، حدث خطأ أثناء المعالجة.' : 'Sorry, I encountered an error while processing.'
             }]);
         }
     };
@@ -201,13 +211,13 @@ export function ChatbotWidget() {
 
     const handleFeedback = async (type: FeedbackType) => {
         if (!activeLogId) return;
-        
+
         setIsAwaitingFeedback(false);
         trackEvent(`chatbot_feedback_${type}`, { logId: activeLogId });
 
         try {
             await api.post('/chat/feedback', { logId: activeLogId, feedback: type });
-            
+
             if (type === 'helpful') {
                 setMessages((prev) => [
                     ...prev,
@@ -218,10 +228,10 @@ export function ChatbotWidget() {
                 setIsAwaitingTicketInfo(true);
                 setMessages((prev) => [
                     ...prev,
-                    { 
-                        role: 'bot', 
+                    {
+                        role: 'bot',
                         text: locale === 'ar' ? "أنا آسف لأن الإجابة لم تكن كافية. يرجى تزويدنا بتفاصيلك لنقوم بمساعدتك بشكل أفضل." : "I'm sorry the answer wasn't sufficient. Please provide your details so we can assist you better.",
-                        isTicketForm: true 
+                        isTicketForm: true
                     }
                 ]);
             }
@@ -237,27 +247,27 @@ export function ChatbotWidget() {
 
         try {
             await api.post('/chat/submit-ticket', {
-                message: fallbackMessage,
+                message: ticketMessage,
                 firstName,
                 lastName,
                 email,
                 logId: activeLogId
             });
-            
+
             trackEvent('chatbot_ticket_created', { logId: activeLogId });
             setIsAwaitingTicketInfo(false);
             setMessages((prev) => [
                 ...prev,
-                { 
-                    role: 'bot', 
-                    text: locale === 'ar' ? 'تم إنشاء تذكرة الدعم بنجاح! سيتواصل معك فريقنا قريباً.' : 'Your support ticket has been created! Our team will reach out soon.' 
+                {
+                    role: 'bot',
+                    text: locale === 'ar' ? 'تم إنشاء تذكرة الدعم بنجاح! سيتواصل معك فريقنا قريباً.' : 'Your support ticket has been created! Our team will reach out soon.'
                 }
             ]);
-            setFirstName(''); setLastName(''); setEmail(''); setFallbackMessage('');
+            setFirstName(''); setLastName(''); setEmail(''); setFallbackMessage(''); setTicketMessage('');
         } catch (error) {
-            setMessages((prev) => [...prev, { 
-                role: 'bot', 
-                text: locale === 'ar' ? 'فشل الإرسال. يرجى التأكد من البيانات والمحاولة مرة أخرى.' : 'Submission failed. Please check your info and try again.' 
+            setMessages((prev) => [...prev, {
+                role: 'bot',
+                text: locale === 'ar' ? 'فشل الإرسال. يرجى التأكد من البيانات والمحاولة مرة أخرى.' : 'Submission failed. Please check your info and try again.'
             }]);
         } finally {
             setIsSubmittingTicket(false);
@@ -292,7 +302,7 @@ export function ChatbotWidget() {
                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none'} ${locale === 'ar' ? 'text-right' : 'text-left'}`}>
                                     <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
-                                    
+
                                     {msg.articleLink && (
                                         <a href={msg.articleLink} className={`inline-flex items-center mt-3 text-blue-600 text-sm font-semibold hover:text-blue-800 ${locale === 'ar' ? 'flex-row-reverse' : ''}`}>
                                             {locale === 'ar' ? 'اقرأ المزيد' : 'Read More'} <ChevronRight className={`w-4 h-4 ${locale === 'ar' ? 'mr-1 rotate-180' : 'ml-1'}`} />
@@ -306,6 +316,14 @@ export function ChatbotWidget() {
                                                 <Input required placeholder={locale === 'ar' ? 'العائلة' : "Last Name"} value={lastName} onChange={(e: any) => setLastName(e.target.value)} className="bg-white text-sm h-9" />
                                             </div>
                                             <Input required type="email" placeholder={locale === 'ar' ? 'البريد' : "Email"} value={email} onChange={(e: any) => setEmail(e.target.value)} className="bg-white text-sm h-9" />
+                                            <Textarea
+                                                required
+                                                rows={3}
+                                                placeholder={locale === 'ar' ? 'صف مشكلتك...' : 'Describe your issue...'}
+                                                value={ticketMessage}
+                                                onChange={(e: any) => setTicketMessage(e.target.value)}
+                                                className="bg-white text-sm resize-none"
+                                            />
                                             <Button size="sm" disabled={isSubmittingTicket} className="w-full bg-blue-600 text-white rounded-lg">
                                                 {isSubmittingTicket ? (locale === 'ar' ? 'جاري الإرسال...' : 'Sending...') : (locale === 'ar' ? 'تأكيد التذكرة' : 'Confirm Ticket')}
                                             </Button>
@@ -314,7 +332,7 @@ export function ChatbotWidget() {
                                 </div>
                             </div>
                         ))}
-                        
+
                         {isAwaitingFeedback && (
                             <div className={`flex flex-col gap-2 mt-2 animate-in fade-in slide-in-from-bottom-2 ${locale === 'ar' ? 'items-end pr-4' : 'items-start pl-4'}`}>
                                 <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
@@ -333,7 +351,7 @@ export function ChatbotWidget() {
                                 </div>
                             </div>
                         )}
-                        
+
                         <div ref={messagesEndRef} />
                     </div>
 
@@ -341,15 +359,15 @@ export function ChatbotWidget() {
                     {!isAwaitingTicketInfo && (
                         <div className="p-4 bg-white border-t border-gray-100 shrink-0">
                             <div className="flex gap-2">
-                                <Input 
-                                    className="flex-1 rounded-full bg-gray-50 border-transparent focus:border-blue-500 focus:bg-white transition-colors" 
-                                    placeholder={locale === 'ar' ? 'اسأل سؤالاً...' : "Ask a question..."} 
+                                <Input
+                                    className="flex-1 rounded-full bg-gray-50 border-transparent focus:border-blue-500 focus:bg-white transition-colors"
+                                    placeholder={locale === 'ar' ? 'اسأل سؤالاً...' : "Ask a question..."}
                                     value={inputText}
                                     onChange={(e: any) => setInputText(e.target.value)}
                                     onKeyDown={(e: any) => e.key === 'Enter' && handleSend()}
                                 />
-                                <Button 
-                                    onClick={() => handleSend()} 
+                                <Button
+                                    onClick={() => handleSend()}
                                     className="rounded-full w-10 h-10 p-0 bg-blue-600 text-white flex-shrink-0"
                                 >
                                     <Send className="w-5 h-5" />
