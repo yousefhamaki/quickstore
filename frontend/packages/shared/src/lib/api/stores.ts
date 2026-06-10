@@ -22,7 +22,8 @@ export const updateStore = async (id: string, storeData: Partial<Store>): Promis
 };
 
 export const deleteStore = async ({ id, password }: { id: string; password?: string }): Promise<void> => {
-    await api.delete(`/stores/${id}`, { data: { password } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await api.delete(`/stores/${id}`, { data: { password } } as any);
 };
 
 export const publishStore = async (id: string): Promise<{ message: string; store: Store; storeUrl: string }> => {
