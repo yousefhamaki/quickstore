@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import type { OfferType } from './OfferCampaign';
 
 export interface IOrderItem {
     productId: mongoose.Types.ObjectId;
@@ -8,6 +9,38 @@ export interface IOrderItem {
     quantity: number;
     price: number;
     image?: string;
+}
+
+/**
+ * Attribution record written when a shopper accepts a UCD offer.
+ * Append-only — one entry per accepted campaign on this order.
+ * Powers per-campaign revenue and ROI analytics without needing
+ * to join back to the OfferImpression collection at query time.
+ */
+
+export interface IOfferAttribution {
+    campaignId: mongoose.Types.ObjectId;
+    impressionId?: mongoose.Types.ObjectId;
+    offerType: OfferType;
+    revenueAdded: number;
+    savedAmount: number;
+    acceptedAt: Date;
+    campaignRevenue: number;
+    discountAmount: number;
+    revenueSource?: 'order' | 'upsell' | 'bogo' | 'threshold' | 'bundle';
+    analyticsReversed?: boolean;
+    attributionVersion: number;
+    placement?: 'product_page' | 'cart' | 'checkout' | 'post_purchase' | 'standalone';
+    campaignName?: string;
+    tierQuantity?: number;
+    tierPrice?: number;
+    productId?: mongoose.Types.ObjectId;
+    productName?: string;
+    productSKU?: string;
+    variantId?: mongoose.Types.ObjectId;
+    variantName?: string;
+    shippingFee?: number;
+    orderSource?: 'storefront_checkout' | 'offer_page';
 }
 
 export interface IOrderTimeline {
@@ -51,6 +84,12 @@ export interface IOrder extends Document {
     couponCode?: string;
     transactionFee: number;
     timeline: IOrderTimeline[];
+    /**
+     * UCD offer attribution records. Each entry represents one accepted
+     * offer campaign. Written atomically alongside the order item mutation
+     * in offerController.accept. Max ~10 entries per order in practice.
+     */
+    offerAttribution?: IOfferAttribution[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -123,6 +162,44 @@ const OrderSchema: Schema = new Schema(
                 status: { type: String },
                 timestamp: { type: Date, default: Date.now },
                 note: { type: String },
+            }
+        ],
+        offerAttribution: [
+            {
+                campaignId: {
+                    type: Schema.Types.ObjectId,
+                    ref: 'OfferCampaign',
+                    required: true,
+                },
+                impressionId: {
+                    type: Schema.Types.ObjectId,
+                    ref: 'OfferImpression',
+                    required: false,
+                },
+                offerType: {
+                    type: String,
+                    enum: ['upsell', 'cross_sell', 'down_sell', 'offer_page', 'volume_discount', 'bogo', 'cart_threshold'],
+                    required: true,
+                },
+                revenueAdded: { type: Number, required: true, min: 0 },
+                savedAmount: { type: Number, default: 0, min: 0 },
+                campaignRevenue: { type: Number, required: true, default: 0 },
+                discountAmount: { type: Number, required: true, default: 0 },
+                revenueSource: { type: String, enum: ['order', 'upsell', 'bogo', 'threshold', 'bundle'] },
+                analyticsReversed: { type: Boolean, default: false },
+                attributionVersion: { type: Number, default: 1 },
+                placement: { type: String, enum: ['product_page', 'cart', 'checkout', 'post_purchase', 'standalone'] },
+                acceptedAt: { type: Date, default: Date.now },
+                campaignName: { type: String },
+                tierQuantity: { type: Number },
+                tierPrice: { type: Number },
+                productId: { type: Schema.Types.ObjectId, ref: 'Product' },
+                productName: { type: String },
+                productSKU: { type: String },
+                variantId: { type: Schema.Types.ObjectId },
+                variantName: { type: String },
+                shippingFee: { type: Number },
+                orderSource: { type: String, enum: ['storefront_checkout', 'offer_page'] },
             },
         ],
     },

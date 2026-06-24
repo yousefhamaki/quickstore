@@ -19,6 +19,7 @@ export interface Plan {
     description_ar?: string;
     features_en?: string[];
     features_ar?: string[];
+    emailLimit?: number;
 }
 
 export interface Subscription {

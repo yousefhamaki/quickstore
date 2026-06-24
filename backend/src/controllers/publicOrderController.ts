@@ -5,6 +5,8 @@ import Store from '../models/Store';
 import Coupon from '../models/Coupon';
 import mongoose from 'mongoose';
 import Customer from '../models/Customer';
+import OfferCampaign from '../models/OfferCampaign';
+import OfferImpression from '../models/OfferImpression';
 import { processOrderFee } from './billingController';
 import InventoryLog from '../models/InventoryLog';
 import { PaymentFactory } from '../services/payment/PaymentFactory';
@@ -18,15 +20,148 @@ export const createPublicOrder = async (req: Request, res: Response) => {
     try {
         const {
             storeId,
-            items,
+            campaignId,
+            selectedQuantity,
+            variantId,
             customer: customerData,
             shippingAddress,
             paymentMethod,
-            totalAmount,
             couponCode,
             discountAmount
         } = req.body;
 
+        let { items, totalAmount } = req.body;
+        let campaign: any = null;
+        let resolvedSubtotal = 0;
+        let resolvedUnitPrice = 0;
+        let qty = 1;
+        let shippingFee = 50;
+        let campaignProductOriginalPrice = 0;
+
+        // If campaignId is provided, perform campaign-specific lookup and validations
+        if (campaignId) {
+            if (!mongoose.Types.ObjectId.isValid(storeId)) {
+                return res.status(400).json({ message: 'Invalid store ID' });
+            }
+            if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+                return res.status(400).json({ message: 'Invalid campaign ID' });
+            }
+
+            // Validate phone number format (Egyptian format checks)
+            const phoneRegex = /^01[0125]\d{8}$/;
+            if (!phoneRegex.test(customerData?.phone)) {
+                return res.status(400).json({ message: 'Invalid Egyptian phone number. Must be 11 digits starting with 010, 011, 012, or 015.' });
+            }
+
+            // Validate store exists
+            const oidStoreId = new mongoose.Types.ObjectId(storeId);
+            const store = await Store.findById(oidStoreId).populate({
+                path: 'subscriptionId',
+                populate: { path: 'planId' }
+            });
+            if (!store) {
+                return res.status(404).json({ message: 'Store not found' });
+            }
+
+            // Load active campaign matching tenant context and schedules
+            const now = new Date();
+            campaign = await OfferCampaign.findOne({
+                _id: new mongoose.Types.ObjectId(campaignId),
+                storeId: oidStoreId,
+                status: 'active',
+                $and: [
+                    { $or: [{ 'schedule.startAt': { $exists: false } }, { 'schedule.startAt': { $lte: now } }] },
+                    { $or: [{ 'schedule.endAt': { $exists: false } }, { 'schedule.endAt': { $gte: now } }] }
+                ]
+            });
+            if (!campaign) {
+                return res.status(404).json({ message: 'Campaign not found, inactive, or outside schedule constraints.' });
+            }
+
+            // Verify quantity matches pricing tiers
+            qty = Number(selectedQuantity || 1);
+            const matchedTier = campaign.pricingTiers?.find((t: any) => t.quantity === qty);
+            if (!matchedTier) {
+                return res.status(400).json({ message: 'Invalid quantity bundle selected. Pricing is only configured for specific quantity tiers.' });
+            }
+            resolvedSubtotal = matchedTier.totalPrice;
+            resolvedUnitPrice = Number((resolvedSubtotal / qty).toFixed(2));
+
+            // Load product and validate variant ownership + active status
+            const product = await Product.findById(campaign.offerProducts[0].productId);
+            if (!product || product.status !== 'active') {
+                return res.status(400).json({ message: 'Product is no longer available.' });
+            }
+            campaignProductOriginalPrice = product.price;
+            if (product.storeId.toString() !== storeId.toString()) {
+                return res.status(400).json({ message: 'Product does not belong to this store.' });
+            }
+
+            // Resolve selectedVariants array
+            let resolvedVariants: { variantId?: string; quantity: number }[] = [];
+            if (req.body.selectedVariants && Array.isArray(req.body.selectedVariants) && req.body.selectedVariants.length > 0) {
+                resolvedVariants = req.body.selectedVariants;
+            } else {
+                resolvedVariants = [{ variantId: variantId || undefined, quantity: qty }];
+            }
+
+            // Verify sum of quantities matches qty
+            const totalQtySelected = resolvedVariants.reduce((sum, rv) => sum + Number(rv.quantity), 0);
+            if (totalQtySelected !== qty) {
+                return res.status(400).json({ message: 'Total quantity of selected variants must match the bundle quantity.' });
+            }
+
+            // Validate each variant
+            for (const rv of resolvedVariants) {
+                if (rv.variantId) {
+                    const variant = product.variants.find((v: any) => v._id.toString() === rv.variantId && !v.isDeleted);
+                    if (!variant) {
+                        return res.status(400).json({ message: 'One or more selected variants is invalid or no longer available.' });
+                    }
+                } else if (product.variants && product.variants.some((v: any) => !v.isDeleted)) {
+                    return res.status(400).json({ message: 'Please select a product variant for each unit.' });
+                }
+            }
+
+
+
+            // Resolve Shipping Fee Hierarchy
+            if (campaign.shippingFee !== undefined && campaign.shippingFee !== null) {
+                shippingFee = campaign.shippingFee;
+            } else {
+                const zones = store.settings?.shipping?.zones || [];
+                if (zones.length > 0) {
+                    const matchedZone = zones.find((z: any) => z.cities.includes(shippingAddress.city));
+                    shippingFee = matchedZone ? matchedZone.rate : zones[0].rate;
+                }
+            }
+
+            // Calculate taxes
+            const taxRate = store.settings?.tax?.enabled ? store.settings.tax.rate / 100 : 0;
+            const taxAmount = parseFloat((resolvedSubtotal * taxRate).toFixed(2));
+
+            // Calculate final totalAmount
+            totalAmount = resolvedSubtotal + shippingFee + taxAmount - Number(discountAmount || 0);
+
+            // Construct standard items list for subsequent processing
+            items = resolvedVariants.map(rv => {
+                const matchedVariant = rv.variantId 
+                    ? product.variants.find((v: any) => v._id.toString() === rv.variantId)
+                    : null;
+                return {
+                    _id: product._id.toString(),
+                    name: product.name,
+                    quantity: Number(rv.quantity),
+                    price: resolvedUnitPrice,
+                    image: product.images?.[0]?.url,
+                    variantId: rv.variantId || undefined,
+                    selectedOptions: matchedVariant?.options || undefined,
+                    trackInventory: product.trackInventory
+                };
+            });
+        }
+
+        // Standard order validations (for general checkouts without campaign)
         if (!items || items.length === 0) {
             return res.status(400).json({ message: 'No items in order' });
         }
@@ -39,12 +174,21 @@ export const createPublicOrder = async (req: Request, res: Response) => {
         const oidStoreId = new mongoose.Types.ObjectId(storeId);
 
         // Validate store exists
-        const store = await Store.findById(oidStoreId).populate({
+        const store = campaignId ? null : await Store.findById(oidStoreId).populate({
             path: 'subscriptionId',
             populate: { path: 'planId' }
         });
 
-        if (!store) {
+        if (!campaignId && !store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        const activeStore = campaignId ? (await Store.findById(oidStoreId).populate({
+            path: 'subscriptionId',
+            populate: { path: 'planId' }
+        })) : store;
+
+        if (!activeStore) {
             return res.status(404).json({ message: 'Store not found' });
         }
 
@@ -106,8 +250,8 @@ export const createPublicOrder = async (req: Request, res: Response) => {
         const randomStr = Math.floor(1000 + Math.random() * 9000);
         const orderNumber = `QS-${dateStr}-${randomStr}`;
 
-        const numericTotal = Number(totalAmount);
-        const shippingFee = 50;
+                const numericTotal = Number(totalAmount);
+        const resolvedShippingFee = campaignId ? shippingFee : 50;
         let finalDiscount = Number(discountAmount || 0);
 
         let session: mongoose.ClientSession | null = null;
@@ -149,7 +293,7 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                         } else if (coupon.type === 'fixed') {
                             calculatedDiscount = coupon.value;
                         } else if (coupon.type === 'free_shipping') {
-                            calculatedDiscount = shippingFee;
+                            calculatedDiscount = resolvedShippingFee;
                         }
 
                         // Use the calculated discount
@@ -163,7 +307,7 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             }
 
             // Calculate transaction fee based on plan
-            const plan = (store.subscriptionId as any)?.planId;
+            const plan = (activeStore.subscriptionId as any)?.planId;
             const feePercent = plan?.transactionFeePercent || 0;
             const transactionFee = Number((numericTotal * (feePercent / 100)).toFixed(2));
 
@@ -180,8 +324,8 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                     image: item.image,
                     variant: item.selectedOptions ? Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ') : undefined
                 })),
-                subtotal: (numericTotal - shippingFee + finalDiscount),
-                shipping: shippingFee,
+                subtotal: (numericTotal - resolvedShippingFee + finalDiscount),
+                shipping: resolvedShippingFee,
                 discount: finalDiscount,
                 total: numericTotal,
                 couponCode: couponCode || undefined,
@@ -213,10 +357,105 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 }]
             });
 
+            if (campaignId && campaign) {
+                const offerProductConfig = campaign.offerProducts[0];
+                order.offerAttribution = [{
+                    campaignId: campaign._id,
+                    campaignName: campaign.name,
+                    offerType: 'offer_page',
+                    productId: offerProductConfig.productId,
+                    productName: items[0].name,
+                    tierQuantity: qty,
+                    tierPrice: resolvedSubtotal,
+                    shippingFee: resolvedShippingFee,
+                    orderSource: 'offer_page',
+                    acceptedAt: new Date(),
+                    revenueAdded: resolvedSubtotal,
+                    savedAmount: Math.max(0, (campaignProductOriginalPrice * qty) - resolvedSubtotal),
+                    campaignRevenue: campaignProductOriginalPrice * qty,
+                    discountAmount: Math.max(0, (campaignProductOriginalPrice * qty) - resolvedSubtotal),
+                    revenueSource: 'order',
+                    analyticsReversed: false,
+                    attributionVersion: 1,
+                    placement: 'standalone'
+                }];
+            } else if (items && Array.isArray(items)) {
+                // Storefront campaign attributions
+                const campaignAttributions: Record<string, {
+                    campaignId: string;
+                    impressionId?: string;
+                    placement?: string;
+                    items: any[];
+                }> = {};
+
+                for (const item of items) {
+                    if (item.campaignId) {
+                        if (!campaignAttributions[item.campaignId]) {
+                            campaignAttributions[item.campaignId] = {
+                                campaignId: item.campaignId,
+                                impressionId: item.impressionId,
+                                placement: item.placement,
+                                items: []
+                            };
+                        }
+                        campaignAttributions[item.campaignId].items.push(item);
+                    }
+                }
+
+                const attributionRecords = [];
+                for (const [campIdStr, group] of Object.entries(campaignAttributions)) {
+                    const camp = await OfferCampaign.findById(campIdStr).session(session);
+                    if (!camp) continue;
+
+                    let grossRevenue = 0;
+                    let totalDiscount = 0;
+
+                    for (const groupItem of group.items) {
+                        const prod = await Product.findById(groupItem._id).session(session);
+                        const originalPrice = prod ? prod.price : groupItem.price;
+                        grossRevenue += originalPrice * groupItem.quantity;
+                        totalDiscount += Math.max(0, originalPrice - groupItem.price) * groupItem.quantity;
+                    }
+
+                    let revenueSource: 'order' | 'upsell' | 'bogo' | 'threshold' | 'bundle' = 'bundle';
+                    if (camp.type === 'upsell' || camp.type === 'down_sell') {
+                        revenueSource = 'upsell';
+                    } else if (camp.type === 'bogo') {
+                        revenueSource = 'bogo';
+                    } else if (camp.type === 'cart_threshold') {
+                        revenueSource = 'threshold';
+                    } else if (camp.type === 'volume_discount') {
+                        revenueSource = 'bundle';
+                    } else if (camp.type === 'offer_page') {
+                        revenueSource = 'order';
+                    }
+
+                    attributionRecords.push({
+                        campaignId: camp._id,
+                        impressionId: group.impressionId ? new mongoose.Types.ObjectId(group.impressionId) : undefined,
+                        offerType: camp.type,
+                        revenueAdded: Math.max(0, grossRevenue - totalDiscount),
+                        savedAmount: totalDiscount,
+                        campaignRevenue: grossRevenue,
+                        discountAmount: totalDiscount,
+                        revenueSource,
+                        analyticsReversed: false,
+                        attributionVersion: 1,
+                        placement: (group.placement || camp.placement || 'product_page') as any,
+                        acceptedAt: new Date(),
+                        campaignName: camp.name
+                    });
+                }
+
+                if (attributionRecords.length > 0) {
+                    order.offerAttribution = attributionRecords;
+                }
+            }
+
             const createdOrder = await order.save({ session: session || undefined });
 
             // Deduct Order Fee from Merchant Wallet (0.5 EGP)
-            await processOrderFee(store.ownerId.toString(), createdOrder._id, session || undefined);
+            await processOrderFee(activeStore.ownerId.toString(), createdOrder._id, session || undefined);
 
             // Update Store Stats
             await Store.findByIdAndUpdate(oidStoreId, {
@@ -226,42 +465,153 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 }
             }, { session: session || undefined });
 
+            // Increment campaign stats atomically
+            if (campaignId && campaign) {
+                await OfferCampaign.findByIdAndUpdate(
+                    campaign._id,
+                    {
+                        $inc: {
+                            totalAcceptances: 1,
+                            'analytics.acceptances': 1,
+                            'analytics.revenue': campaignProductOriginalPrice * qty,
+                            'analytics.generatedOrders': 1
+                        }
+                    },
+                    { session: session || undefined }
+                );
+            } else if (order.offerAttribution && order.offerAttribution.length > 0) {
+                for (const attr of order.offerAttribution) {
+                    await OfferCampaign.findByIdAndUpdate(
+                        attr.campaignId,
+                        {
+                            $inc: {
+                                totalAcceptances: 1,
+                                'analytics.acceptances': 1,
+                                'analytics.revenue': attr.campaignRevenue,
+                                'analytics.generatedOrders': 1
+                            }
+                        },
+                        { session: session || undefined }
+                    );
+
+                    if (attr.impressionId) {
+                        await OfferImpression.findByIdAndUpdate(
+                            attr.impressionId,
+                            {
+                                $set: {
+                                    decision: 'accepted',
+                                    decidedAt: new Date(),
+                                    orderId: createdOrder._id
+                                }
+                            },
+                            { session: session || undefined }
+                        );
+                    }
+                }
+            }
+
             // Update customer orders list
             await Customer.findByIdAndUpdate(customer._id, {
                 $push: { orders: createdOrder._id }
             }, { session: session || undefined });
 
-            // Atomic Stock Reservation & Movement Logging
+            // Atomic Stock Reservation & Movement Logging via OCC
             for (const item of items) {
                 if (item.trackInventory === false) continue;
 
-                let updatedProduct;
-                if (item.variantId) {
-                    // Try to reserve variant-level stock (Atomically move from inventory to reserved)
-                    // We check inventory - reserved >= quantity to be safe even if a previous check passed
-                    updatedProduct = await Product.findOneAndUpdate(
-                        {
-                            _id: item._id,
-                            "variants._id": item.variantId,
-                            "variants.isDeleted": false
-                        },
-                        {
-                            $inc: {
-                                "variants.$.reserved": Number(item.quantity),
-                                "inventory.reserved": Number(item.quantity) // Cache at product level too
-                            }
-                        },
-                        { session: session || undefined, new: true }
-                    );
-                } else {
-                    // Reserve global-level stock
-                    updatedProduct = await Product.findOneAndUpdate(
-                        { _id: item._id },
-                        {
-                            $inc: { "inventory.reserved": Number(item.quantity) }
-                        },
-                        { session: session || undefined, new: true }
-                    );
+                let updatedProduct = null;
+                let retries = 3;
+                let success = false;
+
+                while (retries > 0 && !success) {
+                    const prodDoc = await Product.findById(item._id).session(session);
+                    if (!prodDoc || prodDoc.status !== 'active') {
+                        throw new Error(`Product ${item.name} is no longer available.`);
+                    }
+
+                    if (item.variantId) {
+                        const variant = prodDoc.variants.find((v: any) => v._id.toString() === item.variantId.toString() && !v.isDeleted);
+                        if (!variant) {
+                            throw new Error(`Variant for ${item.name} is no longer available.`);
+                        }
+                        const available = (variant.inventory || 0) - (variant.reserved || 0);
+                        if (available < item.quantity) {
+                            throw new Error(`Insufficient stock for ${item.name} (${variant.name}). Only ${available} left.`);
+                        }
+
+                        const currentReserved = variant.reserved || 0;
+                        const variantReservedQuery = currentReserved === 0
+                            ? { 
+                                variants: { 
+                                    $elemMatch: { 
+                                        _id: item.variantId, 
+                                        $or: [{ reserved: 0 }, { reserved: { $exists: false } }] 
+                                    } 
+                                } 
+                              }
+                            : { 
+                                variants: { 
+                                    $elemMatch: { 
+                                        _id: item.variantId, 
+                                        reserved: currentReserved 
+                                    } 
+                                } 
+                              };
+
+                        updatedProduct = await Product.findOneAndUpdate(
+                            {
+                                _id: item._id,
+                                ...variantReservedQuery
+                            },
+                            {
+                                $inc: {
+                                    "variants.$.reserved": Number(item.quantity),
+                                    "inventory.reserved": Number(item.quantity)
+                                }
+                            },
+                            { session: session || undefined, new: true }
+                        );
+                        if (updatedProduct) {
+                            success = true;
+                        } else {
+                            retries--;
+                        }
+                    } else {
+                        const available = (prodDoc.inventory.quantity || 0) - (prodDoc.inventory.reserved || 0);
+                        if (available < item.quantity) {
+                            throw new Error(`Insufficient stock for ${item.name}. Only ${available} left.`);
+                        }
+
+                        const currentReserved = prodDoc.inventory.reserved || 0;
+                        const reservedQuery = currentReserved === 0
+                            ? {
+                                $or: [
+                                    { "inventory.reserved": 0 },
+                                    { "inventory.reserved": { $exists: false } }
+                                ]
+                              }
+                            : { "inventory.reserved": currentReserved };
+
+                        updatedProduct = await Product.findOneAndUpdate(
+                            {
+                                _id: item._id,
+                                ...reservedQuery
+                            },
+                            {
+                                $inc: { "inventory.reserved": Number(item.quantity) }
+                            },
+                            { session: session || undefined, new: true }
+                        );
+                        if (updatedProduct) {
+                            success = true;
+                        } else {
+                            retries--;
+                        }
+                    }
+                }
+
+                if (!success) {
+                    throw new Error(`Concurrency timeout reserving stock for product ${item.name}. Please try again.`);
                 }
 
                 if (updatedProduct) {
@@ -306,10 +656,10 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             }
 
             let paymentUrl = null;
-            if (paymentMethod !== 'COD' && store.settings?.payment?.provider && store.settings.payment.provider !== 'manual') {
+            if (paymentMethod !== 'COD' && activeStore.settings?.payment?.provider && activeStore.settings.payment.provider !== 'manual') {
                 try {
-                    const paymentProvider = PaymentFactory.getProvider(store);
-                    const paymentIntent = await paymentProvider.initializePayment(createdOrder, store);
+                    const paymentProvider = PaymentFactory.getProvider(activeStore);
+                    const paymentIntent = await paymentProvider.initializePayment(createdOrder, activeStore);
                     
                     paymentUrl = paymentIntent.paymentUrl;
                     createdOrder.transactionId = paymentIntent.transactionId;

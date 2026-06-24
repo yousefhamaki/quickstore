@@ -12,6 +12,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { useOfferEngine } from '@shared/hooks/useOfferEngine';
+import { OfferModal } from '@shared/components/offers/OfferModal';
+import { DownSellOverlay } from '@shared/components/offers/DownSellOverlay';
+import { useEffect } from 'react';
 
 const createCheckoutSchema = (t: any) => z.object({
     firstName: z.string().min(2, t('errors.required')),
@@ -38,9 +42,96 @@ export default function CheckoutPage() {
     const commonT = useTranslations('errors');
     const { subdomain } = useParams();
     const router = useRouter();
-    const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
+    const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart, addToCart } = useCart();
     const [step, setStep] = useState(1); // 1: Cart, 2: Info, 3: Payment
     const [loading, setLoading] = useState(false);
+    const [storeId, setStoreId] = useState<string | null>(null);
+
+    // Fetch storeId on mount for offers
+    useEffect(() => {
+        getPublicStore(subdomain as string).then((store: any) => setStoreId(store._id));
+    }, [subdomain]);
+
+    const handleOfferAccept = (result: any) => {
+        if (result.localAccept && result.offer) {
+            const offer = result.offer;
+            // Add all offer products to cart
+            offer.offerProducts.forEach((op: any) => {
+                addToCart(
+                    {
+                        _id: op.productId,
+                        name: op.name,
+                        price: op.offerPrice,
+                        originalPrice: op.basePrice,
+                        images: [{ url: op.image }],
+                        storeId: storeId,
+                    },
+                    op.quantity,
+                    op.selectedOptions || {},
+                    op.variantId
+                );
+            });
+
+            // If it replaces a product, we should remove the old one.
+            if (offer.type === 'upsell' && offer.replacesProductId) {
+                const itemToRemove = cart.find(i => i._id === offer.replacesProductId);
+                if (itemToRemove) {
+                    removeFromCart(itemToRemove.cartItemId);
+                }
+            }
+            toast.success(t('messages.success'));
+        }
+    };
+
+    const { currentOffer, isProcessing, triggerEvaluation, handleAccept, handleDecline } = useOfferEngine(handleOfferAccept);
+
+    useEffect(() => {
+        if (!storeId || cart.length === 0) return;
+        
+        let sessionId = '';
+        if (typeof window !== 'undefined') {
+            sessionId = localStorage.getItem('storefront_session') || '';
+            if (!sessionId) {
+                sessionId = Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('storefront_session', sessionId);
+            }
+        }
+
+        const event = step === 1 ? 'cart_view' : 'checkout_start';
+
+        triggerEvaluation({
+            storeId,
+            event: event as any,
+            sessionId,
+            cartItems: cart.map(item => ({
+                productId: item._id,
+                variantId: item.variantId,
+                quantity: item.quantity,
+                price: item.price,
+                category: (item as any).category
+            })),
+            cartSubtotal: getCartTotal()
+        });
+    }, [step, storeId]);
+
+    const handleExitIntent = () => {
+        if (!storeId || cart.length === 0 || currentOffer) return;
+        
+        const sessionId = localStorage.getItem('storefront_session') || '';
+        triggerEvaluation({
+            storeId,
+            event: 'checkout_abandon_intent',
+            sessionId,
+            cartItems: cart.map(item => ({
+                productId: item._id,
+                variantId: item.variantId,
+                quantity: item.quantity,
+                price: item.price,
+                category: (item as any).category
+            })),
+            cartSubtotal: getCartTotal()
+        });
+    };
 
     // Coupon States
     const [couponInput, setCouponInput] = useState('');
@@ -213,7 +304,16 @@ export default function CheckoutPage() {
                                                         ))}
                                                     </div>
                                                 )}
-                                                <p className="text-gray-500 font-bold">EGP {item.price.toLocaleString()}</p>
+                                                <div className="flex flex-col md:items-start items-end mt-1">
+                                                    {item.originalPrice && item.originalPrice > item.price ? (
+                                                        <>
+                                                            <span className="font-bold text-green-600">EGP {item.price.toLocaleString()}</span>
+                                                            <span className="text-xs text-muted-foreground line-through">EGP {item.originalPrice.toLocaleString()}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-gray-500 font-bold">EGP {item.price.toLocaleString()}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="flex items-center justify-between gap-4 mt-4 md:mt-0">
                                                 <div className="flex items-center bg-white rounded-full p-1 border">
@@ -403,6 +503,16 @@ export default function CheckoutPage() {
 
                 </div>
             </div>
+
+            {/* Offer Modals & Triggers */}
+            <OfferModal 
+                offer={currentOffer}
+                isOpen={!!currentOffer && (currentOffer.type === 'cross_sell' || currentOffer.type === 'down_sell')}
+                isProcessing={isProcessing}
+                onAccept={handleAccept}
+                onDecline={handleDecline}
+            />
+            {step > 1 && <DownSellOverlay onExitIntent={handleExitIntent} disabled={!!currentOffer} />}
         </div>
     );
 }

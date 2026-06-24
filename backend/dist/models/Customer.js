@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const CustomerSchema = new mongoose_1.Schema({
     storeId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Store', required: true },
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    email: { type: String, required: true },
+    firstName: { type: String }, // Optional for newsletter-only subscribers
+    lastName: { type: String }, // Optional for newsletter-only subscribers
+    email: { type: String, required: true, trim: true, lowercase: true },
     password: { type: String },
     phone: { type: String },
     addresses: [
@@ -54,7 +54,28 @@ const CustomerSchema = new mongoose_1.Schema({
         },
     ],
     orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Order' }],
+    // Consent & newsletter tracking
+    consentStatus: {
+        type: String,
+        enum: ['subscribed', 'unsubscribed', 'pending', 'bounced', 'complained'],
+        default: 'subscribed'
+    },
+    consentHistory: [
+        {
+            status: { type: String },
+            action: { type: String },
+            timestamp: { type: Date, default: Date.now },
+            ipAddress: { type: String },
+            userAgent: { type: String },
+            consentText: { type: String }
+        }
+    ],
+    source: { type: String },
+    tags: [{ type: String }],
+    metadata: { type: mongoose_1.Schema.Types.Mixed, default: {} }
 }, { timestamps: true });
-// Customer is unique per store
+// Indexes for Tenant Isolation, Search, Sorting, and Uniqueness
 CustomerSchema.index({ storeId: 1, email: 1 }, { unique: true });
+CustomerSchema.index({ storeId: 1, consentStatus: 1, createdAt: -1 });
+CustomerSchema.index({ storeId: 1, tags: 1 });
 exports.default = mongoose_1.default.model('Customer', CustomerSchema);

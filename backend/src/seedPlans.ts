@@ -25,15 +25,23 @@ const plans = [
             'Up to 10 Products',
             'Community Support',
             'Buildora Subdomain (.buildora.com)',
-            'Standard Themes'
+            'Standard Themes',
+            '0 monthly marketing emails'
         ],
         features_ar: [
             'متجر واحد على الإنترنت',
             'حتى 10 منتجات',
             'دعم المجتمع',
             'نطاق فرعي من بيلدورا (.buildora.com)',
-            'قوالب قياسية'
+            'قوالب قياسية',
+            '0 رسائل بريد إلكتروني تسويقية شهرياً'
         ],
+        features: {
+            dropshipping: false,
+            customDomain: false,
+            allowUCD: false,   // UCD is a Pro+ feature
+        },
+        emailLimit: 0,
         isActive: true
     },
     {
@@ -58,7 +66,8 @@ const plans = [
             'Custom Domain Support',
             'Premium Themes & Builder',
             'Instapay & VCash Integration',
-            'Advanced Analytics'
+            'Advanced Analytics',
+            '500 free monthly emails'
         ],
         features_ar: [
             '3 متاجر إلكترونية',
@@ -67,8 +76,15 @@ const plans = [
             'دعم النطاق المخصص',
             'قوالب ممتازة ومنشئ قوالب',
             'تكامل إنستاباي وفودافون كاش',
-            'تحليلات متقدمة'
+            'تحليلات متقدمة',
+            '500 رسائل بريد إلكتروني مجانية شهرياً'
         ],
+        features: {
+            dropshipping: true,
+            customDomain: true,
+            allowUCD: false,   // UCD is a Pro+ feature
+        },
+        emailLimit: 500,
         isActive: true
     },
     {
@@ -93,7 +109,8 @@ const plans = [
             'Custom Domain Support',
             'Premium Themes & Builder',
             'Instapay & VCash Integration',
-            'Advanced Analytics'
+            'Advanced Analytics',
+            '1000 free monthly emails'
         ],
         features_ar: [
             '10 متاجر إلكترونية',
@@ -102,8 +119,15 @@ const plans = [
             'دعم النطاق المخصص',
             'قوالب ممتازة ومنشئ قوالب',
             'تكامل إنستاباي وفودافون كاش',
-            'تحليلات متقدمة'
+            'تحليلات متقدمة',
+            '1000 رسائل بريد إلكتروني مجانية شهرياً'
         ],
+        features: {
+            dropshipping: true,
+            customDomain: true,
+            allowUCD: true,    // Upsell / Cross-sell / Down-sell engine enabled
+        },
+        emailLimit: 1000,
         isActive: true
     },
     {
@@ -128,7 +152,8 @@ const plans = [
             'SLA & Priority Chat Support',
             'Advanced Security Features',
             'Custom Feature Development',
-            'Highest Performance Servers'
+            'Highest Performance Servers',
+            '1500 free monthly emails'
         ],
         features_ar: [
             '50 متجر إلكتروني',
@@ -137,8 +162,15 @@ const plans = [
             'اتفاقية مستوى الخدمة ودعم الدردشة ذو الأولوية',
             'ميزات أمنية متقدمة',
             'تطوير ميزات مخصصة',
-            'أعلى أداء للخواتم'
+            'أعلى أداء للخواتم',
+            '1500 رسائل بريد إلكتروني مجانية شهرياً'
         ],
+        features: {
+            dropshipping: true,
+            customDomain: true,
+            allowUCD: true,    // Upsell / Cross-sell / Down-sell engine enabled
+        },
+        emailLimit: 1500,
         isActive: true
     }
 ];

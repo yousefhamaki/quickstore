@@ -10,7 +10,9 @@ import {
     updateBillingProfile,
     rechargeWallet,
     getTransactions,
-    getReceipts
+    getReceipts,
+    getEmailAccountBalance,
+    buyEmailAddOn
 } from '../controllers/billingController';
 
 const router = express.Router();
@@ -30,5 +32,7 @@ router.put('/profile', updateBillingProfile);
 router.post('/wallet/recharge', rechargeWallet);
 router.get('/transactions', getTransactions);
 router.get('/receipts', getReceipts);
+router.get('/:storeId/email-account', getEmailAccountBalance);
+router.post('/:storeId/email-account/buy-add-on', buyEmailAddOn);
 
 export default router;

@@ -6,12 +6,73 @@ import { Plus, Minus, ShoppingCart, Heart, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@shared/lib/utils";
 import { useTranslations } from "next-intl";
+import { useOfferEngine } from "@shared/hooks/useOfferEngine";
+import { UpsellTeaser } from "@shared/components/offers/UpsellTeaser";
+import { OfferModal } from "@shared/components/offers/OfferModal";
+import { useEffect } from "react";
 
 export function ProductActions({ product }: { product: any }) {
     const t = useTranslations('store.product');
     const [quantity, setQuantity] = useState(1);
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
-    const { addToCart } = useCart();
+    const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+    const { addToCart, updateQuantity, removeFromCart, cart } = useCart();
+
+    const handleOfferAccept = (result: any) => {
+        if (result.localAccept && result.offer) {
+            const offer = result.offer;
+            // Add all offer products to cart
+            offer.offerProducts.forEach((op: any) => {
+                addToCart(
+                    {
+                        _id: op.productId,
+                        name: op.name,
+                        price: op.offerPrice,
+                        originalPrice: op.basePrice,
+                        images: [{ url: op.image }],
+                        storeId: product.storeId,
+                    },
+                    op.quantity,
+                    op.selectedOptions || {},
+                    op.variantId
+                );
+            });
+
+            // If it's an upsell that replaces the current product, we don't add the original product.
+            // Wait, this is triggered when they view the page. The user hasn't added the base product to the cart yet.
+            // So we just add the upsell products to the cart and show success.
+            toast.success(t('addedToCart', { quantity: 1, name: offer.name || 'Bundle' }));
+        }
+    };
+
+    const { currentOffer, isProcessing, triggerEvaluation, handleAccept, handleDecline } = useOfferEngine(handleOfferAccept);
+
+    useEffect(() => {
+        if (!product || !product.storeId) return;
+        
+        let sessionId = '';
+        if (typeof window !== 'undefined') {
+            sessionId = localStorage.getItem('storefront_session') || '';
+            if (!sessionId) {
+                sessionId = Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('storefront_session', sessionId);
+            }
+        }
+
+        // Trigger product_page evaluation
+        triggerEvaluation({
+            storeId: product.storeId,
+            event: 'product_page' as any,
+            sessionId,
+            cartItems: [{
+                productId: product._id,
+                quantity: 1,
+                price: product.price,
+                category: product.category
+            }],
+            cartSubtotal: product.price
+        });
+    }, [product]);
 
     const handleAddToCart = () => {
         // Validation: Ensure all options are selected
@@ -110,6 +171,27 @@ export function ProductActions({ product }: { product: any }) {
                     </button>
                 </div>
             </div>
+
+            {currentOffer && (
+                <UpsellTeaser 
+                    offer={currentOffer} 
+                    onClick={() => setIsOfferModalOpen(true)} 
+                />
+            )}
+
+            <OfferModal 
+                offer={currentOffer}
+                isOpen={isOfferModalOpen}
+                isProcessing={isProcessing}
+                onAccept={async (products) => {
+                    await handleAccept(products);
+                    setIsOfferModalOpen(false);
+                }}
+                onDecline={async () => {
+                    await handleDecline();
+                    setIsOfferModalOpen(false);
+                }}
+            />
         </div>
     );
 }

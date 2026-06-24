@@ -1,9 +1,9 @@
 import { getPublicStore, getStoreProducts } from "@shared/services/publicStoreService";
-import { Plus, ShoppingCart } from "lucide-react";
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import ProductCatalog from "./ProductCatalog";
+import NewsletterForm from "./NewsletterForm";
 
 // 1. The Instant UI Skeleton
 function StoreSkeleton() {
@@ -105,91 +105,10 @@ async function StoreContent({ subdomain, locale }: { subdomain: string; locale: 
             </section>
 
             {/* Product Grid */}
-            <section className="container mx-auto px-4 py-20 animate-in fade-in duration-1000 delay-300">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
-                    <h2 className="text-3xl font-black tracking-tighter">{t('ourCollection')}</h2>
-                    <div className="flex flex-wrap gap-2">
-                        {[{ name: t('all'), id: 'all' }, ...[...new Set(products.map(p => p.category))].map(c => ({ name: c, id: c }))].map((cat: any) => (
-                            <button
-                                key={cat.id}
-                                className="px-6 py-2 rounded-full border text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all bg-white"
-                            >
-                                {cat.name}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {products.length === 0 ? (
-                        <div className="col-span-full py-20 text-center space-y-4">
-                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400">
-                                <ShoppingCart size={24} />
-                            </div>
-                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">{t('emptyCatalog')}</p>
-                        </div>
-                    ) : (
-                        products.map((product: any) => (
-                            <Link
-                                key={product._id}
-                                href={`/products/${product._id}`}
-                                className="group cursor-pointer space-y-4"
-                            >
-                                <div className="aspect-[4/5] bg-gray-100 rounded-3xl overflow-hidden relative border shadow-sm group-hover:shadow-xl transition-all duration-500">
-                                    {product.images?.[0]?.url ? (
-                                        <img
-                                            src={product.images[0].url}
-                                            alt={product.name}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                            <ShoppingCart size={40} />
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                                        <div className="w-full bg-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl">
-                                            <Plus size={16} /> View Details
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="px-2 space-y-1">
-                                    <h3 className="font-bold text-lg group-hover:text-primary transition-colors duration-300">{product.name}</h3>
-                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">{product.category}</p>
-                                    <p className="text-lg font-black mt-2">EGP {(product.price ?? 0).toLocaleString()}</p>
-                                </div>
-                            </Link>
-                        ))
-                    )}
-                </div>
-            </section>
+            <ProductCatalog products={products} />
 
             {/* Newsletter Section */}
-            <section className="container mx-auto px-4 pb-20">
-                <div className="bg-black rounded-[40px] p-12 md:p-20 text-white relative overflow-hidden text-center space-y-8">
-                    <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-tight whitespace-pre-line">
-                        {t('newsletterTitle')}
-                    </h2>
-                    <p className="text-gray-400 font-medium text-lg max-w-lg mx-auto">
-                        {t('newsletterSubtitle')}
-                    </p>
-                    <div className="flex flex-col md:flex-row gap-4 max-w-md mx-auto">
-                        <input
-                            type="email"
-                            placeholder={t('emailPlaceholder')}
-                            className="flex-1 bg-white/10 border-white/20 rounded-full px-6 h-14 outline-none focus:ring-2 focus:ring-white/30 transition-all font-medium"
-                        />
-                        <button className="bg-white text-black px-10 h-14 rounded-full font-black text-sm uppercase tracking-widest hover:bg-gray-200 transition-colors">
-                            {t('subscribe')}
-                        </button>
-                    </div>
-                    <div
-                        className="absolute -bottom-[50%] -left-[10%] w-[60%] aspect-square rounded-full opacity-20 blur-[100px]"
-                        style={{ backgroundColor: primaryColor }}
-                    />
-                </div>
-            </section>
+            <NewsletterForm storeId={store._id || store.id} primaryColor={primaryColor} />
         </div>
     );
 }

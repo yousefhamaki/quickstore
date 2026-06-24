@@ -51,6 +51,7 @@ const Store_1 = __importDefault(require("../models/Store"));
 const Product_1 = __importDefault(require("../models/Product"));
 const InventoryLog_1 = __importDefault(require("../models/InventoryLog"));
 const mongoose_1 = __importDefault(require("mongoose"));
+const OfferCampaign_1 = __importDefault(require("../models/OfferCampaign"));
 // @desc    Get all orders for a store
 // @route   GET /api/orders
 // @access  Private/Merchant
@@ -144,6 +145,43 @@ const updateOrderStatus = (req, res) => __awaiter(void 0, void 0, void 0, functi
             timestamp: new Date(),
             note: `Status updated to ${status} by merchant`
         });
+        // Revert or re-apply campaign analytics based on status
+        if (['cancelled', 'refunded'].includes(status)) {
+            if (order.offerAttribution && order.offerAttribution.length > 0) {
+                for (const attr of order.offerAttribution) {
+                    if (!attr.analyticsReversed) {
+                        yield OfferCampaign_1.default.findByIdAndUpdate(attr.campaignId, {
+                            $inc: {
+                                totalAcceptances: -1,
+                                'analytics.acceptances': -1,
+                                'analytics.revenue': -attr.campaignRevenue,
+                                'analytics.generatedOrders': -1
+                            }
+                        }, { session });
+                        attr.analyticsReversed = true;
+                    }
+                }
+                order.markModified('offerAttribution');
+            }
+        }
+        else if (['pending', 'confirmed', 'processing', 'shipped', 'delivered'].includes(status)) {
+            if (order.offerAttribution && order.offerAttribution.length > 0) {
+                for (const attr of order.offerAttribution) {
+                    if (attr.analyticsReversed) {
+                        yield OfferCampaign_1.default.findByIdAndUpdate(attr.campaignId, {
+                            $inc: {
+                                totalAcceptances: 1,
+                                'analytics.acceptances': 1,
+                                'analytics.revenue': attr.campaignRevenue,
+                                'analytics.generatedOrders': 1
+                            }
+                        }, { session });
+                        attr.analyticsReversed = false;
+                    }
+                }
+                order.markModified('offerAttribution');
+            }
+        }
         // Inventory Logic based on status transition
         if (previousStatus === 'pending' && status !== 'pending') {
             // Moving out of pending

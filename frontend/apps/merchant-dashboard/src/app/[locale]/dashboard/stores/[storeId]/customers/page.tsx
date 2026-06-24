@@ -25,6 +25,7 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
     const localeString = useLocale();
     const dateLocale = localeString === 'ar' ? ar : enUS;
 
+    const [activeTab, setActiveTab] = useState<'customers' | 'subscribers'>('customers');
     const [searchTerm, setSearchTerm] = useState("");
     const [customers, setCustomers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -33,7 +34,8 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
     const fetchCustomers = async (page = 1) => {
         try {
             setLoading(true);
-            const data = await getCustomers(storeId, searchTerm, page) as any;
+            const consentStatus = activeTab === 'subscribers' ? 'subscribed' : undefined;
+            const data = await getCustomers(storeId, searchTerm, page, consentStatus) as any;
             setCustomers(data.customers);
             setPagination({
                 page: data.page,
@@ -41,7 +43,7 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
                 total: data.total
             });
         } catch (error) {
-            toast.error(t('loadError'));
+            toast.error(t('loadError') || 'Failed to load customers');
         } finally {
             setLoading(false);
         }
@@ -53,7 +55,7 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, storeId]);
+    }, [searchTerm, storeId, activeTab]);
 
     return (
         <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
@@ -68,7 +70,7 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
             </div>
 
             <Card className="border-2 shadow-sm rounded-[32px] overflow-hidden">
-                <CardHeader className="bg-muted/30 border-b p-6">
+                <CardHeader className="bg-muted/30 border-b p-6 space-y-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1">
                             <Search className={`absolute ${localeString === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4`} />
@@ -83,6 +85,36 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
                         <Button variant="outline" className="h-12 px-6 rounded-2xl border-2 font-bold uppercase tracking-widest text-xs">
                             <Filter className={`w-4 h-4 ${localeString === 'ar' ? 'ml-2' : 'mr-2'}`} /> {t('filters')}
                         </Button>
+                    </div>
+
+                    {/* Navigation tabs */}
+                    <div className="flex border-b border-border/60 mt-4 -mx-6 px-6">
+                        <button
+                            onClick={() => {
+                                setActiveTab('customers');
+                                setCustomers([]);
+                            }}
+                            className={`pb-4 px-4 font-bold text-xs uppercase tracking-widest transition-all border-b-2 cursor-pointer outline-none ${
+                                activeTab === 'customers'
+                                    ? 'border-primary text-primary font-black'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            {localeString === 'ar' ? 'جميع العملاء' : 'All Customers'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setActiveTab('subscribers');
+                                setCustomers([]);
+                            }}
+                            className={`pb-4 px-4 font-bold text-xs uppercase tracking-widest transition-all border-b-2 cursor-pointer outline-none ${
+                                activeTab === 'subscribers'
+                                    ? 'border-primary text-primary font-black'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            {localeString === 'ar' ? 'مشتركو النشرة البريدية' : 'Newsletter Subscribers'}
+                        </button>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -115,39 +147,48 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {customers.map((customer) => (
-                                        <tr key={customer._id} className="hover:bg-muted/10 transition-colors group">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-black text-xs">
-                                                        {customer.firstName[0]}{customer.lastName[0]}
+                                    {customers.map((customer) => {
+                                        const name = (customer.firstName || customer.lastName) 
+                                            ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() 
+                                            : customer.email.split('@')[0];
+                                        const initials = (customer.firstName && customer.lastName)
+                                            ? `${customer.firstName[0]}${customer.lastName[0]}`.toUpperCase()
+                                            : (customer.firstName ? customer.firstName[0] : (customer.lastName ? customer.lastName[0] : customer.email[0])).toUpperCase();
+
+                                        return (
+                                            <tr key={customer._id} className="hover:bg-muted/10 transition-colors group">
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-black text-xs">
+                                                            {initials}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold">{name}</p>
+                                                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                                                <Mail className="w-3 h-3" /> {customer.email}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold">{customer.firstName} {customer.lastName}</p>
-                                                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                            <Mail className="w-3 h-3" /> {customer.email}
-                                                        </p>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800">
+                                                        {customer.orders?.length || 0} Orders
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-5 text-muted-foreground font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <Calendar className="w-3.5 h-3.5" />
+                                                        {format(new Date(customer.createdAt), 'MMM dd, yyyy', { locale: dateLocale })}
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800">
-                                                    {customer.orders?.length || 0} Orders
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-5 text-muted-foreground font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="w-3.5 h-3.5" />
-                                                    {format(new Date(customer.createdAt), 'MMM dd, yyyy', { locale: dateLocale })}
-                                                </div>
-                                            </td>
-                                            <td className={`px-6 py-5 ${localeString === 'ar' ? 'text-left' : 'text-right'}`}>
-                                                <Button variant="ghost" size="icon" className="rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <ExternalLink className="w-4 h-4" />
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td className={`px-6 py-5 ${localeString === 'ar' ? 'text-left' : 'text-right'}`}>
+                                                    <Button variant="ghost" size="icon" className="rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

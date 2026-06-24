@@ -47,8 +47,10 @@ const SubscriptionPlanSchema = new mongoose_1.Schema({
     features_ar: [{ type: String }],
     features: {
         dropshipping: { type: Boolean, default: false },
-        customDomain: { type: Boolean, default: false }
+        customDomain: { type: Boolean, default: false },
+        allowUCD: { type: Boolean, default: false },
     },
+    emailLimit: { type: Number, default: 0 },
     duration: { type: Number, required: true, default: 30 },
     maxStores: { type: Number, default: 1 },
     storeLimit: { type: Number },

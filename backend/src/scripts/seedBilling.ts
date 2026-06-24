@@ -15,6 +15,7 @@ const plans = [
         productLimit: 50,
         orderFee: 0.5,
         features: { dropshipping: false, customDomain: false },
+        emailLimit: 0,
         isActive: true
     },
     {
@@ -25,6 +26,7 @@ const plans = [
         productLimit: 500,
         orderFee: 0.5,
         features: { dropshipping: false, customDomain: true },
+        emailLimit: 500,
         isActive: true
     },
     {
@@ -35,16 +37,18 @@ const plans = [
         productLimit: 2000,
         orderFee: 0.5,
         features: { dropshipping: true, customDomain: true },
+        emailLimit: 1000,
         isActive: true
     },
     {
         name: 'Enterprise',
         type: 'paid',
-        monthlyPrice: 2499,
+        monthlyPrice: 1499,
         storeLimit: -1, // Unlimited
         productLimit: -1, // Unlimited
         orderFee: 0.5,
         features: { dropshipping: true, customDomain: true },
+        emailLimit: 1500,
         isActive: true
     }
 ];

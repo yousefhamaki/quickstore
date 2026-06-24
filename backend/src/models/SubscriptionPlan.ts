@@ -14,7 +14,16 @@ export interface ISubscriptionPlan extends Document {
     features?: {
         dropshipping: boolean;
         customDomain: boolean;
+        /**
+         * Controls whether the merchant can create and activate
+         * Upsell, Cross-sell, and Down-sell campaigns.
+         * Gated at Pro plan and above.
+         * Checked by `requireUCDFeature` middleware on all
+         * /api/merchant/offers/campaigns write endpoints.
+         */
+        allowUCD: boolean;
     }; // Logic-based features
+    emailLimit?: number; // Monthly emails allowance
     duration: number; // in days
     maxStores: number;
     storeLimit?: number; // Alias for maxStores
@@ -37,8 +46,10 @@ const SubscriptionPlanSchema: Schema = new Schema({
     features_ar: [{ type: String }],
     features: {
         dropshipping: { type: Boolean, default: false },
-        customDomain: { type: Boolean, default: false }
+        customDomain: { type: Boolean, default: false },
+        allowUCD: { type: Boolean, default: false },
     },
+    emailLimit: { type: Number, default: 0 },
     duration: { type: Number, required: true, default: 30 },
     maxStores: { type: Number, default: 1 },
     storeLimit: { type: Number },

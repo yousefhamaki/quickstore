@@ -25,9 +25,13 @@ import aiMarketingRoutes from './routes/aiMarketingRoutes';
 import seoRoutes from './routes/seo';
 import articleRoutes from './routes/articleRoutes';
 import chatRoutes from './routes/chatRoutes';
+import campaignRoutes from './routes/campaignRoutes';
+import { publicOfferRouter, merchantOfferRouter } from './routes/offerRoutes';
+import { CampaignQuotaService } from './services/CampaignQuotaService';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
+
 
 app.use(compression({ level: 6 }));
 app.use(cors());
@@ -47,11 +51,14 @@ app.use('/api/support', supportRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/marketing', marketingRoutes);
+app.use('/api/campaigns', campaignRoutes);
 app.use('/api/abandoned-carts', abandonedCartRoutes);
 app.use('/api/ai-marketing', aiMarketingRoutes);
 app.use('/api', seoRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/public/offers', publicOfferRouter);
+app.use('/api/merchant/offers', merchantOfferRouter);
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Buildora API is running...');
@@ -71,8 +78,14 @@ const connectDB = async () => {
     }
 };
 
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
+if (process.env.NODE_ENV !== 'test') {
+    connectDB().then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+            // Start credit reservation reconciliation (runs every 5 minutes)
+            CampaignQuotaService.startReconciliationInterval();
+        });
     });
-});
+}
+
+export default app;

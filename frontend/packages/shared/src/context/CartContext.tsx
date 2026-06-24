@@ -9,14 +9,30 @@ export interface CartItem {
     variantId?: string;
     name: string;
     price: number;
+    originalPrice?: number;
     quantity: number;
     image?: string;
     selectedOptions?: Record<string, string>;
+    campaignId?: string;
+    impressionId?: string;
+    revenueSource?: 'order' | 'upsell' | 'bogo' | 'threshold' | 'bundle';
+    placement?: 'product_page' | 'cart' | 'checkout' | 'post_purchase' | 'standalone';
+    parentCartItemId?: string;
 }
 
 interface CartContextType {
     cart: CartItem[];
-    addToCart: (product: any, quantity: number, selectedOptions?: Record<string, string>, variantId?: string) => void;
+    addToCart: (
+        product: any,
+        quantity: number,
+        selectedOptions?: Record<string, string>,
+        variantId?: string,
+        campaignId?: string,
+        impressionId?: string,
+        revenueSource?: 'order' | 'upsell' | 'bogo' | 'threshold' | 'bundle',
+        placement?: 'product_page' | 'cart' | 'checkout' | 'post_purchase' | 'standalone',
+        parentCartItemId?: string
+    ) => void;
     removeFromCart: (cartItemId: string) => void;
     updateQuantity: (cartItemId: string, quantity: number) => void;
     clearCart: () => void;
@@ -53,10 +69,26 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
         }
     }, [cart, cartKey, isInitialized]);
 
-    const addToCart = (product: any, quantity: number, selectedOptions?: Record<string, string>, variantId?: string) => {
+    const addToCart = (
+        product: any,
+        quantity: number,
+        selectedOptions?: Record<string, string>,
+        variantId?: string,
+        campaignId?: string,
+        impressionId?: string,
+        revenueSource?: 'order' | 'upsell' | 'bogo' | 'threshold' | 'bundle',
+        placement?: 'product_page' | 'cart' | 'checkout' | 'post_purchase' | 'standalone',
+        parentCartItemId?: string
+    ) => {
         setCart(prevCart => {
             const optionsString = selectedOptions ? JSON.stringify(selectedOptions) : '';
-            const cartItemId = variantId ? `${product._id}_${variantId}` : `${product._id}_${optionsString}`;
+            let cartItemId = variantId ? `${product._id}_${variantId}` : `${product._id}_${optionsString}`;
+            if (campaignId) {
+                cartItemId += `_${campaignId}`;
+            }
+            if (parentCartItemId) {
+                cartItemId += `_child_${parentCartItemId}`;
+            }
 
             const existingItemIndex = prevCart.findIndex(item => item.cartItemId === cartItemId);
 
@@ -75,9 +107,15 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
                 variantId: variantId,
                 name: product.name,
                 price: product.price,
+                originalPrice: product.originalPrice,
                 quantity: quantity,
                 image: product.images?.[0]?.url,
-                selectedOptions: selectedOptions
+                selectedOptions: selectedOptions,
+                campaignId,
+                impressionId,
+                revenueSource,
+                placement,
+                parentCartItemId
             }];
         });
 
@@ -92,16 +130,27 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
     };
 
     const removeFromCart = (cartItemId: string) => {
-        setCart(prevCart => prevCart.filter(item => item.cartItemId !== cartItemId));
+        setCart(prevCart => prevCart.filter(item => item.cartItemId !== cartItemId && item.parentCartItemId !== cartItemId));
     };
 
     const updateQuantity = (cartItemId: string, quantity: number) => {
         if (quantity < 1) return;
-        setCart(prevCart =>
-            prevCart.map(item =>
+        setCart(prevCart => {
+            const targetItem = prevCart.find(item => item.cartItemId === cartItemId);
+            if (!targetItem) return prevCart;
+
+            const isDecrease = quantity < targetItem.quantity;
+            if (isDecrease) {
+                // If quantity is decreased, remove linked child BOGO items
+                return prevCart
+                    .filter(item => item.parentCartItemId !== cartItemId)
+                    .map(item => item.cartItemId === cartItemId ? { ...item, quantity } : item);
+            }
+
+            return prevCart.map(item =>
                 item.cartItemId === cartItemId ? { ...item, quantity } : item
-            )
-        );
+            );
+        });
     };
 
     const clearCart = () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useBillingOverview, useRechargeWallet, useTransactions, usePayFromWallet } from "@shared/lib/hooks/useBilling";
+import { useStores } from "@shared/lib/hooks/useStores";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@shared/components/ui/card";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -13,18 +14,25 @@ import {
     Zap,
     ChevronLeft,
     ChevronRight,
-    ArrowDownLeft
+    ArrowDownLeft,
+    Mail,
+    Plus,
+    ShoppingBag,
+    Loader2
 } from "lucide-react";
 import { Progress } from "@shared/components/ui/progress";
 import { Badge } from "@shared/components/ui/badge";
 import { Skeleton } from "@shared/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@shared/components/ui/input";
 import { format } from "date-fns";
 import Link from "next/link";
 import { cn } from "@shared/lib/utils";
 import { ReceiptModal } from "@shared/components/merchant/ReceiptModal";
 import { RechargeModal } from "@shared/components/merchant/RechargeModal";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
+import { getEmailAccountBalance, buyEmailAddOn } from "@shared/services/marketingService";
+import { toast } from "sonner";
 import { useTranslations, useLocale } from "next-intl";
 
 export default function MerchantBillingPage() {
@@ -34,6 +42,55 @@ export default function MerchantBillingPage() {
     const [page, setPage] = useState(1);
     const { data: billing, isLoading: overviewLoading } = useBillingOverview();
     const { data: transactionData, isLoading: transLoading } = useTransactions(page, 5);
+    const { data: stores } = useStores();
+
+    const [selectedStoreId, setSelectedStoreId] = useState<string>('');
+    const [emailBalance, setEmailBalance] = useState<any>(null);
+    const [loadingEmail, setLoadingEmail] = useState(false);
+    const [buyEmailOpen, setBuyEmailOpen] = useState(false);
+    const [buyingEmail, setBuyingEmail] = useState(false);
+
+    useEffect(() => {
+        if (stores && stores.length > 0 && !selectedStoreId) {
+            setSelectedStoreId(stores[0]._id);
+        }
+    }, [stores]);
+
+    useEffect(() => {
+        if (selectedStoreId) {
+            fetchEmailBalance();
+        }
+    }, [selectedStoreId]);
+
+    const fetchEmailBalance = async () => {
+        try {
+            setLoadingEmail(true);
+            const balanceData = await getEmailAccountBalance(selectedStoreId);
+            setEmailBalance(balanceData);
+        } catch (error) {
+            console.error("Failed to load email balance:", error);
+        } finally {
+            setLoadingEmail(false);
+        }
+    };
+
+    const handleBuyCredits = async (emailCount: number) => {
+        try {
+            setBuyingEmail(true);
+            const res = await buyEmailAddOn(selectedStoreId, emailCount);
+            toast.success(res.message || `Successfully purchased ${emailCount} emails!`);
+            setBuyEmailOpen(false);
+            fetchEmailBalance();
+            // Trigger quick refresh to update wallet balance on dashboard
+            window.location.reload();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.response?.data?.message || "Purchase failed");
+        } finally {
+            setBuyingEmail(false);
+        }
+    };
+
     const [isRechargeModalOpen, setRechargeModalOpen] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
     const payFromWallet = usePayFromWallet();
@@ -84,7 +141,7 @@ export default function MerchantBillingPage() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-8">
                 {/* Wallet Card */}
                 <Card id="recharge" className="rounded-[32px] border-2 shadow-xl bg-primary text-primary-foreground overflow-hidden relative group">
                     <CardHeader className="pb-2">
@@ -173,6 +230,77 @@ export default function MerchantBillingPage() {
                                 </div>
                             );
                         })()}
+                    </CardContent>
+                </Card>
+
+                {/* Email Credits Card */}
+                <Card className="rounded-[32px] border-2 shadow-md flex flex-col">
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle className="text-xl font-black tracking-tight">{t('emailCredits')}</CardTitle>
+                                <CardDescription className="font-medium">{t('emailCreditsSubtitle')}</CardDescription>
+                            </div>
+                            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
+                                <Mail className="w-5 h-5" />
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
+                        {stores && stores.length > 0 && (
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{t('selectStore')}</label>
+                                <select 
+                                    value={selectedStoreId} 
+                                    onChange={(e) => setSelectedStoreId(e.target.value)}
+                                    className="w-full bg-background border-2 rounded-xl px-3 py-2 text-xs font-black focus:outline-none focus:border-primary"
+                                >
+                                    {stores.map((store: any) => (
+                                        <option key={store._id} value={store._id}>
+                                            {store.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {loadingEmail ? (
+                            <div className="flex items-center justify-center py-6 flex-1">
+                                <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+                            </div>
+                        ) : emailBalance ? (
+                            <div className="space-y-4 flex-1 flex flex-col justify-end">
+                                <div className="space-y-2 pt-2">
+                                    <div className="flex justify-between text-xs font-bold text-muted-foreground">
+                                        <span>{t('planAllowance')}</span>
+                                        <span className="font-black text-slate-800">{emailBalance.planBalance}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs font-bold text-muted-foreground">
+                                        <span>{t('addOnBalance')}</span>
+                                        <span className="font-black text-indigo-600">{emailBalance.purchasedBalance}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs font-bold text-muted-foreground">
+                                        <span>{t('heldReserved')}</span>
+                                        <span className="font-black text-amber-600">{emailBalance.reserved}</span>
+                                    </div>
+                                </div>
+                                <div className="pt-3 border-t border-dashed flex justify-between items-baseline">
+                                    <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">{t('totalCredits')}</span>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-3xl font-black text-slate-900">{emailBalance.balance}</span>
+                                        <span className="text-[9px] font-bold text-muted-foreground uppercase">Emails</span>
+                                    </div>
+                                </div>
+                                <Button 
+                                    onClick={() => setBuyEmailOpen(true)}
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black h-11"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" /> {t('buyEmailCredits')}
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="text-xs text-muted-foreground italic text-center py-6 flex-1 flex items-center justify-center">{t('noEmailBalance')}</div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -309,6 +437,65 @@ export default function MerchantBillingPage() {
                     onOpenChange={(open) => !open && setSelectedReceipt(null)}
                 />
             )}
+
+            {/* Buy Email Credits Dialog */}
+            <Dialog open={buyEmailOpen} onOpenChange={setBuyEmailOpen}>
+                <DialogContent className="rounded-3xl max-w-lg border-2">
+                    <DialogHeader className="space-y-2">
+                        <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                            <ShoppingBag className="w-5.5 h-5.5 text-indigo-600" /> {t('buyEmailCredits')}
+                        </DialogTitle>
+                        <DialogDescription className="font-medium text-xs">
+                            {locale === 'ar' 
+                                ? "اشترِ باقات رصيد بريد إلكتروني إضافية. الرصيد الإضافي صالح لمدة عام واحد ويتم استخدامه بعد نفاد مخصص الخطة الشهري."
+                                : "Purchase extra email credit bundles. Add-on credits are valid for 1 year and used after monthly allowances exhaust."}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Pricing packages cards */}
+                    <div className="grid grid-cols-2 gap-4 my-6">
+                        {[
+                            { count: 50, price: 70, tag: locale === 'ar' ? "باقة المبتدئين" : "Starter Pack" },
+                            { count: 100, price: 120, tag: locale === 'ar' ? "باقة أساسية" : "Standard Pack" },
+                            { count: 250, price: 250, tag: locale === 'ar' ? "أفضل قيمة" : "Best Value" },
+                            { count: 500, price: 400, tag: locale === 'ar' ? "باقة ضخمة" : "Bulk Pack" }
+                        ].map((pkg) => (
+                            <Card key={pkg.count} className="border-2 rounded-2xl p-4 hover:border-primary transition-all duration-300 flex flex-col justify-between items-stretch bg-muted/10 relative overflow-hidden group">
+                                {pkg.count === 250 && (
+                                    <span className="absolute top-0 right-0 bg-indigo-600 text-white font-black text-[7px] uppercase tracking-widest py-0.5 px-3 rounded-bl-lg">
+                                        Popular
+                                    </span>
+                                )}
+                                <div className="space-y-1 mb-4">
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block">
+                                        {pkg.tag}
+                                    </span>
+                                    <span className="text-2xl font-black tracking-tighter text-slate-800 block">
+                                        {pkg.count} <span className="text-[10px] font-semibold text-muted-foreground tracking-normal uppercase">{locale === 'ar' ? "إيميل" : "Emails"}</span>
+                                    </span>
+                                    <span className="text-xs font-black text-indigo-600">
+                                        {pkg.price} {locale === 'ar' ? "ج.م" : "EGP"}
+                                    </span>
+                                </div>
+                                <Button 
+                                    size="sm" 
+                                    className="rounded-xl font-bold uppercase tracking-wider text-[8px] h-9 w-full bg-indigo-600 hover:bg-indigo-700"
+                                    onClick={() => handleBuyCredits(pkg.count)}
+                                    disabled={buyingEmail}
+                                >
+                                    {buyingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (locale === 'ar' ? "شراء" : "Purchase")}
+                                </Button>
+                            </Card>
+                        ))}
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => setBuyEmailOpen(false)} className="rounded-xl font-bold uppercase tracking-wider text-[9px] h-10 w-full md:w-auto">
+                            {locale === 'ar' ? "إلغاء" : "Cancel"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <RechargeModal 
                 open={isRechargeModalOpen} 

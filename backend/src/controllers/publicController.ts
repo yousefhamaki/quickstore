@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Store from '../models/Store';
 import Product from '../models/Product';
 import Coupon from '../models/Coupon';
+import Customer from '../models/Customer';
 import { redisClient } from '../config/redis';
 
 // @desc    Get store by subdomain
@@ -186,5 +187,87 @@ export const validateCoupon = async (req: Request, res: Response) => {
         });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error validating coupon', error });
+    }
+};
+
+// @desc    Subscribe to storefront newsletter (Idempotent Flow)
+// @route   POST /api/public/stores/:storeId/newsletter/subscribe
+// @access  Public
+export const subscribeNewsletter = async (req: Request, res: Response) => {
+    try {
+        const { storeId } = req.params;
+        const { email, source, consentText, honeypot } = req.body;
+
+        // 1. Bot Honeypot mitigation
+        if (honeypot) {
+            console.log(`[Newsletter] Bot trap triggered by honeypot submission.`);
+            return res.json({ success: true, message: 'Subscribed successfully' });
+        }
+
+        // 2. Validate email input
+        if (!email || typeof email !== 'string') {
+            return res.status(400).json({ success: false, message: 'Email address is required' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, message: 'Please enter a valid email address' });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // 3. Verify store existence and active status
+        const store = await Store.findOne({ _id: storeId, status: 'live' });
+        if (!store) {
+            return res.status(404).json({ success: false, message: 'Store not found or unavailable' });
+        }
+
+        // 4. Find or update/create unified contact record
+        let customer = await Customer.findOne({ storeId, email: normalizedEmail });
+
+        const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        const textConsent = consentText || 'I agree to receive store newsletter updates.';
+
+        if (!customer) {
+            // First time signup
+            customer = new Customer({
+                storeId,
+                email: normalizedEmail,
+                consentStatus: 'subscribed',
+                source: source || 'storefront_footer',
+                consentHistory: [{
+                    status: 'subscribed',
+                    action: 'opt_in_signup',
+                    timestamp: new Date(),
+                    ipAddress,
+                    userAgent,
+                    consentText: textConsent
+                }]
+            });
+            await customer.save();
+        } else {
+            // Already exists in DB
+            if (customer.consentStatus === 'subscribed') {
+                return res.json({ success: true, message: 'Subscribed successfully' });
+            }
+
+            // Update status and push audit log
+            customer.consentStatus = 'subscribed';
+            customer.consentHistory.push({
+                status: 'subscribed',
+                action: 'opt_in_resubscribe',
+                timestamp: new Date(),
+                ipAddress,
+                userAgent,
+                consentText: textConsent
+            });
+            await customer.save();
+        }
+
+        res.json({ success: true, message: 'Subscribed successfully' });
+    } catch (error) {
+        console.error('Newsletter subscription error:', error);
+        res.status(500).json({ success: false, message: 'Server Error', error });
     }
 };

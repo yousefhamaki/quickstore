@@ -6,6 +6,7 @@ import Product from '../models/Product';
 import { AuthRequest } from '../middleware/authMiddleware';
 import InventoryLog from '../models/InventoryLog';
 import mongoose from 'mongoose';
+import OfferCampaign from '../models/OfferCampaign';
 
 // @desc    Get all orders for a store
 // @route   GET /api/orders
@@ -112,6 +113,50 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             timestamp: new Date(),
             note: `Status updated to ${status} by merchant`
         });
+        // Revert or re-apply campaign analytics based on status
+        if (['cancelled', 'refunded'].includes(status)) {
+            if (order.offerAttribution && order.offerAttribution.length > 0) {
+                for (const attr of order.offerAttribution) {
+                    if (!attr.analyticsReversed) {
+                        await OfferCampaign.findByIdAndUpdate(
+                            attr.campaignId,
+                            {
+                                $inc: {
+                                    totalAcceptances: -1,
+                                    'analytics.acceptances': -1,
+                                    'analytics.revenue': -attr.campaignRevenue,
+                                    'analytics.generatedOrders': -1
+                                }
+                            },
+                            { session }
+                        );
+                        attr.analyticsReversed = true;
+                    }
+                }
+                order.markModified('offerAttribution');
+            }
+        } else if (['pending', 'confirmed', 'processing', 'shipped', 'delivered'].includes(status)) {
+            if (order.offerAttribution && order.offerAttribution.length > 0) {
+                for (const attr of order.offerAttribution) {
+                    if (attr.analyticsReversed) {
+                        await OfferCampaign.findByIdAndUpdate(
+                            attr.campaignId,
+                            {
+                                $inc: {
+                                    totalAcceptances: 1,
+                                    'analytics.acceptances': 1,
+                                    'analytics.revenue': attr.campaignRevenue,
+                                    'analytics.generatedOrders': 1
+                                }
+                            },
+                            { session }
+                        );
+                        attr.analyticsReversed = false;
+                    }
+                }
+                order.markModified('offerAttribution');
+            }
+        }
 
         // Inventory Logic based on status transition
         if (previousStatus === 'pending' && status !== 'pending') {

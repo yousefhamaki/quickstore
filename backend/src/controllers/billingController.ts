@@ -10,6 +10,10 @@ import mongoose from 'mongoose';
 import axios from 'axios';
 import Transaction from '../models/Transaction';
 import { sendInvoiceEmail } from '../services/emailService';
+import Store from '../models/Store';
+import EmailLedgerEntry from '../models/EmailLedgerEntry';
+import EmailAccount from '../models/EmailAccount';
+import { CampaignQuotaService } from '../services/CampaignQuotaService';
 
 /**
  * Idempotent Wallet Creation Helper
@@ -724,3 +728,182 @@ export const processOrderFee = async (userId: string, orderId: any, session?: mo
 
     return { success: true, newBalance: updatedWallet?.balance };
 };
+
+/**
+ * @desc    Get email quota details & balance overview for a merchant store
+ * @route   GET /api/billing/:storeId/email-account
+ * @access  Private/Merchant
+ */
+export const getEmailAccountBalance = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user._id;
+        const { storeId } = req.params;
+        const storeIdStr = storeId as string;
+
+        // Verify store belongs to merchant
+        const store = await Store.findOne({ _id: storeIdStr, ownerId: userId });
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found or unauthorized' });
+        }
+
+        const balanceInfo = await CampaignQuotaService.getCreditBalance(storeIdStr);
+
+        // Fetch ledger history (limit 50)
+        const ledgerHistory = await EmailLedgerEntry.find({ storeId: storeIdStr })
+            .sort({ createdAt: -1 })
+            .limit(50);
+
+        res.json({
+            balance: balanceInfo.balance,
+            planBalance: balanceInfo.planBalance,
+            purchasedBalance: balanceInfo.purchasedBalance,
+            reserved: balanceInfo.reserved,
+            ledgerHistory
+        });
+    } catch (error) {
+        console.error('Get Email Account Balance Error:', error);
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+const EMAIL_PACKAGES = [
+    { count: 50, price: 70 },
+    { count: 100, price: 120 },
+    { count: 250, price: 250 },
+    { count: 500, price: 400 }
+];
+
+/**
+ * @desc    Purchase email credits package using wallet balance
+ * @route   POST /api/billing/:storeId/email-account/buy-add-on
+ * @access  Private/Merchant
+ */
+export const buyEmailAddOn = async (req: AuthRequest, res: Response) => {
+    const { storeId } = req.params;
+    const { emailCount } = req.body;
+    const storeIdStr = storeId as string;
+
+    const count = Number(emailCount);
+    const pkg = EMAIL_PACKAGES.find(p => p.count === count);
+    if (!pkg) {
+        return res.status(400).json({ message: 'Invalid email package selection' });
+    }
+
+    try {
+        // Initialize/verify email account and refresh allowance before starting transaction
+        await CampaignQuotaService.getCreditBalance(storeIdStr);
+    } catch (err: any) {
+        return res.status(500).json({ message: err.message || 'Failed to initialize email account balance' });
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const userId = req.user._id;
+
+        // Verify store belongs to merchant
+        const store = await Store.findOne({ _id: storeIdStr, ownerId: userId }).session(session);
+        if (!store) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ message: 'Store not found or unauthorized' });
+        }
+
+        // Fetch Wallet
+        const wallet = await Wallet.findOne({ userId }).session(session);
+        if (!wallet || wallet.balance < pkg.price) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ 
+                message: `Insufficient wallet balance. Package costs ${pkg.price} EGP, but your balance is ${wallet?.balance || 0} EGP.` 
+            });
+        }
+
+        // Deduct from wallet
+        wallet.balance -= pkg.price;
+        await wallet.save({ session });
+
+        // Record transaction
+        const walletTx = await WalletTransaction.create([{
+            userId,
+            type: 'debit',
+            amount: pkg.price,
+            reason: 'plan_payment',
+            referenceId: store._id
+        }], { session });
+
+        // Record receipt
+        await Receipt.create([{
+            userId,
+            referenceId: walletTx[0]._id,
+            type: 'wallet_recharge',
+            amount: pkg.price,
+            currency: 'EGP'
+        }], { session });
+
+        // Update EmailAccount
+        let emailAccount = await EmailAccount.findOne({ storeId: storeIdStr }).session(session);
+        if (!emailAccount) {
+            emailAccount = new EmailAccount({
+                storeId: storeIdStr,
+                planBalance: 0,
+                purchasedBalance: count,
+                balance: count,
+                reserved: 0
+            });
+        } else {
+            emailAccount.purchasedBalance += count;
+            emailAccount.balance = emailAccount.planBalance + emailAccount.purchasedBalance;
+        }
+        await emailAccount.save({ session });
+
+        // Write ledger entry
+        await EmailLedgerEntry.create([{
+            storeId: storeIdStr,
+            type: 'purchase',
+            amount: count,
+            referenceId: walletTx[0]._id.toString(),
+            description: `Purchased email credit add-on: ${count} emails (${pkg.price} EGP)`
+        }], { session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        // Trigger invoice email notification asynchronously after successful commit
+        if (req.user && req.user.email) {
+            const invoiceDetails = {
+                invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
+                buyerName: req.user.name || 'Merchant',
+                amount: pkg.price,
+                currency: 'EGP',
+                date: new Date().toISOString(),
+                paymentMethod: 'Buildora Wallet',
+                items: [
+                    {
+                        name: `Email Campaign Credits Add-On - ${count} Emails`,
+                        quantity: 1,
+                        price: pkg.price
+                    }
+                ]
+            };
+            sendInvoiceEmail(req.user.email, 'Buildora SaaS Add-On', invoiceDetails).catch(err => {
+                console.error('[BillingController] Failed to send email add-on invoice email:', err);
+            });
+        }
+
+        res.json({
+            message: `Successfully purchased ${count} emails!`,
+            balance: emailAccount.balance,
+            planBalance: emailAccount.planBalance,
+            purchasedBalance: emailAccount.purchasedBalance,
+            walletBalance: wallet.balance
+        });
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error('Buy Email Add-on Error:', error);
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+

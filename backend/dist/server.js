@@ -37,6 +37,9 @@ const aiMarketingRoutes_1 = __importDefault(require("./routes/aiMarketingRoutes"
 const seo_1 = __importDefault(require("./routes/seo"));
 const articleRoutes_1 = __importDefault(require("./routes/articleRoutes"));
 const chatRoutes_1 = __importDefault(require("./routes/chatRoutes"));
+const campaignRoutes_1 = __importDefault(require("./routes/campaignRoutes"));
+const offerRoutes_1 = require("./routes/offerRoutes");
+const CampaignQuotaService_1 = require("./services/CampaignQuotaService");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 app.use((0, compression_1.default)({ level: 6 }));
@@ -56,11 +59,14 @@ app.use('/api/support', supportRoutes_1.default);
 app.use('/api/customers', customerRoutes_1.default);
 app.use('/api/coupons', couponRoutes_1.default);
 app.use('/api/marketing', marketingRoutes_1.default);
+app.use('/api/campaigns', campaignRoutes_1.default);
 app.use('/api/abandoned-carts', abandonedCartRoutes_1.default);
 app.use('/api/ai-marketing', aiMarketingRoutes_1.default);
 app.use('/api', seo_1.default);
 app.use('/api/articles', articleRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
+app.use('/api/public/offers', offerRoutes_1.publicOfferRouter);
+app.use('/api/merchant/offers', offerRoutes_1.merchantOfferRouter);
 app.get('/', (req, res) => {
     res.send('Buildora API is running...');
 });
@@ -78,8 +84,13 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         process.exit(1);
     }
 });
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
+if (process.env.NODE_ENV !== 'test') {
+    connectDB().then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+            // Start credit reservation reconciliation (runs every 5 minutes)
+            CampaignQuotaService_1.CampaignQuotaService.startReconciliationInterval();
+        });
     });
-});
+}
+exports.default = app;

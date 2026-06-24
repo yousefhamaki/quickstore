@@ -146,6 +146,31 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                     </CardContent>
                 </Card>
 
+                {/* Email Campaigns */}
+                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition-all relative">
+                    <CardHeader className="bg-muted/30 border-b p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                                <Sparkles className="w-6 h-6" />
+                            </div>
+                        </div>
+                        <CardTitle className="text-xl font-black uppercase tracking-tight">Email Campaigns</CardTitle>
+                        <CardDescription className="font-medium">Send newsletters and campaigns to subscribers.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider leading-relaxed">
+                            Draft marketing emails, monitor credit balance usage, and track delivery or open analytics.
+                        </p>
+                        <Button
+                            className="w-full rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
+                            variant="outline"
+                            onClick={() => router.push(`/dashboard/stores/${storeId}/marketing/campaigns`)}
+                        >
+                            Manage Campaigns
+                        </Button>
+                    </CardContent>
+                </Card>
+
                 {/* Tracking Pixels */}
                 <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition-all relative">
                     {!hasPixelsAccess && <FeatureLock feature="Pixels" requiredPlan={getRequiredPlan('pixels')} />}

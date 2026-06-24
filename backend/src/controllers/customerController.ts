@@ -9,7 +9,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 export const getCustomers = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user._id;
-        const { storeId, search, pageNumber } = req.query;
+        const { storeId, search, pageNumber, consentStatus } = req.query;
 
         let query: any = {};
 
@@ -25,6 +25,10 @@ export const getCustomers = async (req: AuthRequest, res: Response) => {
             const stores = await Store.find({ ownerId: userId });
             const storeIds = stores.map(store => store._id);
             query.storeId = { $in: storeIds };
+        }
+
+        if (consentStatus) {
+            query.consentStatus = consentStatus;
         }
 
         const pageSize = 20;

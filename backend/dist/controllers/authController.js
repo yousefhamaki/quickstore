@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserProfile = exports.googleLogin = exports.verifyEmail = exports.loginUser = exports.registerUser = void 0;
+exports.resendVerificationEmail = exports.getUserProfile = exports.googleLogin = exports.verifyEmail = exports.loginUser = exports.registerUser = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const User_1 = __importDefault(require("../models/User"));
 const Subscription_1 = __importDefault(require("../models/Subscription"));
@@ -22,11 +22,30 @@ const google_auth_library_1 = require("google-auth-library");
 const emailService_1 = require("../services/emailService");
 const billingController_1 = require("./billingController");
 const client = new google_auth_library_1.OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+/**
+ * Normalize an email address to its canonical form to prevent alias abuse.
+ * Examples:
+ *   user+anything@gmail.com  → user@gmail.com
+ *   USER+tag@Gmail.COM       → user@gmail.com
+ *
+ * The `+tag` trick is supported by most major providers (Gmail, Outlook, iCloud).
+ * Stripping it ensures one inbox = one account.
+ */
+function normalizeEmail(raw) {
+    const lower = raw.trim().toLowerCase();
+    const [local, domain] = lower.split('@');
+    if (!local || !domain)
+        return lower; // malformed — return as-is, let validators catch it
+    const canonicalLocal = local.split('+')[0]; // strip everything from '+' onwards
+    return `${canonicalLocal}@${domain}`;
+}
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, email, password, role, planId } = req.body;
+    const { name, password, role, planId } = req.body;
+    // Normalize the email to prevent +tag alias abuse (e.g., user+1@gmail.com → user@gmail.com)
+    const email = normalizeEmail(req.body.email || '');
     try {
         const userExists = yield User_1.default.findOne({ email });
         if (userExists) {
@@ -90,7 +109,9 @@ exports.registerUser = registerUser;
 // @access  Public
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const { email, password } = req.body;
+    const { password } = req.body;
+    // Normalize so users can't use +tag to bypass an account suspension/lookup
+    const email = normalizeEmail(req.body.email || '');
     try {
         const user = yield User_1.default.findOne({ email });
         if (user && user.passwordHash && (yield bcryptjs_1.default.compare(password, user.passwordHash))) {
@@ -278,3 +299,36 @@ const getUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.getUserProfile = getUserProfile;
+// @desc    Resend email verification link
+// @route   POST /api/auth/resend-verification
+// @access  Public (requires email in body)
+const resendVerificationEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // Normalize to canonical form so alias variants still find the right account
+    const email = normalizeEmail(req.body.email || '');
+    if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+    }
+    try {
+        const user = yield User_1.default.findOne({ email });
+        // Always return 200 to avoid user enumeration
+        if (!user || user.isVerified) {
+            return res.status(200).json({ message: 'If your account exists and is unverified, a new link has been sent.' });
+        }
+        // Generate a fresh token
+        const verificationToken = crypto_1.default.randomBytes(32).toString('hex');
+        const emailVerificationTokenHash = crypto_1.default
+            .createHash('sha256')
+            .update(verificationToken)
+            .digest('hex');
+        user.emailVerificationTokenHash = emailVerificationTokenHash;
+        user.emailVerificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+        yield user.save();
+        const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+        yield (0, emailService_1.sendBuyerVerificationEmail)(user.email, 'Buildora', verifyUrl);
+        res.status(200).json({ message: 'If your account exists and is unverified, a new link has been sent.' });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+exports.resendVerificationEmail = resendVerificationEmail;

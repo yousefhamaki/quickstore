@@ -3,7 +3,7 @@
 import { usePlans, useSubscribe, useBillingOverview } from "@shared/lib/hooks/useBilling";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@shared/components/ui/card";
 import { Button } from "@shared/components/ui/button";
-import { Check, Zap, Rocket, Star, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
+import { Check, Zap, Rocket, Star, ShieldCheck, Loader2, AlertCircle, X } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { Badge } from "@shared/components/ui/badge";
@@ -191,6 +191,27 @@ export default function PlansPage() {
                                     {(locale === 'ar' ? plan.features_ar : plan.features_en)?.map((feature, idx) => (
                                         <FeatureItem key={idx} icon={Check} label={feature} />
                                     ))}
+
+                                    {/* Email Campaigns Quota */}
+                                    <FeatureItem 
+                                        icon={(plan.emailLimit || 0) === 0 ? X : Check} 
+                                        label={
+                                            (plan.emailLimit || 0) === 0 
+                                                ? t('emailQuotaFree')
+                                                : t('emailQuotaPaid', { count: plan.emailLimit || 0 })
+                                        }
+                                        enabled={(plan.emailLimit || 0) > 0}
+                                    />
+
+                                    {/* Advanced Funnels (Upsell, Cross-sell, Down-sell) Gate */}
+                                    <FeatureItem 
+                                        icon={(plan.features as any)?.allowUCD ? Check : X} 
+                                        label={(plan.features as any)?.allowUCD 
+                                            ? "Advanced Funnels (Upsell, Cross-sell, Down-sell)" 
+                                            : "Advanced Funnels (Upgrade to Unlock)"
+                                        } 
+                                        enabled={(plan.features as any)?.allowUCD} 
+                                    />
                                 </div>
                             </CardContent>
 

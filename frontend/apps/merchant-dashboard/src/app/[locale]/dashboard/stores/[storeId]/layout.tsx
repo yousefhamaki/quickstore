@@ -22,7 +22,8 @@ import {
     Palette,
     Megaphone,
     LogOut,
-    ShieldCheck
+    ShieldCheck,
+    Zap
 } from "lucide-react";
 import { NavLink, useSafeNavigation } from "@shared/components/NavLink";
 import { usePathname } from "next/navigation";
@@ -67,6 +68,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
         { name: t('items.orders'), href: `/dashboard/stores/${storeId}/orders`, icon: ShoppingCart },
         { name: t('items.customers'), href: `/dashboard/stores/${storeId}/customers`, icon: Users },
         { name: t('items.marketing'), href: `/dashboard/stores/${storeId}/marketing`, icon: Megaphone },
+        { name: 'Offers', href: `/dashboard/stores/${storeId}/offers`, icon: Zap, badge: 'PRO' },
         { name: t('items.analytics'), href: `/dashboard/stores/${storeId}/analytics`, icon: BarChart2 },
     ];
 
@@ -146,17 +148,24 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                 key={item.name}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group font-medium text-sm",
+                                    "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-300 group font-medium text-sm",
                                     isActive(item.href)
                                         ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 )}
                             >
-                                <item.icon className={cn(
-                                    "w-4 h-4",
-                                    isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
-                                )} />
-                                {item.name}
+                                <div className="flex items-center gap-3">
+                                    <item.icon className={cn(
+                                        "w-4 h-4",
+                                        isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                    )} />
+                                    {item.name}
+                                </div>
+                                {item.badge && (
+                                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-sm">
+                                        {item.badge}
+                                    </span>
+                                )}
                             </NavLink>
                         ))}
                     </nav>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Check, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Loader2, X } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Badge } from '@shared/components/ui/badge';
 import { Navbar } from '@shared/components/landing/Navbar';
@@ -106,6 +106,7 @@ export default function PricingPage() {
                                     buttonText={plan.price === 0 ? (locale === 'ar' ? 'ابدأ مجاناً' : 'Start for Free') : (locale === 'ar' ? 'ابدأ الآن' : 'Get Started')}
                                     features={locale === 'ar' ? plan.features_ar : plan.features_en}
                                     popular={plan.name_en === 'Professional'}
+                                    allowUCD={plan.name_en === 'Professional' || plan.name_en === 'Enterprise'}
                                     color={plan.type === 'free' ? 'gray' : (plan.name_en === 'Professional' ? 'blue' : 'purple')}
                                     onSelect={() => {
                                         const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
@@ -166,9 +167,9 @@ export default function PricingPage() {
 }
 
 function PricingCard({
-    name, price, period, description, buttonText, features, popular, color, onSelect
+    name, price, period, description, buttonText, features, popular, allowUCD, color, onSelect
 }: {
-    name: string, price: string, period: string, description: string, buttonText: string, features: string[], popular?: boolean, color: 'gray' | 'blue' | 'purple', onSelect: () => void
+    name: string, price: string, period: string, description: string, buttonText: string, features: string[], popular?: boolean, allowUCD?: boolean, color: 'gray' | 'blue' | 'purple', onSelect: () => void
 }) {
     const isPopular = popular;
 
@@ -208,6 +209,16 @@ function PricingCard({
                         <span className="rtl:text-right">{feature}</span>
                     </li>
                 ))}
+                
+                {/* Advanced Funnels Gate */}
+                <li className={`flex items-start gap-3 text-sm font-bold rtl:flex-row-reverse ${allowUCD ? 'text-gray-700' : 'text-gray-400 opacity-60'}`}>
+                    <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${allowUCD ? (isPopular ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500') : 'bg-gray-50 text-gray-400'}`}>
+                        {allowUCD ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                    </div>
+                    <span className="rtl:text-right">
+                        {allowUCD ? "Advanced Funnels (Upsell, Cross-sell, Down-sell)" : "Advanced Funnels (Upgrade to Unlock)"}
+                    </span>
+                </li>
             </ul>
         </div>
     );
