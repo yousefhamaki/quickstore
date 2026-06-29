@@ -40,11 +40,11 @@ export function LanguageSwitcher() {
 
             // Update body font class
             if (newLocale === 'ar') {
-                document.body.classList.remove('font-inter');
+                document.body.classList.remove('font-montserrat');
                 document.body.classList.add('font-cairo');
             } else {
                 document.body.classList.remove('font-cairo');
-                document.body.classList.add('font-inter');
+                document.body.classList.add('font-montserrat');
             }
 
             // Replace the locale in the current pathname

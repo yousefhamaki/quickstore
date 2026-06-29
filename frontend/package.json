@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node dev.js",
+    "dev:admin": "npm run dev --workspace=admin-dashboard",
     "dev:merchant": "npm run dev --workspace=merchant-dashboard",
     "dev:saas": "npm run dev --workspace=saas-portal",
     "build": "npm run build --workspaces",

@@ -112,7 +112,7 @@ export default function SupportPage() {
 
                     <div className="space-y-6">
                         {loading ? (
-                            <div className="text-center text-gray-500 py-10 font-medium font-inter">Loading Knowledge Base Articles...</div>
+                            <div className="text-center text-gray-500 py-10 font-medium font-montserrat">Loading Knowledge Base Articles...</div>
                         ) : focusedArticle ? (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="p-10 md:p-14 rounded-[40px] bg-white border-2 border-green-50 shadow-2xl shadow-green-100">
@@ -122,7 +122,7 @@ export default function SupportPage() {
                                     <h3 className="text-3xl md:text-4xl font-black text-gray-900 mb-8 leading-tight">
                                         {locale === 'ar' ? (focusedArticle.titleAr || focusedArticle.title) : focusedArticle.title}
                                     </h3>
-                                    <div className="text-lg text-gray-600 leading-relaxed font-inter space-y-4">
+                                    <div className="text-lg text-gray-600 leading-relaxed font-montserrat space-y-4">
                                         {(locale === 'ar' ? (focusedArticle.contentAr || focusedArticle.content) : focusedArticle.content).split('\n').map((para, i) => (
                                             <p key={i}>{para}</p>
                                         ))}

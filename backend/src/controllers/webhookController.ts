@@ -89,10 +89,10 @@ export const handlePaymobWebhook = async (req: Request, res: Response) => {
 
                         // Update Wallet
                         const userId = transaction.userId;
-                        await Wallet.findOneAndUpdate(
+                        const wallet = await Wallet.findOneAndUpdate(
                             { userId },
                             { $inc: { balance: amount } },
-                            { upsert: true, session: session || undefined }
+                            { upsert: true, new: true, session: session || undefined }
                         );
 
                         // Record WalletTransaction
@@ -103,6 +103,18 @@ export const handlePaymobWebhook = async (req: Request, res: Response) => {
                             reason: 'recharge',
                             referenceId: transaction._id
                         }], { session: session || undefined });
+
+                        if (wallet) {
+                            const WalletLedgerModel = mongoose.model('WalletLedger');
+                            await WalletLedgerModel.create([{
+                                merchantId: userId,
+                                type: 'credit',
+                                amount,
+                                reason: 'recharge',
+                                referenceId: transaction._id,
+                                balanceAfter: wallet.balance
+                            }], session ? { session } : {});
+                        }
 
                         // Issue Receipt
                         await Receipt.create([{

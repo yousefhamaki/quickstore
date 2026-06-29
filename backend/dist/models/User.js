@@ -38,7 +38,7 @@ const UserSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, index: true },
     passwordHash: { type: String, required: false },
-    role: { type: String, enum: ['merchant', 'super_admin'], default: 'merchant' },
+    role: { type: String, enum: ['merchant', 'super_admin', 'finance_admin', 'support_admin', 'read_only_admin'], default: 'merchant' },
     authProvider: { type: String, enum: ['local', 'google'], required: true, default: 'local' },
     googleId: { type: String, index: true, sparse: true },
     isVerified: { type: Boolean, default: false },
@@ -51,6 +51,7 @@ const UserSchema = new mongoose_1.Schema({
     },
     subscriptionPlan: { type: mongoose_1.Schema.Types.ObjectId, ref: 'SubscriptionPlan' },
     subscriptionExpiry: { type: Date },
-    stores: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Store' }]
+    stores: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Store' }],
+    isBlocked: { type: Boolean, default: false }
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('User', UserSchema);

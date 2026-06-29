@@ -144,10 +144,10 @@ export default function RegisterPage() {
             <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse group mb-8">
                 <div className="relative h-12 w-12 flex-shrink-0">
                     <Image
-                        src="/logo.png"
+                        src="/new-logo.png"
                         alt="Buildora Logo"
-                        width={120}
-                        height={120}
+                        width={50}
+                        height={50}
                         className="object-contain group-hover:scale-110 transition-transform duration-300"
                         priority
                     />

@@ -48,10 +48,10 @@ export function Navbar() {
                         <NavLink href="/" className="flex items-center space-x-3 rtl:space-x-reverse group">
                             <div className="relative h-10 w-10 flex-shrink-0">
                                 <Image
-                                    src="/logo.png"
+                                    src="/new-logo.png"
                                     alt="Buildora Logo"
-                                    width={100}
-                                    height={100}
+                                    width={50}
+                                    height={50}
                                     className="object-contain group-hover:scale-110 transition-transform duration-300"
                                     priority
                                     style={{ background: 'transparent' }}

@@ -28,6 +28,8 @@ import chatRoutes from './routes/chatRoutes';
 import campaignRoutes from './routes/campaignRoutes';
 import { publicOfferRouter, merchantOfferRouter } from './routes/offerRoutes';
 import { CampaignQuotaService } from './services/CampaignQuotaService';
+import './workers/adminWorker';
+import { startAnalyticsCron } from './jobs/analyticsCron';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
@@ -84,6 +86,8 @@ if (process.env.NODE_ENV !== 'test') {
             console.log(`Server is running on port ${PORT}`);
             // Start credit reservation reconciliation (runs every 5 minutes)
             CampaignQuotaService.startReconciliationInterval();
+            // Start analytics cache snapshot calculation (runs hourly)
+            startAnalyticsCron();
         });
     });
 }

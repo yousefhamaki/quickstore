@@ -10,7 +10,7 @@ interface User {
     _id: string;
     name: string;
     email: string;
-    role: 'merchant' | 'super_admin';
+    role: 'merchant' | 'super_admin' | 'finance_admin' | 'support_admin' | 'read_only_admin';
     isVerified: boolean;
     subscriptionPlan?: {
         name: string;

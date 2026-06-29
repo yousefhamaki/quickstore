@@ -15,10 +15,10 @@ export function Footer() {
                     <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
                         <div className="relative h-10 w-10 flex-shrink-0">
                             <Image
-                                src="/logo.png"
+                                src="/new-logo.png"
                                 alt="Buildora Logo"
-                                width={40}
-                                height={40}
+                                width={50}
+                                height={50}
                                 className="object-contain"
                             />
                         </div>

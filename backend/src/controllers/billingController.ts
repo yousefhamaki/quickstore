@@ -133,6 +133,17 @@ export const paySubscriptionWithWallet = async (req: AuthRequest, res: Response)
                 referenceId: sub._id
             }], { session });
 
+            // 3. Log to WalletLedger
+            const WalletLedgerModel = mongoose.model('WalletLedger');
+            await WalletLedgerModel.create([{
+                merchantId: userId,
+                type: 'debit',
+                amount: price,
+                reason: 'plan_payment',
+                referenceId: sub._id,
+                balanceAfter: wallet.balance
+            }], { session });
+
             // 3. Activate subscription
             sub.status = 'active';
             sub.startedAt = new Date();
@@ -390,6 +401,17 @@ export const subscribe = async (req: AuthRequest, res: Response) => {
                     referenceId: subscription._id
                 }], { session });
 
+                // Log to WalletLedger
+                const WalletLedgerModel = mongoose.model('WalletLedger');
+                await WalletLedgerModel.create([{
+                    merchantId: userId,
+                    type: 'debit',
+                    amount: price,
+                    reason: 'plan_payment',
+                    referenceId: subscription._id,
+                    balanceAfter: wallet.balance
+                }], { session });
+
                 // 3. Activate subscription
                 subscription.status = 'active';
                 subscription.startedAt = new Date();
@@ -551,6 +573,18 @@ export const rechargeWallet = async (req: AuthRequest, res: Response) => {
                 reason: 'recharge',
                 referenceId: new mongoose.Types.ObjectId()
             });
+
+            if (wallet) {
+                const WalletLedgerModel = mongoose.model('WalletLedger');
+                await WalletLedgerModel.create([{
+                    merchantId: req.user._id,
+                    type: 'credit',
+                    amount,
+                    reason: 'recharge',
+                    referenceId: wallet._id,
+                    balanceAfter: wallet.balance
+                }]);
+            }
 
             return res.json({
                 success: true,
@@ -717,6 +751,18 @@ export const processOrderFee = async (userId: string, orderId: any, session?: mo
         referenceId: orderIdObj
     }], { session });
 
+    if (updatedWallet) {
+        const WalletLedgerModel = mongoose.model('WalletLedger');
+        await WalletLedgerModel.create([{
+            merchantId: new mongoose.Types.ObjectId(userId),
+            type: 'debit',
+            amount: fee,
+            reason: 'order_fee',
+            referenceId: orderIdObj,
+            balanceAfter: updatedWallet.balance
+        }], session ? { session } : {});
+    }
+
     // LEDGER: Create Receipt
     await ReceiptModel.create([{
         userId,
@@ -828,8 +874,19 @@ export const buyEmailAddOn = async (req: AuthRequest, res: Response) => {
             userId,
             type: 'debit',
             amount: pkg.price,
-            reason: 'plan_payment',
+            reason: 'addon_purchase',
             referenceId: store._id
+        }], { session });
+
+        // Log to WalletLedger
+        const WalletLedgerModel = mongoose.model('WalletLedger');
+        await WalletLedgerModel.create([{
+            merchantId: userId,
+            type: 'debit',
+            amount: pkg.price,
+            reason: 'addon_purchase',
+            referenceId: store._id,
+            balanceAfter: wallet.balance
         }], { session });
 
         // Record receipt

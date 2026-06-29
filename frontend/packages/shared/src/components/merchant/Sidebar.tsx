@@ -71,7 +71,7 @@ function Sidebar() {
                 <NavLink href="/merchant" className="flex items-center space-x-3 rtl:space-x-reverse">
                     <div className="relative h-8 w-8 flex-shrink-0">
                         <Image
-                            src="/logo.png"
+                            src="/new-logo.png"
                             alt="Buildora Logo"
                             width={32}
                             height={32}

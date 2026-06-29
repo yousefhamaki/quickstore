@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@source "../../../../packages/shared/src";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --background: #020617; /* Slate-950 */
+  --foreground: #f8fafc; /* Slate-50 */
+  
+  --card: #0b1329; /* Deep Slate */
+  --card-foreground: #f8fafc;
+  
+  --border: rgba(255, 255, 255, 0.08);
+  --ring: #06b6d4; /* Cyan-500 */
+  
+  --primary: #06b6d4; /* Cyan-500 */
+  --primary-foreground: #020617;
+  
+  --secondary: #1e293b; /* Slate-800 */
+  --secondary-foreground: #f8fafc;
+  
+  --muted: #0f172a; /* Slate-900 */
+  --muted-foreground: #94a3b8; /* Slate-400 */
+  
+  --accent: #6366f1; /* Indigo-500 */
+  --accent-foreground: #f8fafc;
+  
+  --destructive: #ef4444;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+  }
+  .glow-indigo {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  }
+}

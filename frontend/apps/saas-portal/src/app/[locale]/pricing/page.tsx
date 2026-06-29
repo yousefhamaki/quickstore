@@ -24,6 +24,16 @@ interface Plan {
     features_en: string[];
     features_ar: string[];
     isActive: boolean;
+    maxStores?: number;
+    storeLimit?: number;
+    productLimit?: number;
+    orderFee?: number;
+    emailLimit?: number;
+    features?: {
+        dropshipping: boolean;
+        customDomain: boolean;
+        allowUCD: boolean;
+    };
 }
 
 export default function PricingPage() {
@@ -96,129 +106,167 @@ export default function PricingPage() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-                            {plans.map((plan) => (
-                                <PricingCard
-                                    key={plan._id}
-                                    name={locale === 'ar' ? plan.name_ar : plan.name_en}
-                                    price={`${plan.currency} ${plan.price}`}
-                                    period={plan.price === 0 ? "Forever" : (locale === 'ar' ? "شهرياً" : "Monthly")}
-                                    description={locale === 'ar' ? plan.description_ar : plan.description_en}
-                                    buttonText={plan.price === 0 ? (locale === 'ar' ? 'ابدأ مجاناً' : 'Start for Free') : (locale === 'ar' ? 'ابدأ الآن' : 'Get Started')}
-                                    features={locale === 'ar' ? plan.features_ar : plan.features_en}
-                                    popular={plan.name_en === 'Professional'}
-                                    allowUCD={plan.name_en === 'Professional' || plan.name_en === 'Enterprise'}
-                                    color={plan.type === 'free' ? 'gray' : (plan.name_en === 'Professional' ? 'blue' : 'purple')}
-                                    onSelect={() => {
-                                        const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
-                                        if (user) {
-                                            window.location.href = `${dashboardUrl}/merchant/plans?autoSubscribe=${plan._id}`;
-                                        } else {
-                                            window.location.href = `${dashboardUrl}/auth/register?redirect=${encodeURIComponent('/merchant/plans?autoSubscribe=' + plan._id)}`;
-                                        }
-                                    }}
-                                />
-                            ))}
+                            {plans.map((plan) => {
+                                const resolvedMaxStores = plan.maxStores || plan.storeLimit || 1;
+                                const storeFeature = locale === 'ar'
+                                    ? `حتى ${resolvedMaxStores} ${resolvedMaxStores === 1 ? 'متجر إلكتروني' : resolvedMaxStores === 2 ? 'متجرين' : 'متاجر إلكترونية'}`
+                                    : `Up to ${resolvedMaxStores} ${resolvedMaxStores === 1 ? 'store' : 'stores'}`;
+                                
+                                const resolvedProductLimit = plan.productLimit ?? -1;
+                                const productFeature = resolvedProductLimit === -1
+                                    ? (locale === 'ar' ? 'رفع منتجات غير محدود' : 'Unlimited products upload')
+                                    : (locale === 'ar' ? `حتى ${resolvedProductLimit} منتج` : `Up to ${resolvedProductLimit} products`);
+
+                                const resolvedOrderFee = plan.orderFee ?? 0;
+                                const currencyLabel = plan.currency || 'EGP';
+                                const feeFeature = resolvedOrderFee === 0
+                                    ? (locale === 'ar' ? 'بدون رسوم على الطلبات' : 'No flat transaction fee on orders')
+                                    : (locale === 'ar' ? `${resolvedOrderFee} ج.م رسوم ثابتة على كل طلب` : `${resolvedOrderFee} ${currencyLabel} flat fee per order`);
+
+                                const resolvedEmailLimit = plan.emailLimit ?? 0;
+                                const emailFeature = resolvedEmailLimit === 0
+                                    ? (locale === 'ar' ? 'بدون رصيد حملات بريد إلكتروني' : 'No email marketing credits')
+                                    : (locale === 'ar' ? `${resolvedEmailLimit.toLocaleString()} رصيد حملات بريد شهرياً` : `${resolvedEmailLimit.toLocaleString()} monthly email marketing credits`);
+
+                                const hasCustomDomain = !!plan.features?.customDomain;
+                                const hasDropshipping = !!plan.features?.dropshipping;
+                                const hasUCD = !!plan.features?.allowUCD;
+
+                                const featureItems = [
+                                    { text: storeFeature, unlocked: true },
+                                    { text: productFeature, unlocked: true },
+                                    { text: feeFeature, unlocked: true },
+                                    { 
+                                        text: emailFeature, 
+                                        unlocked: resolvedEmailLimit > 0 
+                                    },
+                                    { 
+                                        text: locale === 'ar' ? 'دعم النطاق الخاص (Custom Domain)' : 'Custom Domain Support', 
+                                        unlocked: hasCustomDomain 
+                                    },
+                                    { 
+                                        text: locale === 'ar' ? 'الوصول لكتالوج الدروب شيبنج' : 'Catalog Dropshipping Access', 
+                                        unlocked: hasDropshipping 
+                                    },
+                                    { 
+                                        text: locale === 'ar' ? 'حملات زيادة المبيعات (Upsell & Cross-sell)' : 'Advanced Funnels (Upsell, Cross-sell, Down-sell)', 
+                                        unlocked: hasUCD 
+                                    }
+                                ];
+
+                                return (
+                                    <PricingCard
+                                        key={plan._id}
+                                        name={locale === 'ar' ? plan.name_ar : plan.name_en}
+                                        price={`${plan.currency} ${plan.price}`}
+                                        period={plan.price === 0 ? "Forever" : (locale === 'ar' ? "شهرياً" : "Monthly")}
+                                        description={locale === 'ar' ? plan.description_ar : plan.description_en}
+                                        buttonText={plan.price === 0 ? (locale === 'ar' ? 'ابدأ مجاناً' : 'Start for Free') : (locale === 'ar' ? 'ابدأ الآن' : 'Get Started')}
+                                        features={featureItems}
+                                        popular={plan.name_en === 'Professional'}
+                                        color={plan.type === 'free' ? 'gray' : (plan.name_en === 'Professional' ? 'blue' : 'purple')}
+                                        onSelect={() => {
+                                            const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
+                                            if (user) {
+                                                window.location.href = `${dashboardUrl}/merchant/plans?autoSubscribe=${plan._id}`;
+                                            } else {
+                                                window.location.href = `${dashboardUrl}/auth/register?redirect=${encodeURIComponent('/merchant/plans?autoSubscribe=' + plan._id)}`;
+                                            }
+                                        }}
+                                    />
+                                );
+                            })}
                         </div>
                     )}
                 </div>
             </section>
-
-            {/* FAQ Section */}
-            <section className="py-20 bg-gray-50/50">
-                <div className="max-w-4xl mx-auto px-4 text-center">
-                    <h2 className="text-4xl font-black text-gray-900 mb-4">{t('faq.title')}</h2>
-                    <p className="text-xl text-gray-600 mb-16">{t('faq.subtitle')}</p>
-
-                    <div className="space-y-8 text-left rtl:text-right">
-                        <FAQItem question={t('faq.q1.question')} answer={t('faq.q1.answer')} />
-                        <FAQItem question={t('faq.q2.question')} answer={t('faq.q2.answer')} />
-                        <FAQItem question={t('faq.q3.question')} answer={t('faq.q3.answer')} />
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA Section */}
-            <section className="py-20 md:py-32 bg-blue-600 relative overflow-hidden">
-                <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black)]" />
-
-                <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-                    <h2 className="text-4xl sm:text-5xl font-black text-white mb-6">
-                        {t('cta.title')}
-                    </h2>
-                    <p className="text-xl md:text-2xl text-white/90 mb-10 font-medium">
-                        {t('cta.subtitle')}
-                    </p>
-                    <Button
-                        onClick={() => {
-                            const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
-                            window.location.href = user ? (user.role === 'super_admin' ? `${dashboardUrl}/admin` : `${dashboardUrl}/merchant`) : `${dashboardUrl}/auth/register`;
-                        }}
-                        size="lg"
-                        className="h-16 px-12 text-xl rounded-full bg-white text-blue-600 hover:bg-gray-100 font-bold transition-all hover:scale-105"
-                    >
-                        {t('cta.button')} <ArrowRight className="ml-2 h-6 w-6 rtl:mr-2 rtl:ml-0 rtl:rotate-180" />
-                    </Button>
-                </div>
-            </section>
-
-            <Footer />
-        </div>
-    );
-}
-
-function PricingCard({
-    name, price, period, description, buttonText, features, popular, allowUCD, color, onSelect
-}: {
-    name: string, price: string, period: string, description: string, buttonText: string, features: string[], popular?: boolean, allowUCD?: boolean, color: 'gray' | 'blue' | 'purple', onSelect: () => void
-}) {
-    const isPopular = popular;
-
-    return (
-        <div className={`relative p-8 md:p-10 rounded-3xl bg-white border-2 transition-all duration-300 hover:-translate-y-2 ${isPopular ? 'border-blue-600 shadow-xl shadow-blue-100 md:scale-105 z-10' : 'border-gray-100 hover:border-blue-200 hover:shadow-xl'}`}>
-            {isPopular && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    <span>POPULAR</span>
-                </div>
-            )}
-
-            <div className="mb-8">
-                <h3 className="text-lg font-black text-gray-400 uppercase tracking-widest mb-4">{name}</h3>
-                <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-4xl font-black text-gray-900">{price}</span>
-                    <span className="text-gray-500 font-bold">/{period}</span>
-                </div>
-                <p className="text-gray-600 font-medium h-12 overflow-hidden">{description}</p>
-            </div>
-
-            <div className="block mb-10">
-                <Button
-                    onClick={onSelect}
-                    className={`w-full h-14 text-lg font-bold rounded-xl transition-all ${isPopular ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200' : 'bg-gray-900 hover:bg-gray-800'}`}
-                >
-                    {buttonText}
-                </Button>
-            </div>
-
-            <ul className="space-y-4">
-                {features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-3 text-sm font-bold text-gray-700 rtl:flex-row-reverse">
-                        <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${isPopular ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-                            <Check className="h-3 w-3" />
-                        </div>
-                        <span className="rtl:text-right">{feature}</span>
-                    </li>
-                ))}
-                
-                {/* Advanced Funnels Gate */}
-                <li className={`flex items-start gap-3 text-sm font-bold rtl:flex-row-reverse ${allowUCD ? 'text-gray-700' : 'text-gray-400 opacity-60'}`}>
-                    <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${allowUCD ? (isPopular ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500') : 'bg-gray-50 text-gray-400'}`}>
-                        {allowUCD ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                    </div>
-                    <span className="rtl:text-right">
-                        {allowUCD ? "Advanced Funnels (Upsell, Cross-sell, Down-sell)" : "Advanced Funnels (Upgrade to Unlock)"}
-                    </span>
-                </li>
+ 
+             {/* FAQ Section */}
+             <section className="py-20 bg-gray-50/50">
+                 <div className="max-w-4xl mx-auto px-4 text-center">
+                     <h2 className="text-4xl font-black text-gray-900 mb-4">{t('faq.title')}</h2>
+                     <p className="text-xl text-gray-600 mb-16">{t('faq.subtitle')}</p>
+ 
+                     <div className="space-y-8 text-left rtl:text-right">
+                         <FAQItem question={t('faq.q1.question')} answer={t('faq.q1.answer')} />
+                         <FAQItem question={t('faq.q2.question')} answer={t('faq.q2.answer')} />
+                         <FAQItem question={t('faq.q3.question')} answer={t('faq.q3.answer')} />
+                     </div>
+                 </div>
+             </section>
+ 
+             {/* CTA Section */}
+             <section className="py-20 md:py-32 bg-blue-600 relative overflow-hidden">
+                 <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black)]" />
+ 
+                 <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
+                     <h2 className="text-4xl sm:text-5xl font-black text-white mb-6">
+                         {t('cta.title')}
+                     </h2>
+                     <p className="text-xl md:text-2xl text-white/90 mb-10 font-medium">
+                         {t('cta.subtitle')}
+                     </p>
+                     <Button
+                         onClick={() => {
+                             const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
+                             window.location.href = user ? (user.role === 'super_admin' ? `${dashboardUrl}/admin` : `${dashboardUrl}/merchant`) : `${dashboardUrl}/auth/register`;
+                         }}
+                         size="lg"
+                         className="h-16 px-12 text-xl rounded-full bg-white text-blue-600 hover:bg-gray-100 font-bold transition-all hover:scale-105"
+                     >
+                         {t('cta.button')} <ArrowRight className="ml-2 h-6 w-6 rtl:mr-2 rtl:ml-0 rtl:rotate-180" />
+                     </Button>
+                 </div>
+             </section>
+ 
+             <Footer />
+         </div>
+     );
+ }
+ 
+ function PricingCard({
+     name, price, period, description, buttonText, features, popular, color, onSelect
+ }: {
+     name: string, price: string, period: string, description: string, buttonText: string, features: { text: string; unlocked: boolean }[], popular?: boolean, color: 'gray' | 'blue' | 'purple', onSelect: () => void
+ }) {
+     const isPopular = popular;
+ 
+     return (
+         <div className={`relative p-8 md:p-10 rounded-3xl bg-white border-2 transition-all duration-300 hover:-translate-y-2 ${isPopular ? 'border-blue-600 shadow-xl shadow-blue-100 md:scale-105 z-10' : 'border-gray-100 hover:border-blue-200 hover:shadow-xl'}`}>
+             {isPopular && (
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-1">
+                     <Sparkles className="h-3 w-3" />
+                     <span>POPULAR</span>
+                 </div>
+             )}
+ 
+             <div className="mb-8">
+                 <h3 className="text-lg font-black text-gray-400 uppercase tracking-widest mb-4">{name}</h3>
+                 <div className="flex items-baseline gap-1 mb-2">
+                     <span className="text-4xl font-black text-gray-900">{price}</span>
+                     <span className="text-gray-500 font-bold">/{period}</span>
+                 </div>
+                 <p className="text-gray-600 font-medium h-12 overflow-hidden">{description}</p>
+             </div>
+ 
+             <div className="block mb-10">
+                 <Button
+                     onClick={onSelect}
+                     className={`w-full h-14 text-lg font-bold rounded-xl transition-all ${isPopular ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200' : 'bg-gray-900 hover:bg-gray-800'}`}
+                 >
+                     {buttonText}
+                 </Button>
+             </div>
+ 
+             <ul className="space-y-4">
+                 {features.map((feature, index) => (
+                     <li key={index} className={`flex items-start gap-3 text-sm font-bold rtl:flex-row-reverse ${feature.unlocked ? 'text-gray-700' : 'text-gray-400 opacity-60'}`}>
+                         <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${feature.unlocked ? (isPopular ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500') : 'bg-red-50 text-red-500'}`}>
+                             {feature.unlocked ? <Check className="h-3.5 w-3.5" /> : <X className="h-3 w-3" />}
+                         </div>
+                         <span className="rtl:text-right">{feature.text}</span>
+                     </li>
+                 ))}
             </ul>
         </div>
     );

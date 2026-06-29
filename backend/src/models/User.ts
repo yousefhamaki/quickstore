@@ -4,7 +4,7 @@ export interface IUser extends Document {
     name: string;
     email: string;
     passwordHash?: string;
-    role: 'merchant' | 'super_admin';
+    role: 'merchant' | 'super_admin' | 'finance_admin' | 'support_admin' | 'read_only_admin';
     authProvider: 'local' | 'google';
     googleId?: string;
     isVerified: boolean;
@@ -14,6 +14,7 @@ export interface IUser extends Document {
     subscriptionPlan?: mongoose.Types.ObjectId;
     subscriptionExpiry?: Date;
     stores: mongoose.Types.ObjectId[];
+    isBlocked: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -23,7 +24,7 @@ const UserSchema: Schema = new Schema(
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true, index: true },
         passwordHash: { type: String, required: false },
-        role: { type: String, enum: ['merchant', 'super_admin'], default: 'merchant' },
+        role: { type: String, enum: ['merchant', 'super_admin', 'finance_admin', 'support_admin', 'read_only_admin'], default: 'merchant' },
         authProvider: { type: String, enum: ['local', 'google'], required: true, default: 'local' },
         googleId: { type: String, index: true, sparse: true },
         isVerified: { type: Boolean, default: false },
@@ -36,7 +37,8 @@ const UserSchema: Schema = new Schema(
         },
         subscriptionPlan: { type: Schema.Types.ObjectId, ref: 'SubscriptionPlan' },
         subscriptionExpiry: { type: Date },
-        stores: [{ type: Schema.Types.ObjectId, ref: 'Store' }]
+        stores: [{ type: Schema.Types.ObjectId, ref: 'Store' }],
+        isBlocked: { type: Boolean, default: false }
     },
     { timestamps: true }
 );

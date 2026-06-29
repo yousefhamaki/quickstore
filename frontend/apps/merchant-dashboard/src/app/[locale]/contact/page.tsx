@@ -85,7 +85,7 @@ export default function ContactPage() {
                                     <label className="text-sm font-bold text-gray-900 ml-1 rtl:mr-1">{t('form.message.label')}</label>
                                     <Textarea
                                         placeholder={t('form.message.placeholder')}
-                                        className="min-h-[150px] rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 font-inter"
+                                        className="min-h-[150px] rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 font-montserrat"
                                     />
                                 </div>
 
@@ -162,8 +162,8 @@ function InfoCard({ icon, label, value, color }: { icon: React.ReactNode, label:
                 {icon}
             </div>
             <div>
-                <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1 font-inter">{label}</p>
-                <p className="text-xl font-bold text-gray-900 font-inter">{value}</p>
+                <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1 font-montserrat">{label}</p>
+                <p className="text-xl font-bold text-gray-900 font-montserrat">{value}</p>
             </div>
         </div>
     );
@@ -173,7 +173,7 @@ function FAQCard({ question, answer }: { question: string, answer: string }) {
     return (
         <div className="p-8 rounded-3xl bg-white border border-gray-100 hover:shadow-xl transition-all text-left rtl:text-right">
             <h3 className="text-xl font-black text-gray-900 mb-4">{question}</h3>
-            <p className="text-gray-600 font-medium leading-relaxed font-inter">{answer}</p>
+            <p className="text-gray-600 font-medium leading-relaxed font-montserrat">{answer}</p>
         </div>
     );
 }

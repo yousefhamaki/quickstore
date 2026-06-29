@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Cairo } from "next/font/google";
+import { Montserrat, Cairo } from "next/font/google";
 import { notFound } from 'next/navigation';
 import "./globals.css";
 import { AuthProvider } from "@shared/context/AuthContext";
@@ -9,14 +9,14 @@ import { IntlProvider } from "@shared/components/IntlProvider";
 import { getMessages } from 'next-intl/server';
 import { ChatbotWidget } from "@shared/components/chat/ChatbotWidget";
 
-const inter = Inter({ subsets: ["latin"], variable: '--font-inter', display: 'swap' });
+const montserrat = Montserrat({ subsets: ["latin"], variable: '--font-montserrat', display: 'swap' });
 const cairo = Cairo({ subsets: ["arabic", "latin"], variable: '--font-cairo', display: 'swap' });
 
 export const metadata: Metadata = {
   title: "Buildora - Multi-Store E-commerce Platform",
   description: "Create and manage multiple online stores from one dashboard",
   icons: {
-    icon: "/logo.png",
+    icon: "/new-logo.png",
     apple: "/apple-touch-icon.png",
   },
 };
@@ -49,7 +49,7 @@ export default async function LocaleLayout({
         <link rel="preconnect" href="https://images.simplycodes.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://images.simplycodes.com" />
       </head>
-      <body className={`${inter.variable} ${cairo.variable} ${locale === 'ar' ? 'font-cairo' : 'font-inter'}`}>
+      <body className={`${montserrat.variable} ${cairo.variable} ${locale === 'ar' ? 'font-cairo' : 'font-montserrat'}`}>
         <IntlProvider locale={locale} messages={messages}>
           <AuthProvider>
             <Providers>

@@ -37,12 +37,20 @@ api.interceptors.response.use(
                 window.location.pathname.includes('/store/') ||
                 (window.location.hostname.split('.').length > 2 && !window.location.hostname.startsWith('www.'))
             );
+            const isAdminApp = typeof window !== 'undefined' && (
+                window.location.port === '3002' ||
+                window.location.hostname.startsWith('admin.')
+            );
 
-            if (typeof window !== 'undefined' && !isAuthPage && !isStorePage) {
-                const pathname = window.location.pathname;
-                const segments = pathname.split('/');
-                const locale = ['en', 'ar'].includes(segments[1]) ? segments[1] : 'en';
-                window.location.href = `/${locale}/auth/login`;
+            if (typeof window !== 'undefined') {
+                if (isAdminApp) {
+                    window.location.href = '/';
+                } else if (!isAuthPage && !isStorePage) {
+                    const pathname = window.location.pathname;
+                    const segments = pathname.split('/');
+                    const locale = ['en', 'ar'].includes(segments[1]) ? segments[1] : 'en';
+                    window.location.href = `/${locale}/auth/login`;
+                }
             }
         }
         return Promise.reject(error);
