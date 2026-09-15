@@ -1,0 +1,45 @@
+{{#> layout
+    title="See what Pro unlocks"
+    accentColor="#805ad5"
+    logoUrl="https://www.quickstore.live/logo.png"
+    logoFallbackUrl="https://placehold.co/180x48/3182ce/ffffff?text=Buildora"
+    brandingName="Buildora"
+    showFooterPoweredBy=false
+    footerText="You're receiving this because you signed up as a merchant on Buildora SaaS platform."
+}}
+    <h1 class="title">{{storeName}} is live — congrats, {{merchantName}}!</h1>
+    <p class="subtitle" style="font-size: 16px; color: #718096; text-align: center; margin-bottom: 30px;">Here's what's waiting for you on a paid plan.</p>
+
+    <p class="description">
+        Your store has been live for about a week now. Upgrading unlocks a custom domain, WhatsApp order notifications, higher product limits, and Upsell/Cross-sell campaigns — all built to help {{storeName}} sell more.
+    </p>
+
+    <ul class="feature-list" style="margin: 30px 0; padding: 0; list-style: none;">
+        <li class="feature-item" style="display: flex; align-items: flex-start; margin-bottom: 16px;">
+            <span class="feature-icon" style="font-size: 20px; margin-right: 12px; margin-top: 2px;">🌐</span>
+            <div class="feature-text" style="font-size: 15px; color: #4a5568; line-height: 1.5;">
+                <strong>Custom Domain:</strong> Look fully professional with your own dot-com or dot-shop.
+            </div>
+        </li>
+        <li class="feature-item" style="display: flex; align-items: flex-start; margin-bottom: 16px;">
+            <span class="feature-icon" style="font-size: 20px; margin-right: 12px; margin-top: 2px;">💬</span>
+            <div class="feature-text" style="font-size: 15px; color: #4a5568; line-height: 1.5;">
+                <strong>WhatsApp Notifications:</strong> Confirm orders where your customers already are.
+            </div>
+        </li>
+        <li class="feature-item" style="display: flex; align-items: flex-start; margin-bottom: 16px;">
+            <span class="feature-icon" style="font-size: 20px; margin-right: 12px; margin-top: 2px;">📈</span>
+            <div class="feature-text" style="font-size: 15px; color: #4a5568; line-height: 1.5;">
+                <strong>Upsell &amp; Cross-sell:</strong> Turn every order into a bigger one automatically.
+            </div>
+        </li>
+    </ul>
+
+    <div class="btn-container" style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+        <a href="{{plansLink}}" target="_blank" class="btn" style="background-color: #805ad5; box-shadow: 0 10px 15px -3px rgba(128, 90, 213, 0.3);">See Upgrade Options</a>
+    </div>
+
+    <p style="font-size: 13px; color: #a0aec0; text-align: center; margin-top: 20px;">
+        Don't want these emails? <a href="{{unsubscribeLink}}" style="color: #718096; text-decoration: underline;">Unsubscribe</a>
+    </p>
+{{/layout}}

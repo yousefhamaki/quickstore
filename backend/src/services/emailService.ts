@@ -12,6 +12,7 @@ import {
     StoreEmailTemplateType
 } from './emailBlockRenderer';
 import { sendStoreEmail } from './mailer/storeMailer';
+import { generateMarketingUnsubscribeToken } from '../utils/marketingUnsubscribeToken';
 
 let resendInstance: Resend | null = null;
 const getResendClient = () => {
@@ -555,6 +556,142 @@ export const sendSupportTicketEmail = async (
         return response;
     } catch (error) {
         console.error('[EmailService] Error sending support ticket email:', error);
+        throw error;
+    }
+};
+
+// ============================================================================
+// Merchant onboarding/activation drip (marketing) — see
+// services/marketing/MerchantDripService.ts for the sweep that decides
+// *when* each of these fires (state-gated, not a flat calendar blast) and
+// models/MarketingEmailLog.ts for the send-once bookkeeping. This is
+// Buildora-to-merchant nurture email, NOT the storefront Campaign/
+// CampaignRecipient broadcast tool (that's merchant-to-shopper, unrelated).
+// Every email here carries a one-click unsubscribe link (signed via
+// utils/marketingUnsubscribeToken.ts) so opting out never requires a login.
+// ============================================================================
+
+const getBackendBaseUrl = (): string =>
+    process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+
+/** Builds the one-click unsubscribe link embedded in every drip email footer. */
+const buildMarketingUnsubscribeLink = (userId: string): string => {
+    const token = generateMarketingUnsubscribeToken(userId);
+    return `${getBackendBaseUrl()}/api/public/marketing/unsubscribe?token=${encodeURIComponent(token)}`;
+};
+
+/**
+ * Day-1 nudge: sent ~24h after registration if the merchant still hasn't
+ * created a store at all.
+ */
+export const sendMerchantDripCreateStoreEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    userId: string,
+    dashboardLink: string = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`
+) => {
+    try {
+        const html = renderTemplate('marketing_drip_create_store.html', {
+            merchantName,
+            dashboardLink,
+            unsubscribeLink: buildMarketingUnsubscribeLink(userId),
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: "Let's get your store live on Buildora",
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending marketing drip (create store) email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Sent once a merchant has a store but still has zero products in it a few
+ * days after signing up.
+ */
+export const sendMerchantDripAddFirstProductEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    userId: string,
+    dashboardLink: string = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`
+) => {
+    try {
+        const html = renderTemplate('marketing_drip_add_first_product.html', {
+            merchantName,
+            dashboardLink,
+            unsubscribeLink: buildMarketingUnsubscribeLink(userId),
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: 'Add your first product and start selling',
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending marketing drip (add first product) email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Sent once a merchant has added at least one product but their store is
+ * still unpublished (status 'draft').
+ */
+export const sendMerchantDripPublishStoreEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    storeName: string,
+    userId: string,
+    dashboardLink: string = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`
+) => {
+    try {
+        const html = renderTemplate('marketing_drip_publish_store.html', {
+            merchantName,
+            storeName,
+            dashboardLink,
+            unsubscribeLink: buildMarketingUnsubscribeLink(userId),
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `${storeName} is ready — go live today`,
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending marketing drip (publish store) email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Sent once a merchant's store has been live for about a week and they're
+ * still on the free plan — a feature-highlight/upgrade nudge.
+ */
+export const sendMerchantDripUpgradePlanEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    storeName: string,
+    userId: string,
+    plansLink: string = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/merchant/plans`
+) => {
+    try {
+        const html = renderTemplate('marketing_drip_upgrade_plan.html', {
+            merchantName,
+            storeName,
+            plansLink,
+            unsubscribeLink: buildMarketingUnsubscribeLink(userId),
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `${storeName} is live! See what Pro unlocks`,
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending marketing drip (upgrade plan) email:', error);
         throw error;
     }
 };
