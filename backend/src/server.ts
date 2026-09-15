@@ -7,6 +7,7 @@ import compression from 'compression';
 import mongoose from 'mongoose';
 
 import authRoutes from './routes/authRoutes';
+import securityRoutes from './routes/securityRoutes';
 import merchantRoutes from './routes/merchantRoutes';
 import adminRoutes from './routes/adminRoutes';
 import planRoutes from './routes/planRoutes';
@@ -49,6 +50,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/security', securityRoutes);
 app.use('/api/merchants', merchantRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/plans', planRoutes);

@@ -1,4 +1,80 @@
 {
+    "security": {
+        "password": {
+            "title": "Password",
+            "description": "Change the password used to sign in to your account.",
+            "googleAccount": "This account signs in with Google, so there's no password to change here.",
+            "current": "Current password",
+            "new": "New password",
+            "confirm": "Confirm new password",
+            "mismatch": "New password and confirmation don't match.",
+            "tooShort": "New password must be at least 8 characters.",
+            "saving": "Saving...",
+            "save": "Change password",
+            "success": "Password changed. You've been signed out of your other devices."
+        },
+        "twoFactor": {
+            "title": "Two-Factor Authentication",
+            "description": "Add an extra layer of security to your account beyond just your password.",
+            "methodTotp": "Authenticator App",
+            "methodEmail": "Email Code",
+            "enabledNote": "Two-factor authentication is protecting your account.",
+            "regenerateBackupCodes": "Regenerate backup codes",
+            "disable": "Disable 2FA",
+            "setupTotp": "Set up Authenticator App",
+            "setupTotpDescription": "Use Google Authenticator, Authy, or a similar app to generate codes.",
+            "setupEmail": "Enable Email Codes",
+            "setupEmailDescription": "Get a code emailed to you each time you sign in.",
+            "confirmPasswordDescription": "Enter your password to confirm this change.",
+            "enable": "Enable",
+            "confirmDisableDescription": "This will remove two-factor authentication from your account. Enter your password to confirm.",
+            "disabledSuccess": "Two-factor authentication has been disabled.",
+            "confirmRegenerateDescription": "Your old backup codes will stop working. Enter your password to confirm.",
+            "regenerate": "Regenerate",
+            "scanQrDescription": "Scan this QR code with your authenticator app, then enter the 6-digit code it shows.",
+            "manualEntry": "Or enter this key manually",
+            "enterCodeToConfirm": "Enter the code from your app",
+            "cancel": "Cancel",
+            "verifying": "Verifying...",
+            "invalidCode": "Invalid code. Please try again.",
+            "confirmPasswordLabel": "Your password",
+            "backupCodesTitle": "Save your backup codes",
+            "backupCodesDescription": "Each code can be used once to sign in if you lose access to your authenticator or email. Store them somewhere safe — you won't be able to see them again.",
+            "copied": "Copied",
+            "copyCodes": "Copy codes",
+            "savedCodesConfirm": "I've saved these codes somewhere safe",
+            "done": "Done"
+        },
+        "sessions": {
+            "title": "Active Sessions",
+            "description": "Devices currently signed in to your account.",
+            "revokeAllOthers": "Sign out all other sessions",
+            "device": "Device",
+            "ip": "IP address",
+            "lastActive": "Last active",
+            "actions": "Actions",
+            "thisDevice": "This device",
+            "revoke": "Sign out",
+            "revoked": "Session signed out.",
+            "allOthersRevoked": "All other sessions have been signed out."
+        },
+        "history": {
+            "title": "Login History",
+            "description": "A record of sign-in attempts on your account.",
+            "status": "Status",
+            "time": "Time",
+            "success": "Success",
+            "failed": "Failed",
+            "empty": "No login history yet.",
+            "previous": "Previous",
+            "next": "Next",
+            "pageOf": "Page {page} of {pages}"
+        },
+        "errors": {
+            "loadFailed": "Failed to load. Please refresh the page.",
+            "generic": "Something went wrong. Please try again."
+        }
+    },
     "plans": {
         "badge": "Premium SaaS Tiers",
         "title": "Scale with Confidence",
@@ -211,7 +287,8 @@
         "title": "Account Settings",
         "tabs": {
             "billing": "Billing Info",
-            "subscription": "Subscription"
+            "subscription": "Subscription",
+            "security": "Security"
         },
         "billing": {
             "title": "Billing Information",

@@ -252,6 +252,62 @@ export const sendPasswordResetEmail = async (
 };
 
 /**
+ * Sends a 6-digit code for email-based 2FA login challenges.
+ */
+export const sendTwoFactorCodeEmail = async (email: string, code: string) => {
+    try {
+        const html = renderTemplate('two_factor_code.html', { code });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: email,
+            subject: `${code} is your Buildora verification code`,
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending 2FA code email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Alerts the account owner that a login just happened from a device/browser
+ * we haven't seen before for this account.
+ */
+export const sendNewDeviceLoginEmail = async (email: string, deviceLabel: string, ip: string, time: string) => {
+    try {
+        const html = renderTemplate('new_device_login.html', { deviceLabel, ip: ip || 'Unknown', time });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: email,
+            subject: 'New sign-in to your Buildora account',
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending new device login email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Confirms a password change and reminds the merchant their other sessions
+ * were signed out as a result.
+ */
+export const sendPasswordChangedEmail = async (email: string) => {
+    try {
+        const html = renderTemplate('password_changed.html', {});
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: email,
+            subject: 'Your Buildora password was changed',
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending password changed email:', error);
+        throw error;
+    }
+};
+
+/**
  * Sends a support ticket receipt notification email.
  */
 export const sendSupportTicketEmail = async (

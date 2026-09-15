@@ -113,6 +113,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const logout = () => {
+        // Fire-and-forget: revoke the session server-side too, so a copy of
+        // this token taken before now can't keep working until its natural
+        // 1-day expiry. Never block the actual sign-out on this — a slow or
+        // failed request to reach the backend shouldn't trap the user in a
+        // logged-in-looking state.
+        api.post('/security/logout').catch(() => {});
+
         setToken(null);
         setUser(null);
         Cookies.remove('token', authCookieOptions());

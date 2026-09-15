@@ -1,13 +1,25 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User';
 import Subscription from '../models/Subscription';
-import { generateToken, generateRefreshToken } from '../utils/auth';
+import { createSessionAndToken } from '../services/sessionService';
+import { recordLoginHistory, checkAndAlertNewDevice } from './securityController';
+import { generateEmailOtp } from '../utils/twoFactor';
 
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
-import { sendBuyerVerificationEmail, sendMerchantWelcomeEmail } from '../services/emailService';
+import { sendBuyerVerificationEmail, sendMerchantWelcomeEmail, sendTwoFactorCodeEmail } from '../services/emailService';
 import { ensureWallet, autoSubscribeRecord } from './billingController';
+
+const TWO_FA_CHALLENGE_EXPIRY = '5m';
+
+/** Issues the short-lived token a 2FA login challenge is verified against — see securityController.verifyTwoFactorLogin. */
+function issueTwoFactorChallengeToken(userId: string): string {
+    return jwt.sign({ id: userId, twoFactorChallenge: true }, process.env.JWT_SECRET as string, {
+        expiresIn: TWO_FA_CHALLENGE_EXPIRY,
+    });
+}
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -110,14 +122,37 @@ export const loginUser = async (req: Request, res: Response) => {
     const email = normalizeEmail(req.body.email || '');
 
     try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).select('+passwordHash');
 
         if (user && user.passwordHash && (await bcrypt.compare(password, user.passwordHash))) {
+            // 2FA enabled: don't issue a real session yet. Hand back a
+            // short-lived challenge token; the client completes login via
+            // POST /api/security/2fa/verify-login with a code.
+            if (user.twoFactorEnabled) {
+                const challengeToken = issueTwoFactorChallengeToken((user._id as any).toString());
+
+                if (user.twoFactorMethod === 'email') {
+                    const code = generateEmailOtp();
+                    user.twoFactorLoginCodeHash = await bcrypt.hash(code, 10);
+                    user.twoFactorLoginCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+                    await user.save();
+                    sendTwoFactorCodeEmail(user.email, code).catch((err) =>
+                        console.error('[AuthController] Failed to send 2FA email code:', err)
+                    );
+                }
+
+                return res.json({ requires2FA: true, method: user.twoFactorMethod, challengeToken });
+            }
+
             await ensureWallet(user._id.toString());
 
             // Populate plan name for frontend feature gating
             const sub = await Subscription.findOne({ userId: user._id }).populate('planId');
             const planName = (sub?.planId as any)?.name || 'Free';
+
+            const { token } = await createSessionAndToken(user, req);
+            recordLoginHistory((user._id as any).toString(), true, req).catch(() => {});
+            checkAndAlertNewDevice((user._id as any).toString(), user.email, req).catch(() => {});
 
             res.json({
                 _id: user._id,
@@ -128,9 +163,12 @@ export const loginUser = async (req: Request, res: Response) => {
                 subscriptionPlan: {
                     name: planName
                 },
-                token: generateToken((user._id as any).toString(), user.role, user.isVerified, user.authProvider, user.email),
+                token,
             });
         } else {
+            if (user) {
+                recordLoginHistory((user._id as any).toString(), false, req, 'invalid_password').catch(() => {});
+            }
             res.status(401).json({ message: 'Invalid email or password' });
         }
     } catch (error) {
@@ -172,9 +210,12 @@ export const verifyEmail = async (req: Request, res: Response) => {
             });
         }
 
-        res.json({ 
-            message: 'Email verified successfully', 
-            token: generateToken((user._id as any).toString(), user.role, user.isVerified, user.authProvider, user.email),
+        const { token: sessionToken } = await createSessionAndToken(user, req);
+        recordLoginHistory((user._id as any).toString(), true, req).catch(() => {});
+
+        res.json({
+            message: 'Email verified successfully',
+            token: sessionToken,
             user: {
                 _id: user._id,
                 name: user.name,
@@ -266,10 +307,33 @@ export const googleLogin = async (req: Request, res: Response) => {
             await user.save();
         }
 
+        // A merchant can enable 2FA even on a Google-linked account (as an
+        // extra layer beyond "whoever is signed into this Google account") —
+        // same challenge flow as a password login.
+        if (user.twoFactorEnabled) {
+            const challengeToken = issueTwoFactorChallengeToken((user._id as any).toString());
+
+            if (user.twoFactorMethod === 'email') {
+                const code = generateEmailOtp();
+                user.twoFactorLoginCodeHash = await bcrypt.hash(code, 10);
+                user.twoFactorLoginCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+                await user.save();
+                sendTwoFactorCodeEmail(user.email, code).catch((err) =>
+                    console.error('[AuthController] Failed to send 2FA email code:', err)
+                );
+            }
+
+            return res.json({ requires2FA: true, method: user.twoFactorMethod, challengeToken });
+        }
+
         await ensureWallet(user._id.toString());
 
         const activeSub = await Subscription.findOne({ userId: user._id }).populate('planId');
         const planName = (activeSub?.planId as any)?.name || 'Free';
+
+        const { token: sessionToken } = await createSessionAndToken(user, req);
+        recordLoginHistory((user._id as any).toString(), true, req).catch(() => {});
+        checkAndAlertNewDevice((user._id as any).toString(), user.email, req).catch(() => {});
 
         res.json({
             _id: user._id,
@@ -280,7 +344,7 @@ export const googleLogin = async (req: Request, res: Response) => {
             subscriptionPlan: {
                 name: planName
             },
-            token: generateToken((user._id as any).toString(), user.role, user.isVerified, user.authProvider, user.email),
+            token: sessionToken,
         });
 
     } catch (error) {
@@ -304,6 +368,9 @@ export const getUserProfile = async (req: any, res: Response) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            authProvider: user.authProvider,
+            twoFactorEnabled: user.twoFactorEnabled,
+            twoFactorMethod: user.twoFactorMethod,
             subscriptionPlan: {
                 name: planName
             }

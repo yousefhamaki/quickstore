@@ -15,6 +15,18 @@ export interface IUser extends Document {
     subscriptionExpiry?: Date;
     stores: mongoose.Types.ObjectId[];
     isBlocked: boolean;
+    // --- Two-Factor Authentication ---
+    twoFactorEnabled: boolean;
+    twoFactorMethod?: 'totp' | 'email';
+    totpSecretEncrypted?: string; // AES-256-GCM encrypted (see utils/crypto.ts), only set once TOTP is confirmed
+    backupCodeHashes: string[]; // bcrypt-hashed one-time recovery codes, consumed on use
+    // Ephemeral fields for a pending setup or an in-flight email-OTP login challenge —
+    // never left populated once confirmed/consumed.
+    twoFactorPendingSecretEncrypted?: string; // TOTP secret generated but not yet confirmed via a valid code
+    twoFactorLoginCodeHash?: string;
+    twoFactorLoginCodeExpiresAt?: Date;
+    twoFactorFailedAttempts: number;
+    twoFactorLockedUntil?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -38,7 +50,17 @@ const UserSchema: Schema = new Schema(
         subscriptionPlan: { type: Schema.Types.ObjectId, ref: 'SubscriptionPlan' },
         subscriptionExpiry: { type: Date },
         stores: [{ type: Schema.Types.ObjectId, ref: 'Store' }],
-        isBlocked: { type: Boolean, default: false }
+        isBlocked: { type: Boolean, default: false },
+        // --- Two-Factor Authentication ---
+        twoFactorEnabled: { type: Boolean, default: false },
+        twoFactorMethod: { type: String, enum: ['totp', 'email'] },
+        totpSecretEncrypted: { type: String, select: false },
+        backupCodeHashes: { type: [String], default: undefined, select: false },
+        twoFactorPendingSecretEncrypted: { type: String, select: false },
+        twoFactorLoginCodeHash: { type: String, select: false },
+        twoFactorLoginCodeExpiresAt: { type: Date, select: false },
+        twoFactorFailedAttempts: { type: Number, default: 0 },
+        twoFactorLockedUntil: { type: Date },
     },
     { timestamps: true }
 );

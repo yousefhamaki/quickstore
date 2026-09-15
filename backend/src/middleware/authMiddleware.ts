@@ -1,17 +1,27 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import Session from '../models/Session';
 
 interface DecodedToken {
     id: string;
     role: string;
+    sid?: string;
+    twoFactorChallenge?: boolean;
 }
 
 export interface AuthRequest extends Request {
     user?: any;
     subscription?: any;
     store?: any;
+    sessionId?: string;
 }
+
+// Session.lastActiveAt is a nice-to-have for the Active Sessions UI, not a
+// security control — writing it on literally every authenticated request
+// would double this middleware's DB traffic for no real benefit, so it's
+// only refreshed at most once per this window.
+const LAST_ACTIVE_THROTTLE_MS = 5 * 60 * 1000;
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
     let token;
@@ -21,10 +31,35 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as DecodedToken;
 
+            // A 2FA challenge token (issued after the password check but
+            // before the 2FA code is verified — see authController.loginUser)
+            // must never work as a real access token, or 2FA would be
+            // trivially bypassable by just not submitting the code.
+            if (decoded.twoFactorChallenge) {
+                return res.status(401).json({ message: 'Two-factor verification required' });
+            }
+
             req.user = await User.findById(decoded.id).select('-passwordHash');
 
             if (!req.user) {
                 return res.status(401).json({ message: 'Not authorized, user not found' });
+            }
+
+            // Older tokens (issued before session tracking existed) carry no
+            // `sid` — let them through unchanged until they naturally expire.
+            // Anything issued going forward always has one, so this branch
+            // is what actually makes a session revocable.
+            if (decoded.sid) {
+                const session = await Session.findById(decoded.sid);
+                if (!session || session.revokedAt) {
+                    return res.status(401).json({ message: 'Session has been signed out. Please log in again.' });
+                }
+                req.sessionId = decoded.sid;
+
+                if (Date.now() - session.lastActiveAt.getTime() > LAST_ACTIVE_THROTTLE_MS) {
+                    session.lastActiveAt = new Date();
+                    session.save().catch((err) => console.error('[AuthMiddleware] Failed to refresh session lastActiveAt:', err));
+                }
             }
 
             return next();

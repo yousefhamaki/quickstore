@@ -1,0 +1,31 @@
+{{#> layout
+    title="New sign-in to your Buildora account"
+    accentColor="#c05621"
+    logoUrl="https://www.quickstore.live/logo.png"
+    logoFallbackUrl="https://placehold.co/180x48/c05621/ffffff?text=Buildora"
+    brandingName="Buildora"
+    showFooterPoweredBy=false
+    footerText="You received this email because your Buildora account was signed into from a new device."
+}}
+    <h1 class="title">New Sign-In Detected</h1>
+    <p class="description">
+        Your Buildora account was just signed into from a device we haven't seen before:
+    </p>
+    <table style="width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; color: #4a5568;">
+        <tr>
+            <td style="padding: 8px 0; font-weight: 700; width: 120px;">Device</td>
+            <td style="padding: 8px 0;">{{deviceLabel}}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; font-weight: 700;">IP address</td>
+            <td style="padding: 8px 0;">{{ip}}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; font-weight: 700;">Time</td>
+            <td style="padding: 8px 0;">{{time}}</td>
+        </tr>
+    </table>
+    <p class="description" style="font-size: 14px; color: #718096; margin-bottom: 0;">
+        If this was you, no action is needed. If you don't recognize this activity, change your password immediately from your account's Security settings and consider enabling two-factor authentication.
+    </p>
+{{/layout}}

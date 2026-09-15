@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/tabs';
+import { SecuritySettings } from '@shared/components/merchant/SecuritySettings';
 import { useTranslations, useLocale } from 'next-intl';
 
 const billingSchema = z.object({
@@ -104,6 +105,7 @@ export default function MerchantSettingsPage() {
                 <TabsList>
                     <TabsTrigger value="billing">{t('tabs.billing')}</TabsTrigger>
                     <TabsTrigger value="subscription">{t('tabs.subscription')}</TabsTrigger>
+                    <TabsTrigger value="security">{t('tabs.security')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="billing">
@@ -250,6 +252,10 @@ export default function MerchantSettingsPage() {
                             )}
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="security">
+                    <SecuritySettings />
                 </TabsContent>
             </Tabs>
         </div>
