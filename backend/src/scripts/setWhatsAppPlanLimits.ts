@@ -13,14 +13,20 @@
  * `plans:active` Redis cache exactly like a normal admin edit would —
  * same pattern as scripts/enableUCDForProfessional.ts.
  *
- * Already run once against production (2026-09-15) — set:
- *   Starter: allowWhatsApp=false, whatsappLimit=0
+ * Run against production (2026-09-15), then updated (same day) to also
+ * include Starter with a small trial allowance so merchants can test the
+ * feature before upgrading — current targets:
+ *   Starter: allowWhatsApp=true, whatsappLimit=15  (trial, free tier)
  *   Professional: allowWhatsApp=true, whatsappLimit=150
  *   Professional Plus: allowWhatsApp=true, whatsappLimit=400
  *   Enterprise: allowWhatsApp=true, whatsappLimit=800
  * Kept here (not deleted) as a historical record, same convention as
  * enableUCDForProfessional.ts. Safe to re-run — it's idempotent (just
- * re-applies the same target values via updatePlan()).
+ * re-applies the same target values via updatePlan()). Re-running it also
+ * retroactively fixes any store whose WhatsAppCreditAccount was created
+ * before a plan's WhatsApp fields were set — see the planChanged bug fix
+ * in WhatsAppCreditService.getCreditBalance (previously only compared
+ * against Subscription.updatedAt, which an admin plan edit never touches).
  *
  * Run with: npx ts-node --transpile-only src/scripts/setWhatsAppPlanLimits.ts
  */
@@ -35,7 +41,7 @@ const SYSTEM_ADMIN_EMAIL = 'admin@quickstore.live';
 
 // planName -> { allowWhatsApp, whatsappLimit }
 const TARGETS: Record<string, { allowWhatsApp: boolean; whatsappLimit: number }> = {
-    'Starter': { allowWhatsApp: false, whatsappLimit: 0 },
+    'Starter': { allowWhatsApp: true, whatsappLimit: 15 },
     'Professional': { allowWhatsApp: true, whatsappLimit: 150 },
     'Professional Plus': { allowWhatsApp: true, whatsappLimit: 400 },
     'Enterprise': { allowWhatsApp: true, whatsappLimit: 800 },

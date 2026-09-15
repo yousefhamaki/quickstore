@@ -227,13 +227,24 @@ export default function PlansPage() {
                                     />
 
                                     {/* Advanced Funnels (Upsell, Cross-sell, Down-sell) Gate */}
-                                    <FeatureItem 
-                                        icon={(plan.features as any)?.allowUCD ? Check : X} 
-                                        label={(plan.features as any)?.allowUCD 
-                                            ? "Advanced Funnels (Upsell, Cross-sell, Down-sell)" 
+                                    <FeatureItem
+                                        icon={(plan.features as any)?.allowUCD ? Check : X}
+                                        label={(plan.features as any)?.allowUCD
+                                            ? "Advanced Funnels (Upsell, Cross-sell, Down-sell)"
                                             : "Advanced Funnels (Upgrade to Unlock)"
-                                        } 
-                                        enabled={(plan.features as any)?.allowUCD} 
+                                        }
+                                        enabled={(plan.features as any)?.allowUCD}
+                                    />
+
+                                    {/* WhatsApp Notifications Quota */}
+                                    <FeatureItem
+                                        icon={(plan.features as any)?.allowWhatsApp ? Check : X}
+                                        label={
+                                            (plan.features as any)?.allowWhatsApp
+                                                ? t('whatsappQuotaPaid', { count: (plan as any).whatsappLimit || 0 })
+                                                : t('whatsappQuotaFree')
+                                        }
+                                        enabled={!!(plan.features as any)?.allowWhatsApp}
                                     />
                                 </div>
                             </CardContent>

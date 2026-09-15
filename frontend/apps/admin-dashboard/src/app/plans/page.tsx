@@ -24,6 +24,7 @@ interface Plan {
   price: number;
   currency: string;
   emailLimit?: number;
+  whatsappLimit?: number;
   maxStores: number;
   productLimit: number;
   orderFee: number;
@@ -36,6 +37,7 @@ interface Plan {
     customDomain: boolean;
     allowUCD: boolean;
     allowHeroSlider: boolean;
+    allowWhatsApp?: boolean;
   };
 }
 
@@ -52,6 +54,7 @@ export default function PlansAdmin() {
   const [descAr, setDescAr] = useState('');
   const [price, setPrice] = useState('');
   const [emailLimit, setEmailLimit] = useState('');
+  const [whatsappLimit, setWhatsappLimit] = useState('');
   const [maxStores, setMaxStores] = useState('1');
   const [productLimit, setProductLimit] = useState('-1');
   const [orderFee, setOrderFee] = useState('0');
@@ -63,6 +66,9 @@ export default function PlansAdmin() {
   // default (every plan gets the hero slider at launch; admins opt OUT
   // per plan afterwards, not opt in).
   const [allowHeroSlider, setAllowHeroSlider] = useState(true);
+  // WhatsApp is safety-capped (see MAX_SAFE_WHATSAPP_MONTHLY_LIMIT on the
+  // backend) — defaults OFF/0 for a brand-new plan, admins opt in per plan.
+  const [allowWhatsApp, setAllowWhatsApp] = useState(false);
   const [editReason, setEditReason] = useState('');
 
   // Fetch plans
@@ -113,6 +119,7 @@ export default function PlansAdmin() {
     setDescAr('');
     setPrice('');
     setEmailLimit('');
+    setWhatsappLimit('');
     setMaxStores('1');
     setProductLimit('-1');
     setOrderFee('0');
@@ -121,6 +128,7 @@ export default function PlansAdmin() {
     setCustomDomain(false);
     setAllowUCD(false);
     setAllowHeroSlider(true);
+    setAllowWhatsApp(false);
     setEditReason('');
     setIsFormOpen(true);
   };
@@ -134,6 +142,7 @@ export default function PlansAdmin() {
     setDescAr(plan.description_ar || '');
     setPrice(String(plan.price || 0));
     setEmailLimit(String(plan.emailLimit || 0));
+    setWhatsappLimit(String(plan.whatsappLimit || 0));
     setMaxStores(String(plan.maxStores || 1));
     setProductLimit(String(plan.productLimit || -1));
     setOrderFee(String(plan.orderFee || 0));
@@ -142,6 +151,7 @@ export default function PlansAdmin() {
     setCustomDomain(plan.features?.customDomain || false);
     setAllowUCD(plan.features?.allowUCD || false);
     setAllowHeroSlider(plan.features?.allowHeroSlider ?? true);
+    setAllowWhatsApp(plan.features?.allowWhatsApp || false);
     setEditReason('');
     setIsFormOpen(true);
   };
@@ -181,6 +191,10 @@ export default function PlansAdmin() {
     }
     listEn.push(`Monthly allowance: ${emailLimit || '0'} campaigns email credits`);
     listAr.push(`الحد الشهري: ${emailLimit || '0'} رصيد حملات بريد إلكتروني`);
+    if (allowWhatsApp) {
+      listEn.push(`WhatsApp notifications: ${whatsappLimit || '0'} messages/month (safety-capped)`);
+      listAr.push(`إشعارات واتساب: ${whatsappLimit || '0'} رسالة شهريًا (سقف أمان)`);
+    }
 
     const payload = {
       name: nameEn,
@@ -192,6 +206,7 @@ export default function PlansAdmin() {
       monthlyPrice: planType === 'free' ? 0 : parseFloat(price),
       type: planType,
       emailLimit: parseInt(emailLimit, 10) || 0,
+      whatsappLimit: parseInt(whatsappLimit, 10) || 0,
       maxStores: parseInt(maxStores, 10) || 1,
       storeLimit: parseInt(maxStores, 10) || 1,
       productLimit: parseInt(productLimit, 10) || -1,
@@ -202,7 +217,8 @@ export default function PlansAdmin() {
         dropshipping,
         customDomain,
         allowUCD,
-        allowHeroSlider
+        allowHeroSlider,
+        allowWhatsApp
       },
       reason: editReason
     };
@@ -256,6 +272,7 @@ export default function PlansAdmin() {
                     <TableHead className="text-slate-400">Store Cap</TableHead>
                     <TableHead className="text-slate-400">Products Cap</TableHead>
                     <TableHead className="text-slate-400">Email Marketing Credits</TableHead>
+                    <TableHead className="text-slate-400">WhatsApp Messages</TableHead>
                     <TableHead className="text-slate-400">Platform Tx Fee (EGP)</TableHead>
                     <TableHead className="text-slate-400">State</TableHead>
                     <TableHead className="text-slate-400 text-right">Actions</TableHead>
@@ -276,6 +293,11 @@ export default function PlansAdmin() {
                         {plan.productLimit === -1 ? <span className="text-green-400 font-bold">Unlimited</span> : `${plan.productLimit} products`}
                       </TableCell>
                       <TableCell className="text-slate-300">{(plan.emailLimit || 0).toLocaleString()} /mo</TableCell>
+                      <TableCell className="text-slate-300">
+                        {plan.features?.allowWhatsApp
+                          ? <span className="text-green-400 font-bold">{(plan.whatsappLimit || 0).toLocaleString()} /mo</span>
+                          : <span className="text-slate-600">Not included</span>}
+                      </TableCell>
                       <TableCell className="text-slate-300">{plan.orderFee} EGP</TableCell>
                       <TableCell>
                         <Badge 
@@ -396,7 +418,7 @@ export default function PlansAdmin() {
                 )}
                 <div className="space-y-1.5">
                   <Label htmlFor="plan-email" className="text-slate-300 font-semibold text-xs">Monthly Emails limit *</Label>
-                  <Input 
+                  <Input
                     id="plan-email"
                     type="number"
                     placeholder="500"
@@ -405,6 +427,23 @@ export default function PlansAdmin() {
                     className="bg-slate-950 border border-white/10 text-white"
                     disabled={updateMutation.isPending || createMutation.isPending}
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="plan-whatsapp" className="text-slate-300 font-semibold text-xs">
+                    Monthly WhatsApp limit {allowWhatsApp ? '*' : ''}
+                  </Label>
+                  <Input
+                    id="plan-whatsapp"
+                    type="number"
+                    placeholder="150"
+                    value={whatsappLimit}
+                    onChange={(e) => setWhatsappLimit(e.target.value)}
+                    className="bg-slate-950 border border-white/10 text-white"
+                    disabled={!allowWhatsApp || updateMutation.isPending || createMutation.isPending}
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Safety-capped — keep this well below the ~2,000/mo hard ceiling to protect merchant numbers from bans.
+                  </p>
                 </div>
               </div>
 
@@ -488,6 +527,16 @@ export default function PlansAdmin() {
                       className="accent-cyan-500 w-4 h-4 rounded"
                     />
                     <Label htmlFor="feat-hero-slider" className="text-xs text-slate-300">Homepage Hero Slider</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="feat-whatsapp"
+                      checked={allowWhatsApp}
+                      onChange={(e) => setAllowWhatsApp(e.target.checked)}
+                      className="accent-cyan-500 w-4 h-4 rounded"
+                    />
+                    <Label htmlFor="feat-whatsapp" className="text-xs text-slate-300">WhatsApp Notifications</Label>
                   </div>
                 </div>
               </div>

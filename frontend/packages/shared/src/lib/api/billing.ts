@@ -11,6 +11,9 @@ export interface Plan {
     features: {
         dropshipping: boolean;
         customDomain: boolean;
+        allowUCD?: boolean;
+        allowHeroSlider?: boolean;
+        allowWhatsApp?: boolean;
     };
     isActive: boolean;
     name_en?: string;
@@ -20,6 +23,7 @@ export interface Plan {
     features_en?: string[];
     features_ar?: string[];
     emailLimit?: number;
+    whatsappLimit?: number;
 }
 
 export interface Subscription {
@@ -49,6 +53,7 @@ export interface BillingOverview {
         features: {
             dropshipping: boolean;
             customDomain: boolean;
+            allowWhatsApp?: boolean;
         };
     };
     subscription: {

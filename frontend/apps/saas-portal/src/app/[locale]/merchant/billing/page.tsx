@@ -358,6 +358,7 @@ export default function MerchantBillingPage() {
                             <FeatureCheck label={t('features.dashboard')} enabled={true} />
                             <FeatureCheck label={tp('dropshipping')} enabled={billing.plan.features.dropshipping} />
                             <FeatureCheck label={tp('customDomain')} enabled={billing.plan.features.customDomain} />
+                            <FeatureCheck label={tp('whatsapp')} enabled={!!(billing.plan.features as any).allowWhatsApp} />
                         </div>
                     </CardContent>
                 </Card>

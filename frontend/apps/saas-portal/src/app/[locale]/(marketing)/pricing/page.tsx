@@ -27,10 +27,12 @@ interface Plan {
     productLimit?: number;
     orderFee?: number;
     emailLimit?: number;
+    whatsappLimit?: number;
     features?: {
         dropshipping: boolean;
         customDomain: boolean;
         allowUCD: boolean;
+        allowWhatsApp?: boolean;
     };
 }
 
@@ -127,6 +129,11 @@ export default function PricingPage() {
                                 const hasCustomDomain = !!plan.features?.customDomain;
                                 const hasDropshipping = !!plan.features?.dropshipping;
                                 const hasUCD = !!plan.features?.allowUCD;
+                                const hasWhatsApp = !!plan.features?.allowWhatsApp;
+                                const resolvedWhatsAppLimit = plan.whatsappLimit ?? 0;
+                                const whatsappFeature = !hasWhatsApp
+                                    ? (locale === 'ar' ? 'بدون إشعارات واتساب' : 'No WhatsApp notifications')
+                                    : (locale === 'ar' ? `إشعارات واتساب: ${resolvedWhatsAppLimit.toLocaleString()} رسالة شهرياً` : `WhatsApp notifications: ${resolvedWhatsAppLimit.toLocaleString()} messages/month`);
 
                                 const featureItems = [
                                     { text: storeFeature, unlocked: true },
@@ -144,9 +151,13 @@ export default function PricingPage() {
                                         text: locale === 'ar' ? 'الوصول لكتالوج الدروب شيبنج' : 'Catalog Dropshipping Access', 
                                         unlocked: hasDropshipping 
                                     },
-                                    { 
-                                        text: locale === 'ar' ? 'حملات زيادة المبيعات (Upsell & Cross-sell)' : 'Advanced Funnels (Upsell, Cross-sell, Down-sell)', 
-                                        unlocked: hasUCD 
+                                    {
+                                        text: locale === 'ar' ? 'حملات زيادة المبيعات (Upsell & Cross-sell)' : 'Advanced Funnels (Upsell, Cross-sell, Down-sell)',
+                                        unlocked: hasUCD
+                                    },
+                                    {
+                                        text: whatsappFeature,
+                                        unlocked: hasWhatsApp
                                     }
                                 ];
 

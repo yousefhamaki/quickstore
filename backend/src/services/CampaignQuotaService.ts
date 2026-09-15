@@ -27,10 +27,10 @@ export class CampaignQuotaService {
 
         const sub = await Subscription.findOne({ userId: store.ownerId }).populate('planId');
 
+        const plan = sub?.planId as any;
         let allowance = 0;
         let planName = 'Free';
-        if (sub && sub.status === 'active' && sub.planId) {
-            const plan = sub.planId as any;
+        if (sub && sub.status === 'active' && plan) {
             planName = plan.name || 'Free';
             allowance = plan.emailLimit || 0;
         }
@@ -111,8 +111,19 @@ export class CampaignQuotaService {
                 //     never touches — using startedAt here would silently
                 //     miss those). This grants the new allowance immediately
                 //     rather than waiting out the 30-day timer.
+                //
+                //     ALSO compared against the SubscriptionPlan document's
+                //     own `updatedAt` — an admin editing a plan's emailLimit
+                //     (or, elsewhere, WhatsAppCreditService's whatsappLimit/
+                //     allowWhatsApp) never touches the Subscription document
+                //     that references it, so relying on sub.updatedAt alone
+                //     would leave every existing account stuck at its old
+                //     allowance for up to 30 days after such an edit — a
+                //     real bug caught in production when a plan's WhatsApp
+                //     feature was enabled after some accounts already
+                //     existed.
                 const monthElapsed = daysSinceLastRefresh >= 30;
-                const planChanged = account.lastRefreshedAt < sub!.updatedAt;
+                const planChanged = account.lastRefreshedAt < sub!.updatedAt || account.lastRefreshedAt < plan.updatedAt;
 
                 if (monthElapsed || planChanged) {
                     console.log(`[CampaignQuotaService] Refreshing plan allowance for store ${storeId} (monthElapsed=${monthElapsed}, planChanged=${planChanged}).`);

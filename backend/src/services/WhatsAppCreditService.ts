@@ -55,11 +55,11 @@ export class WhatsAppCreditService {
         // suspenders: connectWhatsApp in whatsappController.ts also
         // refuses to even start a connection for a plan without this flag,
         // so this is the second, independent enforcement point).
+        const plan = sub?.planId as any;
         let allowance = 0;
         let planName = 'Free';
-        const planHasWhatsApp = !!(sub && sub.status === 'active' && sub.planId && (sub.planId as any).features?.allowWhatsApp);
+        const planHasWhatsApp = !!(sub && sub.status === 'active' && plan && plan.features?.allowWhatsApp);
         if (planHasWhatsApp) {
-            const plan = sub.planId as any;
             planName = plan.name || 'Free';
             allowance = Math.min(plan.whatsappLimit || 0, MAX_SAFE_WHATSAPP_MONTHLY_LIMIT);
         }
@@ -110,7 +110,18 @@ export class WhatsAppCreditService {
             } else if (planIsActive) {
                 const daysSinceLastRefresh = (now.getTime() - account.lastRefreshedAt.getTime()) / (1000 * 60 * 60 * 24);
                 const monthElapsed = daysSinceLastRefresh >= 30;
-                const planChanged = account.lastRefreshedAt < sub!.updatedAt;
+                // Detects EITHER the subscription itself changing (upgrade/
+                // downgrade/renewal/resubscribe) OR the underlying
+                // SubscriptionPlan document being edited by an admin after
+                // the fact (e.g. a plan's whatsappLimit/allowWhatsApp being
+                // turned on later) — comparing only against sub.updatedAt
+                // misses the second case entirely, since editing a
+                // SubscriptionPlan document never touches the Subscription
+                // document that references it. Without this, an account
+                // created while a plan didn't include WhatsApp (or had a
+                // lower limit) would stay stuck at its old allowance for up
+                // to 30 days after the plan was updated to include/raise it.
+                const planChanged = account.lastRefreshedAt < sub!.updatedAt || account.lastRefreshedAt < plan.updatedAt;
 
                 if (monthElapsed || planChanged) {
                     console.log(`[WhatsAppCreditService] Refreshing plan allowance for store ${storeId} (monthElapsed=${monthElapsed}, planChanged=${planChanged}).`);
