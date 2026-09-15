@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import { Montserrat, Cairo } from "next/font/google";
 import { notFound } from 'next/navigation';
 import "./globals.css";
-import { AuthProvider } from "@shared/context/AuthContext";
-import { Providers } from "./providers";
 import { routing } from '@shared/i18n/routing';
 import { IntlProvider } from "@shared/components/IntlProvider";
 import { getMessages } from 'next-intl/server';
-import { ChatbotWidget } from "@shared/components/chat/ChatbotWidgetLazy";
+import { MerchantChrome } from "./MerchantChrome";
 
 const montserrat = Montserrat({ subsets: ["latin"], variable: '--font-montserrat', display: 'swap' });
 const cairo = Cairo({ subsets: ["arabic", "latin"], variable: '--font-cairo', display: 'swap' });
@@ -51,14 +49,11 @@ export default async function LocaleLayout({
       </head>
       <body className={`${montserrat.variable} ${cairo.variable} ${locale === 'ar' ? 'font-cairo' : 'font-montserrat'}`}>
         <IntlProvider locale={locale} messages={messages}>
-          <AuthProvider>
-            <Providers>
-              <main className="flex-grow flex flex-col min-h-screen relative w-full h-full">
-                {children}
-              </main>
-              <ChatbotWidget />
-            </Providers>
-          </AuthProvider>
+          <MerchantChrome>
+            <main className="flex-grow flex flex-col min-h-screen relative w-full h-full">
+              {children}
+            </main>
+          </MerchantChrome>
         </IntlProvider>
       </body>
     </html>

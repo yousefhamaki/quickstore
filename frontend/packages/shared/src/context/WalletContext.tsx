@@ -6,6 +6,7 @@ import { BillingOverview } from '@shared/lib/api/billing';
 
 import Cookies from 'js-cookie';
 import { usePathname } from 'next/navigation';
+import { isStorefrontPath } from '@shared/lib/routing';
 
 interface WalletContextType {
     billing: BillingOverview | undefined;
@@ -24,11 +25,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         if (typeof window === 'undefined') return false;
 
         const token = Cookies.get('token');
-        const isStorePath = pathname?.includes('/store/') ||
-            (window.location.hostname.split('.').length > 2 &&
-                !window.location.hostname.startsWith('www.'));
-
-        return !!token && !isStorePath;
+        return !!token && !isStorefrontPath(pathname, window.location.hostname);
     });
 
     // 30s polling to keep wallet balance and status synced (only if enabled)
