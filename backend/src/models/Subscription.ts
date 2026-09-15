@@ -9,6 +9,13 @@ export interface ISubscription extends Document {
     trialExpiresAt?: Date;
     gracePeriodEnd?: Date;
     billingCycle?: 'monthly' | 'yearly';
+    // Schema has { timestamps: true } — declared explicitly so
+    // CampaignQuotaService can detect "something changed this
+    // subscription" (new subscribe, resubscribe, upgrade/downgrade, or a
+    // successful renewal) via updatedAt, since startedAt is NOT touched by
+    // an upgrade/downgrade of an already-active subscription.
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 const SubscriptionSchema: Schema = new Schema({

@@ -1093,11 +1093,21 @@ export const getEmailAccountBalance = async (req: AuthRequest, res: Response) =>
             .sort({ createdAt: -1 })
             .limit(50);
 
+        // Plan credits are valid for a rolling 30 days from the last grant
+        // (see CampaignQuotaService.getCreditBalance) — surfaced so the UI
+        // can show the two credit types distinctly: plan credits ("resets
+        // on <date>") vs. purchased credits (no expiry at all).
+        const sub = await Subscription.findOne({ userId: store.ownerId });
+        const planIsActive = !!(sub && sub.status === 'active');
+        const planRefreshAt = new Date(balanceInfo.lastRefreshedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+
         res.json({
             balance: balanceInfo.balance,
             planBalance: balanceInfo.planBalance,
             purchasedBalance: balanceInfo.purchasedBalance,
             reserved: balanceInfo.reserved,
+            planIsActive,
+            planRefreshAt,
             ledgerHistory
         });
     } catch (error) {

@@ -65,63 +65,87 @@ export class CampaignQuotaService {
                 }
             }
         } else {
-            const subStartedAt = sub ? new Date(sub.startedAt) : new Date(0);
             const now = new Date();
-            const monthsSinceLastRefresh =
-                (now.getFullYear() - account.lastRefreshedAt.getFullYear()) * 12 +
-                (now.getMonth() - account.lastRefreshedAt.getMonth());
+            const planIsActive = !!(sub && sub.status === 'active' && sub.planId);
 
-            // Two independent triggers for refreshing the monthly plan
-            // allowance:
-            //  1) monthElapsed — a full calendar month has passed since the
-            //     last grant. This is the actual cadence the plan promises
-            //     ("500 emails/month") and must fire every month regardless
-            //     of the subscription's own billing cycle length.
-            //  2) planChanged — the subscription's plan/cycle changed since
-            //     the last grant (e.g. an upgrade), so the new allowance
-            //     should apply immediately rather than waiting for the next
-            //     calendar month boundary.
-            //
-            // Previously this ONLY checked planChanged (lastRefreshedAt <
-            // sub.startedAt). That's fine for a monthly subscriber — every
-            // renewal advances startedAt once a month — but for a YEARLY
-            // subscriber, startedAt only changes once a year, so the
-            // "monthly" allowance was silently granted exactly once for the
-            // whole 12 months instead of refreshing every month.
-            const monthElapsed = monthsSinceLastRefresh >= 1;
-            const planChanged = account.lastRefreshedAt < subStartedAt;
-
-            if (monthElapsed || planChanged) {
-                console.log(`[CampaignQuotaService] Refreshing monthly allowance for store ${storeId} (monthElapsed=${monthElapsed}, planChanged=${planChanged}).`);
-
-                // Old planBalance expires — it does NOT roll over into the
-                // new cycle (unlike purchasedBalance, which is kept intact
-                // below). Audited via its own 'expired' ledger entry so the
-                // merchant can see exactly how many unused monthly credits
-                // they lost, rather than the number just silently vanishing
-                // from their balance with no trace in the ledger.
+            if (!planIsActive && account.planBalance > 0) {
+                // The subscription isn't active (never subscribed, past_due,
+                // expired, or otherwise lapsed) — plan credits do NOT linger
+                // until the next 30-day boundary in that case, they're gone
+                // immediately: "no active plan" means "0 plan emails" right
+                // now, not "up to 30 days from now." Purchased credits are
+                // entirely unaffected — only planBalance is touched here.
                 const expiredAmount = account.planBalance;
-
-                account.planBalance = allowance;
+                account.planBalance = 0;
                 account.lastRefreshedAt = now;
-                account.balance = account.planBalance + account.purchasedBalance;
+                account.balance = account.purchasedBalance;
                 await account.save();
-
-                if (expiredAmount > 0) {
-                    await EmailLedgerEntry.create({
-                        storeId,
-                        type: 'expired',
-                        amount: -expiredAmount,
-                        description: `${expiredAmount} unused monthly email credit${expiredAmount === 1 ? '' : 's'} expired at cycle renewal (did not roll over)`
-                    });
-                }
 
                 await EmailLedgerEntry.create({
                     storeId,
-                    type: 'monthly_grant',
-                    amount: allowance,
-                    description: `Monthly email quota grant for plan: ${planName}`
+                    type: 'expired',
+                    amount: -expiredAmount,
+                    description: `${expiredAmount} plan email credit${expiredAmount === 1 ? '' : 's'} expired — your subscription plan is no longer active`
                 });
+            } else if (planIsActive) {
+                const daysSinceLastRefresh = (now.getTime() - account.lastRefreshedAt.getTime()) / (1000 * 60 * 60 * 24);
+
+                // Two independent triggers for refreshing the plan
+                // allowance:
+                //  1) monthElapsed — a true ROLLING 30-day window since the
+                //     last grant (not a calendar-month check) — plan credits
+                //     are valid for exactly 30 days and refresh every 30
+                //     days, the same cadence regardless of whether the
+                //     merchant is billed monthly or yearly (there is only
+                //     ever one SubscriptionPlan.emailLimit per plan; billing
+                //     cadence lives on Subscription.billingCycle, not on the
+                //     plan itself, so the two are intentionally decoupled).
+                //  2) planChanged — something made the plan active/different
+                //     since the last grant (a brand-new subscribe, a
+                //     resubscribe after lapsing, an upgrade/downgrade, or a
+                //     successful renewal) — detected via Subscription's
+                //     `updatedAt` (bumped by Mongoose's {timestamps:true} on
+                //     every one of those writes, including the renewal
+                //     service's `updateOne` calls), NOT `startedAt` (which
+                //     upgrade/downgrade of an already-active subscription
+                //     never touches — using startedAt here would silently
+                //     miss those). This grants the new allowance immediately
+                //     rather than waiting out the 30-day timer.
+                const monthElapsed = daysSinceLastRefresh >= 30;
+                const planChanged = account.lastRefreshedAt < sub!.updatedAt;
+
+                if (monthElapsed || planChanged) {
+                    console.log(`[CampaignQuotaService] Refreshing plan allowance for store ${storeId} (monthElapsed=${monthElapsed}, planChanged=${planChanged}).`);
+
+                    // Old planBalance expires — it does NOT roll over into
+                    // the new cycle (unlike purchasedBalance, which is kept
+                    // intact below). Audited via its own 'expired' ledger
+                    // entry so the merchant can see exactly how many unused
+                    // plan credits they lost, rather than the number just
+                    // silently vanishing from their balance with no trace.
+                    const expiredAmount = account.planBalance;
+
+                    account.planBalance = allowance;
+                    account.lastRefreshedAt = now;
+                    account.balance = account.planBalance + account.purchasedBalance;
+                    await account.save();
+
+                    if (expiredAmount > 0) {
+                        await EmailLedgerEntry.create({
+                            storeId,
+                            type: 'expired',
+                            amount: -expiredAmount,
+                            description: `${expiredAmount} unused plan email credit${expiredAmount === 1 ? '' : 's'} expired at cycle renewal (did not roll over)`
+                        });
+                    }
+
+                    await EmailLedgerEntry.create({
+                        storeId,
+                        type: 'monthly_grant',
+                        amount: allowance,
+                        description: `Plan email credit grant (30 days) for plan: ${planName}`
+                    });
+                }
             }
         }
         return account;

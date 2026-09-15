@@ -16,10 +16,16 @@ import {
     ArrowDownLeft,
     TimerOff,
     History,
+    CalendarClock,
+    Infinity as InfinityIcon,
+    Archive,
 } from 'lucide-react';
 import { Card, CardContent } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Progress } from '@shared/components/ui/progress';
+import { Badge } from '@shared/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@shared/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/components/ui/table';
 import { cn } from '@shared/lib/utils';
 import { getEmailAccountBalance, EmailLedgerEntry } from '@shared/services/marketingService';
 
@@ -36,7 +42,7 @@ interface EmailCreditsPanelProps {
 }
 
 const LEDGER_META: Record<EmailLedgerEntry['type'], { icon: any; label: string; tone: 'positive' | 'negative' | 'neutral' }> = {
-    monthly_grant: { icon: TrendingUp, label: 'Monthly grant', tone: 'positive' },
+    monthly_grant: { icon: TrendingUp, label: 'Plan credit grant', tone: 'positive' },
     purchase: { icon: ShoppingBag, label: 'Purchased', tone: 'positive' },
     campaign_debit: { icon: Send, label: 'Campaign sent', tone: 'negative' },
     transactional_debit: { icon: Mail, label: 'Order email', tone: 'negative' },
@@ -47,17 +53,27 @@ const LEDGER_META: Record<EmailLedgerEntry['type'], { icon: any; label: string; 
     expired: { icon: TimerOff, label: 'Expired', tone: 'negative' },
 };
 
+function daysUntil(iso: string): number {
+    return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+}
+
 /**
  * Self-contained "Email Credits" widget: fetches its own balance + recent
  * ledger history and renders a full picture of a store's email-sending
- * capacity — available balance, this cycle's usage against the plan
- * allowance, the plan/purchased/reserved breakdown, how many unused plan
- * credits recently expired (they don't roll over between cycles — see
- * CampaignQuotaService.getCreditBalance), and a short recent-activity feed.
+ * capacity, split into the two credit types Buildora actually has (shown
+ * as two distinct lines, per how they behave):
  *
- * Used on both the Emails settings page and the Campaigns page so a
- * merchant sees the exact same picture of their email credits wherever
- * they're looking at it.
+ *   - PLAN credits: granted by the store's subscription plan, valid for a
+ *     rolling 30 days, refreshed every 30 days for as long as the plan
+ *     stays active (regardless of monthly/yearly billing) -- and reset to
+ *     0 immediately (not after a delay) if the plan lapses. Debited FIRST
+ *     on every send (see CampaignQuotaService.debitTransactional/
+ *     settleCredits) -- purchased credits are only ever touched once plan
+ *     credits hit 0.
+ *   - PURCHASED credits: bought as an add-on, never expire.
+ *
+ * Also surfaces a "View full history" table (up to the last 50 ledger
+ * entries) so a merchant can see exactly where every credit went.
  */
 export function EmailCreditsPanel({ storeId, onBuyCredits, refreshToken, compact, onBalanceChange }: EmailCreditsPanelProps) {
     const [loading, setLoading] = useState(true);
@@ -65,7 +81,10 @@ export function EmailCreditsPanel({ storeId, onBuyCredits, refreshToken, compact
     const [planBalance, setPlanBalance] = useState(0);
     const [purchasedBalance, setPurchasedBalance] = useState(0);
     const [reserved, setReserved] = useState(0);
+    const [planIsActive, setPlanIsActive] = useState(false);
+    const [planRefreshAt, setPlanRefreshAt] = useState<string | null>(null);
     const [ledger, setLedger] = useState<EmailLedgerEntry[]>([]);
+    const [historyOpen, setHistoryOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -77,6 +96,8 @@ export function EmailCreditsPanel({ storeId, onBuyCredits, refreshToken, compact
                 setPlanBalance(res.planBalance || 0);
                 setPurchasedBalance(res.purchasedBalance || 0);
                 setReserved(res.reserved || 0);
+                setPlanIsActive(!!res.planIsActive);
+                setPlanRefreshAt(res.planRefreshAt || null);
                 setLedger(res.ledgerHistory || []);
                 onBalanceChange?.(res.balance);
             })
@@ -114,17 +135,14 @@ export function EmailCreditsPanel({ storeId, onBuyCredits, refreshToken, compact
     // "Used this cycle" is derived from the most recent monthly_grant entry
     // (the amount actually granted) against the current planBalance — there's
     // no separate "usage counter" field, so this is the best available signal.
-    // Falls back to no progress bar if a store has never had a monthly grant
-    // (e.g. free plan with 0 allowance).
     const latestGrant = ledger.find((e) => e.type === 'monthly_grant');
     const cycleAllowance = latestGrant?.amount || 0;
     const cycleUsedPercent = cycleAllowance > 0
         ? Math.max(0, Math.min(100, ((cycleAllowance - planBalance) / cycleAllowance) * 100))
         : null;
 
-    // Most recent expiry event (unused plan credits that didn't roll over) —
-    // shown as a one-line heads-up, not a running lifetime total, since only
-    // the last cycle's expiry is actionable info for the merchant.
+    // Most recent expiry event — plan credits either expired at a cycle
+    // renewal (unused leftover) or immediately because the plan lapsed.
     const latestExpiry = ledger.find((e) => e.type === 'expired');
 
     const recentActivity = ledger.slice(0, 6);
@@ -173,78 +191,156 @@ export function EmailCreditsPanel({ storeId, onBuyCredits, refreshToken, compact
                     <div className="rounded-xl border bg-muted/30 p-3.5 flex items-start gap-3">
                         <TimerOff className="w-4.5 h-4.5 text-muted-foreground mt-0.5 shrink-0" />
                         <div>
-                            <p className="text-sm font-medium">{Math.abs(latestExpiry.amount)} unused plan credit{Math.abs(latestExpiry.amount) === 1 ? '' : 's'} expired</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Monthly plan credits don't roll over between cycles — use them or buy add-ons (which never expire between cycles) to avoid losing them again.</p>
+                            <p className="text-sm font-medium">{Math.abs(latestExpiry.amount)} plan credit{Math.abs(latestExpiry.amount) === 1 ? '' : 's'} expired</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{latestExpiry.description}</p>
                         </div>
                     </div>
                 )}
 
-                {/* This cycle's usage */}
-                {cycleUsedPercent !== null && (
-                    <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-semibold uppercase tracking-wide">
-                            <span className="text-muted-foreground">This cycle</span>
-                            <span>{cycleAllowance - planBalance} / {cycleAllowance} used</span>
+                {/* The two credit types — always shown as two distinct lines, since they behave completely differently */}
+                <div className="space-y-3">
+                    {/* Line 1: Plan credits */}
+                    <div className="rounded-xl border-2 p-4 space-y-2.5">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                                    <CalendarClock className="w-4.5 h-4.5" />
+                                </div>
+                                <div>
+                                    <p className="text-lg font-black tracking-tight leading-none">{planBalance}</p>
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">Plan credits</p>
+                                </div>
+                            </div>
+                            {planIsActive ? (
+                                <Badge variant="outline" className="rounded-full text-[10px] font-semibold whitespace-nowrap">
+                                    {planRefreshAt && daysUntil(planRefreshAt) === 0 ? 'Refreshes today' : `Refreshes in ${planRefreshAt ? daysUntil(planRefreshAt) : 30}d`}
+                                </Badge>
+                            ) : (
+                                <Badge variant="outline" className="rounded-full text-[10px] font-semibold whitespace-nowrap border-destructive/40 text-destructive">
+                                    No active plan
+                                </Badge>
+                            )}
                         </div>
-                        <Progress value={cycleUsedPercent} className="h-2.5" />
+                        <p className="text-xs text-muted-foreground">Renewed every 30 days from your subscription — used first on every send. Unused credits don't roll over.</p>
+                        {cycleUsedPercent !== null && (
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    <span>This cycle</span>
+                                    <span>{cycleAllowance - planBalance} / {cycleAllowance} used</span>
+                                </div>
+                                <Progress value={cycleUsedPercent} className="h-2" />
+                            </div>
+                        )}
                     </div>
-                )}
 
-                {/* Breakdown tiles */}
-                <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-muted/30 border rounded-xl p-3 text-center">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground block mb-1">Plan allowance</span>
-                        <span className="text-lg font-black tracking-tight">{planBalance}</span>
+                    {/* Line 2: Purchased credits */}
+                    <div className="rounded-xl border-2 p-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                                <ShoppingBag className="w-4.5 h-4.5" />
+                            </div>
+                            <div>
+                                <p className="text-lg font-black tracking-tight leading-none text-indigo-600 dark:text-indigo-400">{purchasedBalance}</p>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">Purchased credits</p>
+                            </div>
+                        </div>
+                        <Badge variant="outline" className="rounded-full text-[10px] font-semibold gap-1 whitespace-nowrap">
+                            <InfinityIcon className="w-3 h-3" /> Never expires
+                        </Badge>
                     </div>
-                    <div className="bg-muted/30 border rounded-xl p-3 text-center">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground block mb-1">Purchased</span>
-                        <span className="text-lg font-black tracking-tight text-indigo-600">{purchasedBalance}</span>
-                    </div>
-                    <div className="bg-muted/30 border rounded-xl p-3 text-center">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground block mb-1">Reserved</span>
-                        <span className="text-lg font-black tracking-tight text-amber-600">{reserved}</span>
-                    </div>
+
+                    {reserved > 0 && (
+                        <p className="text-xs text-muted-foreground text-center">{reserved} credit{reserved === 1 ? '' : 's'} currently held for an in-progress campaign send.</p>
+                    )}
                 </div>
 
                 {/* Recent activity */}
                 {!compact && recentActivity.length > 0 && (
                     <div className="space-y-2 pt-1 border-t">
-                        <div className="flex items-center gap-1.5 pt-3">
-                            <History className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Recent activity</span>
+                        <div className="flex items-center justify-between pt-3">
+                            <div className="flex items-center gap-1.5">
+                                <History className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Recent activity</span>
+                            </div>
+                            {ledger.length > recentActivity.length && (
+                                <button type="button" onClick={() => setHistoryOpen(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                                    <Archive className="w-3 h-3" /> View full history
+                                </button>
+                            )}
                         </div>
                         <div className="space-y-1">
-                            {recentActivity.map((entry) => {
-                                const meta = LEDGER_META[entry.type] || LEDGER_META.correction;
-                                const Icon = meta.icon;
-                                return (
-                                    <div key={entry._id} className="flex items-center gap-2.5 py-1.5 text-sm">
-                                        <div
-                                            className={cn(
-                                                'w-6 h-6 rounded-lg flex items-center justify-center shrink-0',
-                                                meta.tone === 'positive' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-                                                meta.tone === 'negative' && 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
-                                                meta.tone === 'neutral' && 'bg-muted text-muted-foreground'
-                                            )}
-                                        >
-                                            <Icon className="w-3.5 h-3.5" />
-                                        </div>
-                                        <span className="flex-1 truncate text-muted-foreground">{entry.description}</span>
-                                        <span
-                                            className={cn(
-                                                'font-semibold shrink-0',
-                                                entry.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
-                                            )}
-                                        >
-                                            {entry.amount > 0 ? `+${entry.amount}` : entry.amount}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                            {recentActivity.map((entry) => (
+                                <LedgerRow key={entry._id} entry={entry} />
+                            ))}
                         </div>
+                        {ledger.length <= recentActivity.length && ledger.length > 0 && (
+                            <button type="button" onClick={() => setHistoryOpen(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline pt-1">
+                                <Archive className="w-3 h-3" /> View full history
+                            </button>
+                        )}
                     </div>
                 )}
             </CardContent>
+
+            {/* Full email credit history — every debit/grant/purchase, so a merchant can see exactly where their credits went */}
+            <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+                <DialogContent className="max-w-2xl rounded-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Email Credit History</DialogTitle>
+                        <DialogDescription>Every credit grant, purchase, send, and expiry for this store's last {ledger.length} transactions.</DialogDescription>
+                    </DialogHeader>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead>Description</TableHead>
+                                <TableHead>Date</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {ledger.map((entry) => {
+                                const meta = LEDGER_META[entry.type] || LEDGER_META.correction;
+                                return (
+                                    <TableRow key={entry._id}>
+                                        <TableCell>
+                                            <Badge variant="outline" className="rounded-full text-[10px] font-semibold whitespace-nowrap">{meta.label}</Badge>
+                                        </TableCell>
+                                        <TableCell className={cn('font-semibold whitespace-nowrap', entry.amount > 0 ? 'text-emerald-600' : 'text-rose-600')}>
+                                            {entry.amount > 0 ? `+${entry.amount}` : entry.amount}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">{entry.description}</TableCell>
+                                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(entry.createdAt).toLocaleString()}</TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </DialogContent>
+            </Dialog>
         </Card>
+    );
+}
+
+function LedgerRow({ entry }: { entry: EmailLedgerEntry }) {
+    const meta = LEDGER_META[entry.type] || LEDGER_META.correction;
+    const Icon = meta.icon;
+    return (
+        <div className="flex items-center gap-2.5 py-1.5 text-sm">
+            <div
+                className={cn(
+                    'w-6 h-6 rounded-lg flex items-center justify-center shrink-0',
+                    meta.tone === 'positive' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+                    meta.tone === 'negative' && 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
+                    meta.tone === 'neutral' && 'bg-muted text-muted-foreground'
+                )}
+            >
+                <Icon className="w-3.5 h-3.5" />
+            </div>
+            <span className="flex-1 truncate text-muted-foreground">{entry.description}</span>
+            <span className={cn('font-semibold shrink-0', entry.amount > 0 ? 'text-emerald-600' : 'text-rose-600')}>
+                {entry.amount > 0 ? `+${entry.amount}` : entry.amount}
+            </span>
+        </div>
     );
 }

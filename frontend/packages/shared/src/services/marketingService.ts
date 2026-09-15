@@ -151,6 +151,10 @@ export interface EmailAccountBalanceResponse {
     planBalance: number;
     purchasedBalance: number;
     reserved: number;
+    /** Whether the store currently has an active subscription plan granting plan credits at all. */
+    planIsActive: boolean;
+    /** ISO date — when the plan-credit balance next refreshes (a rolling 30 days from the last grant). Purchased credits never expire and have no equivalent. */
+    planRefreshAt: string;
     ledgerHistory: EmailLedgerEntry[];
 }
 
