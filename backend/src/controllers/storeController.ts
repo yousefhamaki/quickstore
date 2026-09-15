@@ -134,28 +134,45 @@ export const getStore = async (req: AuthRequest, res: Response) => {
 
         const storeWithStats = await Store.aggregate([
             { $match: { _id: storeId, ownerId: userId } },
-            // Look up subscription and plan
+            // Look up subscription and plan.
+            //
+            // NOTE: Store.subscriptionId is never actually populated anywhere
+            // in the app (confirmed live: 0 of 3 real stores have it set) —
+            // subscriptions are tracked per-USER (Subscription.userId), not
+            // per-store, the same way billingController/WhatsAppCreditService/
+            // CampaignQuotaService already look them up. Joining on
+            // Store.subscriptionId here used to always produce an empty
+            // lookup, so every store silently showed as plan-less/Starter on
+            // the frontend regardless of the owner's real plan — the "I'm on
+            // Pro but Marketing Hub features are locked" bug. Join on
+            // ownerId -> Subscription.userId instead. (Also fixed: the plan
+            // lookup pointed at a stale 'plans' collection instead of the
+            // real 'subscriptionplans' collection the SubscriptionPlan model
+            // actually writes to — a second, independent bug in this same
+            // pipeline.)
             {
                 $lookup: {
                     from: 'subscriptions',
-                    localField: 'subscriptionId',
-                    foreignField: '_id',
+                    localField: 'ownerId',
+                    foreignField: 'userId',
                     as: 'subscription'
                 }
             },
             { $unwind: { path: '$subscription', preserveNullAndEmptyArrays: true } },
             {
                 $lookup: {
-                    from: 'plans',
+                    from: 'subscriptionplans',
                     localField: 'subscription.planId',
                     foreignField: '_id',
                     as: 'subscription.planId'
                 }
             },
             { $unwind: { path: '$subscription.planId', preserveNullAndEmptyArrays: true } },
-            // Re-map subscription to subscriptionId to match FE expectations if needed
-            // Actually, populate({path: 'subscriptionId', populate: {path: 'planId'}}) 
-            // creates store.subscriptionId.planId.name
+            // Re-map subscription to subscriptionId to match FE expectations —
+            // populate({path: 'subscriptionId', populate: {path: 'planId'}})
+            // creates store.subscriptionId.planId.name, so this field name is
+            // kept even though it's now sourced from the owner's subscription
+            // rather than a (never-populated) Store.subscriptionId.
             {
                 $addFields: {
                     subscriptionId: '$subscription'
