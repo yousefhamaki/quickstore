@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { Search, Loader2, Package, Truck, CheckCircle2, Clock, MapPin, Copy } from "lucide-react";
+import { Search, Loader2, Package, Truck, CheckCircle2, Clock, MapPin, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import api from "@shared/services/api";
 import { useParams } from "next/navigation";
@@ -233,6 +233,32 @@ export default function TrackOrderPage() {
                                         </p>
                                     </div>
                                 </div>
+
+                                {order.trackingNumber && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3 text-gray-400">
+                                            <div className="p-2 border rounded-xl bg-gray-50">
+                                                <Truck className="w-4 h-4" />
+                                            </div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest">{t('shipment')}</p>
+                                        </div>
+                                        <div className={`${locale === 'ar' ? 'pr-12' : 'pl-12'} text-sm space-y-1`}>
+                                            <p className="font-black">{order.shippingProvider}</p>
+                                            <p className="text-gray-500 font-mono text-xs">{order.trackingNumber}</p>
+                                            {order.trackingUrl && (
+                                                <a href={order.trackingUrl} target="_blank" rel="noreferrer">
+                                                    <Button
+                                                        size="sm"
+                                                        className="w-full rounded-xl font-black text-xs uppercase tracking-widest mt-2"
+                                                        style={{ backgroundColor: primaryColor }}
+                                                    >
+                                                        {t('trackPackage')} <ExternalLink className="w-3.5 h-3.5 ml-2 rtl:mr-2 rtl:ml-0" />
+                                                    </Button>
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

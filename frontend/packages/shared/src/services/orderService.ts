@@ -45,6 +45,18 @@ export const addMerchantNote = async (id: string, note: string) => {
     return response.data;
 };
 
+// Sets/updates an order's carrier + tracking number (+ optional tracking
+// link) — the only path for 'local'/self-managed shipping, which has no
+// courier API to call. See shippingController.setManualTracking.
+export const setOrderTracking = async (
+    orderId: string,
+    storeId: string,
+    data: { carrierName: string; trackingNumber: string; trackingUrl?: string }
+) => {
+    const response = await api.put(`/shipping/orders/${orderId}/tracking`, { ...data, storeId });
+    return response.data;
+};
+
 export const getOrderStats = async () => {
     const response = await api.get('/orders/stats');
     return response.data;

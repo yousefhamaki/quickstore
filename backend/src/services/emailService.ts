@@ -252,6 +252,40 @@ export const sendPasswordResetEmail = async (
 };
 
 /**
+ * Notifies a customer that their order has shipped, with the carrier,
+ * tracking number, and a link to track it (either the carrier's own
+ * tracking page when one is known, or this store's own track-order page
+ * otherwise).
+ */
+export const sendOrderShippedEmail = async (
+    email: string,
+    storeName: string,
+    orderNumber: string,
+    carrierName: string,
+    trackingNumber: string,
+    trackUrl: string
+) => {
+    try {
+        const html = renderTemplate('order_shipped.html', {
+            storeName,
+            orderNumber,
+            carrierName,
+            trackingNumber,
+            trackUrl,
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: email,
+            subject: `Your ${storeName} order #${orderNumber} has shipped`,
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending order shipped email:', error);
+        throw error;
+    }
+};
+
+/**
  * Sends a 6-digit code for email-based 2FA login challenges.
  */
 export const sendTwoFactorCodeEmail = async (email: string, code: string) => {

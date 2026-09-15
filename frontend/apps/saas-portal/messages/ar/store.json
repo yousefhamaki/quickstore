@@ -111,7 +111,9 @@
         "shipping": "الشحن",
         "total": "الإجمالي",
         "statusReviewed": "طلبك قيد المراجعة.",
-        "statusMsg": "طلبك حالياً {status}."
+        "statusMsg": "طلبك حالياً {status}.",
+        "shipment": "الشحنة",
+        "trackPackage": "تتبع الشحنة"
     },
     "layout": {
         "shop": "المتجر",

@@ -89,6 +89,7 @@ export interface IOrder extends Document {
     transactionId?: string;
     shippingProvider?: string;
     trackingNumber?: string;
+    trackingUrl?: string; // Customer-facing carrier tracking page — set automatically for API-integrated providers, or pasted in manually by the merchant for local/self-managed shipping
     waybillUrl?: string; // Automatically populated AWB PDF location
     shippingStatus?: 'pending' | 'ready_for_pickup' | 'picked_up' | 'in_transit' | 'delivered' | 'returned';
     shippingAddress: IOrderAddress;
@@ -166,6 +167,7 @@ const OrderSchema: Schema = new Schema(
         transactionId: { type: String },
         shippingProvider: { type: String },
         trackingNumber: { type: String },
+        trackingUrl: { type: String },
         waybillUrl: { type: String },
         shippingStatus: {
             type: String,

@@ -19,10 +19,14 @@ import {
     MapPin,
     CreditCard,
     AlertCircle,
-    Loader2
+    Loader2,
+    Truck,
+    ExternalLink,
+    Pencil
 } from "lucide-react";
 import Link from "next/link";
-import { getOrder, updateOrderStatus, issuePartialRefund } from "@shared/services/orderService";
+import { getOrder, updateOrderStatus, issuePartialRefund, setOrderTracking } from "@shared/services/orderService";
+import { Label } from "@shared/components/ui/label";
 import { Input } from "@shared/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -47,6 +51,11 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ storeId
     const [issueRefundAmount, setIssueRefundAmount] = useState('');
     const [issueRefundReason, setIssueRefundReason] = useState('');
     const [issuingRefund, setIssuingRefund] = useState(false);
+    const [trackingDialogOpen, setTrackingDialogOpen] = useState(false);
+    const [carrierNameInput, setCarrierNameInput] = useState('');
+    const [trackingNumberInput, setTrackingNumberInput] = useState('');
+    const [trackingUrlInput, setTrackingUrlInput] = useState('');
+    const [savingTracking, setSavingTracking] = useState(false);
 
     const fetchOrder = async () => {
         try {
@@ -152,6 +161,35 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ storeId
         }
     };
 
+    const openTrackingDialog = () => {
+        setCarrierNameInput(order.shippingProvider && order.shippingProvider !== 'local' ? order.shippingProvider : '');
+        setTrackingNumberInput(order.trackingNumber || '');
+        setTrackingUrlInput(order.trackingUrl || '');
+        setTrackingDialogOpen(true);
+    };
+
+    const handleSaveTracking = async () => {
+        if (!carrierNameInput.trim() || !trackingNumberInput.trim()) {
+            toast.error(t('trackingFieldsRequired'));
+            return;
+        }
+        try {
+            setSavingTracking(true);
+            await setOrderTracking(id, storeId, {
+                carrierName: carrierNameInput.trim(),
+                trackingNumber: trackingNumberInput.trim(),
+                trackingUrl: trackingUrlInput.trim() || undefined,
+            });
+            toast.success(t('trackingSaved'));
+            setTrackingDialogOpen(false);
+            fetchOrder();
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || t('updateError'));
+        } finally {
+            setSavingTracking(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -211,18 +249,22 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ storeId
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {order.trackingNumber ? (
+                    {/* waybillUrl only ever gets set by a real courier API (Bosta) —
+                        manually-entered tracking (see the Shipment & Tracking card
+                        below) has no PDF to download, so this button must check for
+                        that specifically rather than just "some tracking exists". */}
+                    {order.waybillUrl ? (
                         <Button asChild variant="default" className="rounded-xl shadow-lg">
                             <a href={order.waybillUrl} target="_blank" rel="noreferrer">
                                 <Package className="w-4 h-4 mr-2" /> Download Waybill
                             </a>
                         </Button>
-                    ) : (
+                    ) : !order.trackingNumber ? (
                         <Button onClick={handleGenerateWaybill} disabled={generatingWaybill} variant="secondary" className="rounded-xl shadow-sm border-2">
-                            {generatingWaybill ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Package className="w-4 h-4 mr-2" />} 
+                            {generatingWaybill ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Package className="w-4 h-4 mr-2" />}
                             Generate Waybill
                         </Button>
-                    )}
+                    ) : null}
                     {remainingRefundable > 0 && ['paid', 'partially_refunded'].includes(order.paymentStatus) && (
                         <Button onClick={openIssueRefundDialog} variant="secondary" className="rounded-xl shadow-sm border-2">
                             {t('issueRefund')}
@@ -357,6 +399,47 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ storeId
                     </Card>
 
                     <Card className="rounded-3xl border-2 shadow-sm">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <Truck className="w-4 h-4" /> {t('shipment.title')}
+                            </CardTitle>
+                            {order.trackingNumber && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openTrackingDialog} title={t('shipment.edit')}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                            )}
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                            {order.trackingNumber ? (
+                                <>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">{t('shipment.carrier')}</span>
+                                        <span className="font-bold">{order.shippingProvider}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center gap-2">
+                                        <span className="text-muted-foreground shrink-0">{t('shipment.trackingNumber')}</span>
+                                        <span className="font-bold font-mono text-xs truncate">{order.trackingNumber}</span>
+                                    </div>
+                                    {order.trackingUrl && (
+                                        <Button asChild variant="outline" size="sm" className="w-full rounded-xl mt-2">
+                                            <a href={order.trackingUrl} target="_blank" rel="noreferrer">
+                                                {t('shipment.trackPackage')} <ExternalLink className="w-3.5 h-3.5 ml-2 rtl:mr-2 rtl:ml-0" />
+                                            </a>
+                                        </Button>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-muted-foreground">{t('shipment.noTracking')}</p>
+                                    <Button variant="outline" size="sm" className="w-full rounded-xl" onClick={openTrackingDialog}>
+                                        {t('shipment.addTracking')}
+                                    </Button>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-3xl border-2 shadow-sm">
                         <CardHeader>
                             <CardTitle className="text-lg">{t('payment')}</CardTitle>
                         </CardHeader>
@@ -475,6 +558,61 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ storeId
                         >
                             {issuingRefund ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                             {t('confirmIssueRefund')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Shipment Tracking Dialog — the only way to record tracking for
+                'local'/self-managed shipping, which has no courier API to call.
+                Also works as a manual override for API-integrated providers. */}
+            <Dialog open={trackingDialogOpen} onOpenChange={setTrackingDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{order?.trackingNumber ? t('shipment.editTitle') : t('shipment.addTitle')}</DialogTitle>
+                        <DialogDescription>{t('shipment.dialogDescription')}</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <Label>{t('shipment.carrierLabel')}</Label>
+                            <Input
+                                value={carrierNameInput}
+                                onChange={(e) => setCarrierNameInput(e.target.value)}
+                                placeholder={t('shipment.carrierPlaceholder')}
+                                className="rounded-xl border-2"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>{t('shipment.trackingNumberLabel')}</Label>
+                            <Input
+                                value={trackingNumberInput}
+                                onChange={(e) => setTrackingNumberInput(e.target.value)}
+                                placeholder={t('shipment.trackingNumberPlaceholder')}
+                                className="rounded-xl border-2"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>{t('shipment.trackingUrlLabel')}</Label>
+                            <Input
+                                value={trackingUrlInput}
+                                onChange={(e) => setTrackingUrlInput(e.target.value)}
+                                placeholder="https://..."
+                                className="rounded-xl border-2"
+                            />
+                            <p className="text-xs text-muted-foreground">{t('shipment.trackingUrlHint')}</p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="rounded-xl" onClick={() => setTrackingDialogOpen(false)} disabled={savingTracking}>
+                            {t('cancel')}
+                        </Button>
+                        <Button
+                            className="rounded-xl"
+                            onClick={handleSaveTracking}
+                            disabled={savingTracking || !carrierNameInput.trim() || !trackingNumberInput.trim()}
+                        >
+                            {savingTracking ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            {t('shipment.save')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

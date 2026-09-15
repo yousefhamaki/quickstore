@@ -2,6 +2,7 @@ import api from './api';
 
 export type NotificationType =
     | 'order_created'
+    | 'order_shipped'
     | 'refund_requested'
     | 'review_submitted'
     | 'subscription_renewed'

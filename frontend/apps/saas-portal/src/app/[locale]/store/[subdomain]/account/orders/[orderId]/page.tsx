@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { Loader2, Package, Truck, CheckCircle2, Clock, MapPin, ChevronLeft, HandCoins, Paperclip } from "lucide-react";
+import { Loader2, Package, Truck, CheckCircle2, Clock, MapPin, ChevronLeft, HandCoins, Paperclip, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { usePublicStore } from "@shared/lib/hooks/usePublicStore";
 import { useCustomerAuth } from "@shared/context/CustomerAuthContext";
@@ -247,6 +247,32 @@ function OrderDetailContent({ storeId, orderId, primaryColor }: { storeId: strin
                                 </p>
                             </div>
                         </div>
+
+                        {order.trackingNumber && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-gray-400">
+                                    <div className="p-2 border rounded-xl bg-gray-50">
+                                        <Truck className="w-4 h-4" />
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest">{t('shipment')}</p>
+                                </div>
+                                <div className={`${locale === 'ar' ? 'pr-12' : 'pl-12'} text-sm space-y-1`}>
+                                    <p className="font-black">{order.shippingProvider}</p>
+                                    <p className="text-gray-500 font-mono text-xs">{order.trackingNumber}</p>
+                                    {order.trackingUrl && (
+                                        <a href={order.trackingUrl} target="_blank" rel="noreferrer">
+                                            <Button
+                                                size="sm"
+                                                className="w-full rounded-xl font-black text-xs uppercase tracking-widest mt-2"
+                                                style={{ backgroundColor: primaryColor }}
+                                            >
+                                                {t('trackPackage')} <ExternalLink className="w-3.5 h-3.5 ml-2 rtl:mr-2 rtl:ml-0" />
+                                            </Button>
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

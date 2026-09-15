@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
-import { Bell, ShoppingCart, HandCoins, Star, CreditCard, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
+import { Bell, ShoppingCart, Truck, HandCoins, Star, CreditCard, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent } from '@shared/components/ui/card';
@@ -20,6 +20,7 @@ import {
 
 const TYPE_ICON: Record<NotificationType, React.ElementType> = {
     order_created: ShoppingCart,
+    order_shipped: Truck,
     refund_requested: HandCoins,
     review_submitted: Star,
     subscription_renewed: CreditCard,
@@ -29,6 +30,7 @@ const TYPE_ICON: Record<NotificationType, React.ElementType> = {
 
 const TYPE_COLOR: Record<NotificationType, string> = {
     order_created: 'text-blue-600 bg-blue-50',
+    order_shipped: 'text-purple-600 bg-purple-50',
     refund_requested: 'text-amber-600 bg-amber-50',
     review_submitted: 'text-yellow-600 bg-yellow-50',
     subscription_renewed: 'text-green-600 bg-green-50',

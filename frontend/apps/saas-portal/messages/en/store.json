@@ -111,7 +111,9 @@
         "shipping": "Shipping",
         "total": "Total",
         "statusReviewed": "Your order is being reviewed.",
-        "statusMsg": "Your order is being {status}."
+        "statusMsg": "Your order is being {status}.",
+        "shipment": "Shipment",
+        "trackPackage": "Track Package"
     },
     "layout": {
         "shop": "Shop",

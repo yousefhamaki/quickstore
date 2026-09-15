@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export type NotificationType =
     | 'order_created'
+    | 'order_shipped'
     | 'refund_requested'
     | 'review_submitted'
     | 'subscription_renewed'
@@ -25,7 +26,7 @@ const NotificationSchema: Schema = new Schema({
     type: {
         type: String,
         required: true,
-        enum: ['order_created', 'refund_requested', 'review_submitted', 'subscription_renewed', 'subscription_past_due', 'subscription_expired'],
+        enum: ['order_created', 'order_shipped', 'refund_requested', 'review_submitted', 'subscription_renewed', 'subscription_past_due', 'subscription_expired'],
     },
     title: { type: String, required: true },
     message: { type: String, required: true },

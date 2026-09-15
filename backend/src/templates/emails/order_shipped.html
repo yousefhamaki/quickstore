@@ -1,0 +1,27 @@
+{{#> layout
+    title="Your order has shipped"
+    accentColor="#2d3748"
+    logoUrl="https://www.quickstore.live/logo.png"
+    logoFallbackUrl="https://placehold.co/180x48/2d3748/ffffff?text=Buildora"
+    brandingName="{{storeName}}"
+    showFooterPoweredBy=true
+    footerText="You received this email because your order was placed at {{storeName}}."
+}}
+    <h1 class="title">Your Order Has Shipped! 📦</h1>
+    <p class="description">
+        Good news — order <strong>#{{orderNumber}}</strong> from {{storeName}} is on its way to you.
+    </p>
+    <table style="width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; color: #4a5568;">
+        <tr>
+            <td style="padding: 8px 0; font-weight: 700; width: 140px;">Carrier</td>
+            <td style="padding: 8px 0;">{{carrierName}}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; font-weight: 700;">Tracking Number</td>
+            <td style="padding: 8px 0;">{{trackingNumber}}</td>
+        </tr>
+    </table>
+    <div class="btn-container">
+        <a href="{{trackUrl}}" target="_blank" class="btn" style="background-color: #2d3748; box-shadow: 0 10px 15px -3px rgba(45, 55, 72, 0.3);">Track Your Package</a>
+    </div>
+{{/layout}}
