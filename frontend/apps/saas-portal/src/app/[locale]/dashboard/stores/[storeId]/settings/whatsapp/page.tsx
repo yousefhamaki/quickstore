@@ -37,7 +37,19 @@ import {
     CheckCircle2,
     Smartphone,
     Unplug,
+    Lock,
+    Clock,
 } from 'lucide-react';
+
+// Temporarily locked: linking a number ("Link a Device" / QR scan) is being
+// rejected by WhatsApp on cloud-hosted deployments — WhatsApp's anti-abuse
+// system is far stricter about the pairing handshake from datacenter IPs
+// than from residential ones (see connectionManager.ts's module doc). The
+// backend/connection code itself is unaffected and stays intact; this just
+// hides the UI behind a "Coming Soon" lock until a residential/mobile proxy
+// (or another fix) is in place. Flip back to true to relaunch — nothing
+// else on this page needs to change.
+const WHATSAPP_FEATURE_LAUNCHED = false;
 
 type TemplateKey = 'orderConfirmation' | 'orderStatusChanged' | 'marketing';
 
@@ -64,6 +76,7 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const refreshStatus = async () => {
+        if (!WHATSAPP_FEATURE_LAUNCHED) return;
         try {
             const res = await getWhatsAppStatus(storeId);
             setConnStatus(res.status);
@@ -148,6 +161,36 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
     });
 
     if (isLoading) return <div className="p-8"><Loader2 className="animate-spin text-primary" /></div>;
+
+    if (!WHATSAPP_FEATURE_LAUNCHED) {
+        return (
+            <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight">WhatsApp</h1>
+                    <p className="text-muted-foreground">Send order updates to your customers on WhatsApp — connect your number, then customize what gets sent.</p>
+                </div>
+                <Card className="border-2 border-dashed shadow-sm rounded-2xl overflow-hidden">
+                    <CardContent className="py-16 flex flex-col items-center text-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center relative">
+                            <MessageCircle className="w-7 h-7 text-muted-foreground" />
+                            <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm">
+                                <Lock className="w-3.5 h-3.5 text-white" />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5 max-w-md">
+                            <p className="font-semibold text-lg flex items-center justify-center gap-2">
+                                <Clock className="w-4 h-4 text-emerald-600" />
+                                Coming Soon
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                We're putting the finishing touches on WhatsApp notifications to make sure it's reliable before opening it up. It'll be ready here soon — no action needed on your end.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     const sendOrderConfirmation = watch('whatsappNotifications.sendOrderConfirmation');
     const sendStatusUpdates = watch('whatsappNotifications.sendStatusUpdates');

@@ -89,7 +89,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
         { name: t('items.domain'), href: `/dashboard/stores/${storeId}/settings/domain`, icon: Globe },
         { name: t('items.policies'), href: `/dashboard/stores/${storeId}/settings/policies`, icon: ShieldCheck },
         { name: t('items.emails'), href: `/dashboard/stores/${storeId}/settings/emails`, icon: Mail },
-        { name: t('items.whatsapp'), href: `/dashboard/stores/${storeId}/settings/whatsapp`, icon: MessageCircle },
+        { name: t('items.whatsapp'), href: `/dashboard/stores/${storeId}/settings/whatsapp`, icon: MessageCircle, badge: 'SOON' },
     ];
 
     const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
@@ -188,17 +188,24 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                 key={item.name}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition duration-300 group font-medium text-sm",
+                                    "flex items-center justify-between px-3 py-2.5 rounded-xl transition duration-300 group font-medium text-sm",
                                     isActive(item.href)
                                         ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 )}
                             >
-                                <item.icon className={cn(
-                                    "w-4 h-4",
-                                    isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
-                                )} />
-                                {item.name}
+                                <div className="flex items-center gap-3">
+                                    <item.icon className={cn(
+                                        "w-4 h-4",
+                                        isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                    )} />
+                                    {item.name}
+                                </div>
+                                {item.badge && (
+                                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm">
+                                        {item.badge}
+                                    </span>
+                                )}
                             </NavLink>
                         ))}
                     </nav>
