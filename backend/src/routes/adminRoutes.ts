@@ -20,7 +20,9 @@ import {
     addTicketReplyController,
     updateTicketStatusController,
     getTransactionsList,
-    getTransactionStats
+    getTransactionStats,
+    getSignupGiftSettingsController,
+    updateSignupGiftSettingsController
 } from '../controllers/adminController';
 
 const router = express.Router();
@@ -51,5 +53,8 @@ router.put('/tickets/:id/status', can('tickets.status'), updateTicketStatusContr
 
 router.get('/transactions', can('analytics.view'), getTransactionsList);
 router.get('/transactions/stats', can('analytics.view'), getTransactionStats);
+
+router.get('/settings/signup-gift', can('settings.manage'), getSignupGiftSettingsController);
+router.put('/settings/signup-gift', can('settings.manage'), checkIdempotency, updateSignupGiftSettingsController);
 
 export default router;

@@ -531,6 +531,53 @@ export const sendWhatsAppZeroBalanceAlert = async (
     }
 };
 
+// ============================================================================
+// Signup-gift wallet credit email (services/platformConfigService.ts calls
+// this once, only on an actual grant — see grantSignupGiftAndNotify). Kept
+// as its own self-contained block so it merges cleanly alongside other
+// concurrent additions to this file.
+// ============================================================================
+
+/**
+ * Sends the "you just got X EGP" welcome-gift email when a new/newly
+ * verified user is credited the signup gift wallet balance. The amount is
+ * always the live, admin-configured value (see PlatformConfig / superadmin
+ * settings), never hardcoded.
+ */
+export const sendSignupGiftEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    amount: number,
+    dashboardLink: string = 'https://www.quickstore.live/merchant/billing',
+    currency: string = 'EGP'
+) => {
+    try {
+        console.log(`[EmailService] Sending signup gift email to ${merchantEmail} for ${amount} ${currency}`);
+
+        const html = renderTemplate('signup_gift.html', {
+            merchantName: merchantName || 'there',
+            amount,
+            currency,
+            dashboardLink
+        });
+
+        const response = await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `You just got ${amount} ${currency} on Buildora!`,
+            html
+        });
+        return response;
+    } catch (error) {
+        console.error('[EmailService] Error sending signup gift email:', error);
+        throw error;
+    }
+};
+
+// ============================================================================
+// End signup-gift wallet credit email block
+// ============================================================================
+
 /**
  * Sends a support ticket receipt notification email.
  */

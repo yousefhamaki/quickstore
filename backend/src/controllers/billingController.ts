@@ -19,31 +19,26 @@ import { WALLET_LEDGER_REASONS } from '../constants/walletLedgerReasons';
 import { addBillingCycle } from '../utils/billingCycle';
 
 /**
- * Idempotent Wallet Creation Helper
+ * Idempotent Wallet Creation Helper.
+ *
+ * NOTE: this used to also grant a hardcoded 500 EGP "signup gift" the first
+ * time it was called for a user. That's been split out — see
+ * services/platformConfigService.ts's grantSignupGiftIfEligible /
+ * grantSignupGiftAndNotify, which read the gift amount/enabled flag from the
+ * admin-editable PlatformConfig instead of a hardcoded constant, and are
+ * only invoked from the specific points in authController.ts where a user's
+ * email has actually been verified (or Google-verified). ensureWallet() here
+ * now just guarantees a (possibly 0-balance) Wallet document exists, which
+ * is all the many other billing code paths below actually need from it.
  */
 export const ensureWallet = async (userId: string) => {
     let wallet = await Wallet.findOne({ userId });
     if (!wallet) {
-        // Create with 500 EGP balance as a signup gift
         wallet = await Wallet.create({
             userId,
-            balance: 500,
+            balance: 0,
             currency: 'EGP'
         });
-
-        // Record welcome gift in the wallet ledger (previously this only wrote
-        // to the now-deprecated WalletTransaction, so gifted balances never
-        // showed up in the canonical ledger/audit trail).
-        await WalletLedger.create({
-            userId,
-            type: 'credit',
-            amount: 500,
-            reason: WALLET_LEDGER_REASONS.SIGNUP_GIFT,
-            referenceId: wallet._id,
-            balanceAfter: wallet.balance
-        });
-
-        console.log(`Initialized missing wallet for user ${userId} with 500 EGP gift`);
     }
     return wallet;
 };

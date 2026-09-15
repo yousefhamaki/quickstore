@@ -4,7 +4,7 @@ import AdminAuditLog from '../../models/AdminAuditLog';
 export const logAdminAction = async (
     actorId: string | mongoose.Types.ObjectId,
     action: string,
-    targetType: 'User' | 'Store' | 'SubscriptionPlan' | 'PaymentReceipt' | 'SupportTicket',
+    targetType: 'User' | 'Store' | 'SubscriptionPlan' | 'PaymentReceipt' | 'SupportTicket' | 'PlatformConfig',
     targetId: string | mongoose.Types.ObjectId,
     beforeState: Record<string, any>,
     afterState: Record<string, any>,

@@ -19,7 +19,8 @@ import {
   ShieldAlert, 
   Lock,
   Loader2,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Gift
 } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -43,6 +44,7 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Subscription Plans', href: '/plans', icon: CreditCard, roles: ['super_admin', 'finance_admin'] },
   { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight, roles: ['super_admin', 'finance_admin'] },
   { name: 'Support Tickets', href: '/tickets', icon: LifeBuoy, roles: ['super_admin', 'support_admin', 'read_only_admin'] },
+  { name: 'Signup Gift', href: '/settings/signup-gift', icon: Gift, roles: ['super_admin'] },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
