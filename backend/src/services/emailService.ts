@@ -4,7 +4,13 @@ import * as path from 'path';
 import * as Handlebars from 'handlebars';
 import { IStore, IEmailBlock } from '../models/Store';
 import { interpolateTokens } from '../utils/emailTokens';
-import { renderBlocksToHtml, normalizeEmailTemplate } from './emailBlockRenderer';
+import {
+    renderBlocksToHtml,
+    normalizeEmailTemplate,
+    buildDefaultTemplateBlocks,
+    getDefaultTemplateSubject,
+    StoreEmailTemplateType
+} from './emailBlockRenderer';
 import { sendStoreEmail } from './mailer/storeMailer';
 
 let resendInstance: Resend | null = null;
@@ -361,55 +367,32 @@ export const sendPasswordChangedEmail = async (email: string) => {
 // sendStoreTemplatedEmail below only once it's confirmed there's balance.
 // ============================================================================
 
-export type StoreEmailTemplateType = 'orderConfirmation' | 'orderStatusChanged' | 'marketing';
+export type { StoreEmailTemplateType };
 
 interface StoreEmailTemplate {
     subject: string;
     blocks: IEmailBlock[];
 }
 
-const DEFAULT_STORE_EMAIL_TEMPLATES: Record<StoreEmailTemplateType, StoreEmailTemplate> = {
-    orderConfirmation: {
-        subject: 'Your order #{{orderNumber}} has been received',
-        blocks: [
-            { id: 'default-heading', type: 'heading', text: 'Thank you for your order!', level: 'h1', align: 'center' },
-            { id: 'default-body', type: 'text', text: "Hi {{customerName}},\n\nWe've received your order #{{orderNumber}} for {{total}} EGP. We'll email you again as soon as its status changes.\n\nThanks for shopping with {{storeName}}!", align: 'center' },
-        ],
-    },
-    orderStatusChanged: {
-        subject: 'Your order #{{orderNumber}} is now {{status}}',
-        blocks: [
-            { id: 'default-heading', type: 'heading', text: 'Order Update', level: 'h1', align: 'center' },
-            { id: 'default-body', type: 'text', text: 'Hi {{customerName}},\n\nYour order #{{orderNumber}} from {{storeName}} has been updated to: {{status}}.\n\nYou can check the latest details any time on our track-order page.', align: 'center' },
-        ],
-    },
-    marketing: {
-        subject: 'News from {{storeName}}',
-        blocks: [
-            { id: 'default-heading', type: 'heading', text: '{{storeName}} Update', level: 'h1', align: 'center' },
-            { id: 'default-body', type: 'text', text: 'Hi {{customerName}},\n\nWe have something new to share with you!', align: 'center' },
-        ],
-    },
-};
-
 /**
- * Resolves a store's saved template override (if any) over the built-in
- * default — a blank subject falls back to the default individually; the
- * blocks array is all-or-nothing (a store that customized its blocks uses
- * exactly those, not a field-by-field merge, since blocks are a list, not
- * a flat set of fields). Runs legacy heading/body data (saved before the
- * block editor existed) through normalizeEmailTemplate first, so old
- * stores never end up with a truly empty email.
+ * Resolves a store's saved template override (if any) over the store-aware
+ * built-in default (see emailBlockRenderer.ts's buildDefaultTemplateBlocks
+ * — includes the store's own logo when it has one) — a blank subject falls
+ * back to the default individually; the blocks array is all-or-nothing (a
+ * store that customized its blocks uses exactly those, not a field-by-field
+ * merge, since blocks are a list, not a flat set of fields). Runs legacy
+ * heading/body data (saved before the block editor existed) through
+ * normalizeEmailTemplate first, so old stores never end up with a truly
+ * empty email.
  */
 function resolveStoreEmailTemplate(
-    store: { settings?: { emailNotifications?: { templates?: Partial<Record<StoreEmailTemplateType, Partial<StoreEmailTemplate> & { heading?: string; body?: string }>> } } },
+    store: Pick<IStore, 'name' | 'logo'> & { settings?: { emailNotifications?: { templates?: Partial<Record<StoreEmailTemplateType, Partial<StoreEmailTemplate> & { heading?: string; body?: string }>> } } },
     type: StoreEmailTemplateType
 ): StoreEmailTemplate {
     const custom = normalizeEmailTemplate(store.settings?.emailNotifications?.templates?.[type]);
-    const fallback = DEFAULT_STORE_EMAIL_TEMPLATES[type];
     return {
-        subject: custom.subject?.trim() || fallback.subject,
-        blocks: custom.blocks.length > 0 ? custom.blocks : fallback.blocks,
+        subject: custom.subject?.trim() || getDefaultTemplateSubject(type),
+        blocks: custom.blocks.length > 0 ? custom.blocks : buildDefaultTemplateBlocks(store, type),
     };
 }
 
@@ -422,7 +405,7 @@ function resolveStoreEmailTemplate(
  */
 export const sendStoreTemplatedEmail = async (
     email: string,
-    store: Pick<IStore, 'name' | 'settings'>,
+    store: Pick<IStore, 'name' | 'settings' | 'logo'>,
     type: StoreEmailTemplateType,
     vars: Record<string, string>
 ) => {

@@ -148,6 +148,8 @@ export interface EmailLedgerEntry {
 
 export interface EmailAccountBalanceResponse {
     balance: number;
+    planBalance: number;
+    purchasedBalance: number;
     reserved: number;
     ledgerHistory: EmailLedgerEntry[];
 }

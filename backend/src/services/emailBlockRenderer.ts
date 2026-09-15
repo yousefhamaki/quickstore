@@ -117,3 +117,66 @@ export function getCampaignBlocks(campaign: ICampaignLike): IEmailBlock[] {
     if (campaign.content) return [{ id: 'legacy-content', type: 'html', rawHtml: campaign.content }];
     return [];
 }
+
+// ============================================================================
+// Store-aware default templates — a store that has never customized a
+// template should still see (and send) a REAL starting template, not an
+// empty one: the store's own logo (when it has one) plus sensible
+// heading/body copy. This is what a brand-new store's Emails settings page
+// pre-fills the editor with, what "Reset to original" restores, and what
+// actually gets sent if the merchant never touches the editor at all.
+// Mirrored client-side in frontend/packages/shared/src/lib/emailBlockRenderer.ts
+// (same store.logo/store.name inputs — keep both in sync).
+// ============================================================================
+
+export type StoreEmailTemplateType = 'orderConfirmation' | 'orderStatusChanged' | 'marketing';
+
+interface StoreForDefaultTemplate {
+    name: string;
+    logo?: { url?: string };
+}
+
+const DEFAULT_TEMPLATE_SUBJECTS: Record<StoreEmailTemplateType, string> = {
+    orderConfirmation: 'Your order #{{orderNumber}} has been received',
+    orderStatusChanged: 'Your order #{{orderNumber}} is now {{status}}',
+    marketing: 'News from {{storeName}}',
+};
+
+const DEFAULT_TEMPLATE_CONTENT: Record<StoreEmailTemplateType, { heading: string; body: string }> = {
+    orderConfirmation: {
+        heading: 'Thank you for your order!',
+        body: "Hi {{customerName}},\n\nWe've received your order #{{orderNumber}} for {{total}} EGP. We'll email you again as soon as its status changes.\n\nThanks for shopping with {{storeName}}!",
+    },
+    orderStatusChanged: {
+        heading: 'Order Update',
+        body: 'Hi {{customerName}},\n\nYour order #{{orderNumber}} from {{storeName}} has been updated to: {{status}}.\n\nYou can check the latest details any time on our track-order page.',
+    },
+    marketing: {
+        heading: '{{storeName}} Update',
+        body: 'Hi {{customerName}},\n\nWe have something new to share with you!',
+    },
+};
+
+export function getDefaultTemplateSubject(type: StoreEmailTemplateType): string {
+    return DEFAULT_TEMPLATE_SUBJECTS[type];
+}
+
+/**
+ * Builds the real starting block list for a template — the store's own
+ * logo up top (skipped if the store hasn't uploaded one) followed by a
+ * heading and body block. Used at send time as the fallback when a store
+ * never customized a template (see resolveStoreEmailTemplate in
+ * emailService.ts), AND by the frontend to pre-fill a fresh editor / power
+ * its "Reset to original" button, so what a merchant sees while editing is
+ * exactly what a never-customized store would actually send.
+ */
+export function buildDefaultTemplateBlocks(store: StoreForDefaultTemplate, type: StoreEmailTemplateType): IEmailBlock[] {
+    const content = DEFAULT_TEMPLATE_CONTENT[type];
+    const blocks: IEmailBlock[] = [];
+    if (store.logo?.url) {
+        blocks.push({ id: 'default-logo', type: 'image', imageUrl: store.logo.url, altText: store.name });
+    }
+    blocks.push({ id: 'default-heading', type: 'heading', text: content.heading, level: 'h1', align: 'center' });
+    blocks.push({ id: 'default-body', type: 'text', text: content.body, align: 'center' });
+    return blocks;
+}

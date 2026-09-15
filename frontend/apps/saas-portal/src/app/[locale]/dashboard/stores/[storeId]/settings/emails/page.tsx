@@ -20,7 +20,7 @@ import { Label } from "@shared/components/ui/label";
 import { Switch } from "@shared/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
 import { EmailBlockEditor } from "@shared/components/merchant/EmailBlockEditor";
-import { normalizeEmailTemplate } from "@shared/lib/emailBlockRenderer";
+import { normalizeEmailTemplate, buildDefaultTemplateBlocks, getDefaultTemplateSubject } from "@shared/lib/emailBlockRenderer";
 import {
     Mail,
     Save,
@@ -32,7 +32,9 @@ import {
     Ban,
     Send,
     CheckCircle2,
-    Cloud
+    Cloud,
+    Coins,
+    RotateCcw
 } from "lucide-react";
 
 type TemplateKey = 'orderConfirmation' | 'orderStatusChanged' | 'marketing';
@@ -49,6 +51,8 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
     const updateMutation = useUpdateStore(storeId);
 
     const [balance, setBalance] = useState<number | null>(null);
+    const [planBalance, setPlanBalance] = useState<number>(0);
+    const [purchasedBalance, setPurchasedBalance] = useState<number>(0);
     const [balanceLoading, setBalanceLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TemplateKey>('orderConfirmation');
     const [testing, setTesting] = useState(false);
@@ -56,10 +60,30 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
 
     useEffect(() => {
         getEmailAccountBalance(storeId)
-            .then((res) => setBalance(res.balance))
+            .then((res) => {
+                setBalance(res.balance);
+                setPlanBalance(res.planBalance || 0);
+                setPurchasedBalance(res.purchasedBalance || 0);
+            })
             .catch(() => setBalance(null))
             .finally(() => setBalanceLoading(false));
     }, [storeId]);
+
+    // A template a store never customized should still show (and send) a
+    // REAL starting template -- the store's own logo plus real heading/body
+    // copy -- not an empty canvas. buildDefaultTemplateBlocks/
+    // getDefaultTemplateSubject are the exact same store-aware defaults the
+    // backend falls back to at send time (see emailService.ts's
+    // resolveStoreEmailTemplate), so what a merchant edits here always
+    // matches what would actually be sent if they never touch a field.
+    const templateFormValue = (key: TemplateKey) => {
+        if (!store) return { subject: '', blocks: [] };
+        const normalized = normalizeEmailTemplate(store.settings?.emailNotifications?.templates?.[key]);
+        return {
+            subject: normalized.subject || getDefaultTemplateSubject(key),
+            blocks: normalized.blocks.length > 0 ? normalized.blocks : buildDefaultTemplateBlocks(store, key),
+        };
+    };
 
     const { register, control, handleSubmit, watch, setValue, getValues, formState: { isDirty } } = useForm({
         values: store ? {
@@ -67,18 +91,9 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                 sendOrderConfirmation: store.settings?.emailNotifications?.sendOrderConfirmation ?? true,
                 sendStatusUpdates: store.settings?.emailNotifications?.sendStatusUpdates ?? true,
                 templates: {
-                    orderConfirmation: {
-                        subject: store.settings?.emailNotifications?.templates?.orderConfirmation?.subject || '',
-                        blocks: normalizeEmailTemplate(store.settings?.emailNotifications?.templates?.orderConfirmation).blocks,
-                    },
-                    orderStatusChanged: {
-                        subject: store.settings?.emailNotifications?.templates?.orderStatusChanged?.subject || '',
-                        blocks: normalizeEmailTemplate(store.settings?.emailNotifications?.templates?.orderStatusChanged).blocks,
-                    },
-                    marketing: {
-                        subject: store.settings?.emailNotifications?.templates?.marketing?.subject || '',
-                        blocks: normalizeEmailTemplate(store.settings?.emailNotifications?.templates?.marketing).blocks,
-                    },
+                    orderConfirmation: templateFormValue('orderConfirmation'),
+                    orderStatusChanged: templateFormValue('orderStatusChanged'),
+                    marketing: templateFormValue('marketing'),
                 }
             },
             emailSender: {
@@ -116,6 +131,14 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
     const hasSavedPassword = !!store?.settings?.emailSender?.smtp?.hasPassword;
     const isVerified = !!store?.settings?.emailSender?.verified;
 
+    const handleResetTemplate = (key: TemplateKey) => {
+        if (!store) return;
+        if (!confirm('Reset this email back to the original template? Your changes on this tab will be discarded once you save.')) return;
+        setValue(`emailNotifications.templates.${key}.subject` as const, getDefaultTemplateSubject(key), { shouldDirty: true });
+        setValue(`emailNotifications.templates.${key}.blocks` as const, buildDefaultTemplateBlocks(store, key), { shouldDirty: true });
+        toast.success('Reset to the original template — click Save to keep it.');
+    };
+
     const handleTestConnection = async () => {
         const smtp = getValues('emailSender');
         if (!smtp.smtp.host || !smtp.smtp.port || !smtp.smtp.username || !smtp.smtp.password) {
@@ -152,6 +175,34 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                 <h1 className="text-3xl font-bold tracking-tight">Emails</h1>
                 <p className="text-muted-foreground">Design your emails with no code, choose who they're sent from, and control which ones your customers receive.</p>
             </div>
+
+            {/* Email credits — always visible, not just when low/zero */}
+            {!balanceLoading && balance !== null && (
+                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <CardContent className="p-5 flex flex-wrap items-center gap-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <Coins className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold leading-none">{balance}</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mt-1">Emails remaining</p>
+                            </div>
+                        </div>
+                        <div className="h-8 w-px bg-border hidden sm:block" />
+                        <div className="flex items-center gap-6 text-sm">
+                            <div>
+                                <span className="text-muted-foreground">Plan allowance: </span>
+                                <span className="font-semibold">{planBalance}</span>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">Purchased add-ons: </span>
+                                <span className="font-semibold">{purchasedBalance}</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Balance banner */}
             {!balanceLoading && isZeroBalance && (
@@ -333,13 +384,17 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
 
                             {TEMPLATE_TABS.map(({ key }) => (
                                 <TabsContent key={key} value={key} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Subject line</Label>
-                                        <Input
-                                            {...register(`emailNotifications.templates.${key}.subject` as const)}
-                                            placeholder="Leave blank to use the default subject"
-                                            className="rounded-xl"
-                                        />
+                                    <div className="flex items-end justify-between gap-3">
+                                        <div className="space-y-2 flex-1">
+                                            <Label>Subject line</Label>
+                                            <Input
+                                                {...register(`emailNotifications.templates.${key}.subject` as const)}
+                                                className="rounded-xl"
+                                            />
+                                        </div>
+                                        <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 shrink-0" onClick={() => handleResetTemplate(key)}>
+                                            <RotateCcw className="w-3.5 h-3.5" /> Reset to original
+                                        </Button>
                                     </div>
                                     <Controller
                                         control={control}

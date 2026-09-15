@@ -124,3 +124,56 @@ export const PREVIEW_SAMPLE_VARS: Record<string, string> = {
     status: 'Shipped',
     storeName: 'Your Store'
 };
+
+// ============================================================================
+// Store-aware default templates — mirrors backend/src/services/
+// emailBlockRenderer.ts's buildDefaultTemplateBlocks/getDefaultTemplateSubject
+// exactly (same store.logo/store.name inputs, same copy). Used to pre-fill
+// a fresh Emails settings editor with a REAL starting template instead of
+// an empty canvas, and to power the "Reset to original" button — keep both
+// files in sync when changing the default copy or adding a template type.
+// ============================================================================
+
+export type StoreEmailTemplateType = 'orderConfirmation' | 'orderStatusChanged' | 'marketing';
+
+interface StoreForDefaultTemplate {
+    name: string;
+    logo?: { url?: string };
+}
+
+const DEFAULT_TEMPLATE_SUBJECTS: Record<StoreEmailTemplateType, string> = {
+    orderConfirmation: 'Your order #{{orderNumber}} has been received',
+    orderStatusChanged: 'Your order #{{orderNumber}} is now {{status}}',
+    marketing: 'News from {{storeName}}',
+};
+
+const DEFAULT_TEMPLATE_CONTENT: Record<StoreEmailTemplateType, { heading: string; body: string }> = {
+    orderConfirmation: {
+        heading: 'Thank you for your order!',
+        body: "Hi {{customerName}},\n\nWe've received your order #{{orderNumber}} for {{total}} EGP. We'll email you again as soon as its status changes.\n\nThanks for shopping with {{storeName}}!",
+    },
+    orderStatusChanged: {
+        heading: 'Order Update',
+        body: 'Hi {{customerName}},\n\nYour order #{{orderNumber}} from {{storeName}} has been updated to: {{status}}.\n\nYou can check the latest details any time on our track-order page.',
+    },
+    marketing: {
+        heading: '{{storeName}} Update',
+        body: 'Hi {{customerName}},\n\nWe have something new to share with you!',
+    },
+};
+
+export function getDefaultTemplateSubject(type: StoreEmailTemplateType): string {
+    return DEFAULT_TEMPLATE_SUBJECTS[type];
+}
+
+/** Mirrors backend's buildDefaultTemplateBlocks — the store's own logo (when it has one) plus a heading and body block. */
+export function buildDefaultTemplateBlocks(store: StoreForDefaultTemplate, type: StoreEmailTemplateType): EmailBlock[] {
+    const content = DEFAULT_TEMPLATE_CONTENT[type];
+    const blocks: EmailBlock[] = [];
+    if (store.logo?.url) {
+        blocks.push({ id: 'default-logo', type: 'image', imageUrl: store.logo.url, altText: store.name });
+    }
+    blocks.push({ id: 'default-heading', type: 'heading', text: content.heading, level: 'h1', align: 'center' });
+    blocks.push({ id: 'default-body', type: 'text', text: content.body, align: 'center' });
+    return blocks;
+}

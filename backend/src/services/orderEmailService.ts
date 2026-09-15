@@ -29,7 +29,7 @@ import {
  * this codebase.
  */
 export async function sendGatedCustomerEmail(params: {
-    store: Pick<IStore, '_id' | 'name' | 'ownerId' | 'settings'>;
+    store: Pick<IStore, '_id' | 'name' | 'ownerId' | 'settings' | 'logo'>;
     type: StoreEmailTemplateType;
     customerEmail: string;
     vars: Record<string, string>;
