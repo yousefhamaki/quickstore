@@ -2,6 +2,10 @@ import { Resend } from 'resend';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as Handlebars from 'handlebars';
+import { IStore, IEmailBlock } from '../models/Store';
+import { interpolateTokens } from '../utils/emailTokens';
+import { renderBlocksToHtml, normalizeEmailTemplate } from './emailBlockRenderer';
+import { sendStoreEmail } from './mailer/storeMailer';
 
 let resendInstance: Resend | null = null;
 const getResendClient = () => {
@@ -61,7 +65,7 @@ const templatesDir = getTemplatesDir();
 /**
  * Renders an HTML template dynamically using Handlebars with layout partial support
  */
-const renderTemplate = (templateName: string, variables: any): string => {
+export const renderTemplate = (templateName: string, variables: any): string => {
     const layoutPath = path.join(templatesDir, 'layout.html');
     const templatePath = path.join(templatesDir, templateName);
 
@@ -225,26 +229,31 @@ export const sendSubscriptionExpiryWarning = async (
 };
 
 /**
- * Sends a general password recovery email.
+ * Sends a general password recovery email. This is the STOREFRONT
+ * CUSTOMER's forgot-password flow (customerAuthController.ts) — despite
+ * living among the account-security functions below, it's genuinely
+ * store-to-customer, so it's routed through the store's own sender when
+ * one is configured.
  */
 export const sendPasswordResetEmail = async (
+    store: Pick<IStore, 'name' | 'settings'>,
     email: string,
     resetLink: string
 ) => {
     try {
         console.log(`[EmailService] Sending password reset email to ${email}`);
-        
+
         const html = renderTemplate('password_reset.html', {
             resetLink
         });
 
-        const response = await getResendClient().emails.send({
-            from: DEFAULT_FROM,
+        const result = await sendStoreEmail(store, {
             to: email,
-            subject: 'Reset your Buildora password',
+            subject: 'Reset your password',
             html
         });
-        return response;
+        if (!result.ok) throw new Error(result.error || 'Failed to send password reset email');
+        return result;
     } catch (error) {
         console.error('[EmailService] Error sending password reset email:', error);
         throw error;
@@ -258,8 +267,8 @@ export const sendPasswordResetEmail = async (
  * otherwise).
  */
 export const sendOrderShippedEmail = async (
+    store: Pick<IStore, 'name' | 'settings'>,
     email: string,
-    storeName: string,
     orderNumber: string,
     carrierName: string,
     trackingNumber: string,
@@ -267,18 +276,19 @@ export const sendOrderShippedEmail = async (
 ) => {
     try {
         const html = renderTemplate('order_shipped.html', {
-            storeName,
+            storeName: store.name,
             orderNumber,
             carrierName,
             trackingNumber,
             trackUrl,
         });
-        return await getResendClient().emails.send({
-            from: DEFAULT_FROM,
+        const result = await sendStoreEmail(store, {
             to: email,
-            subject: `Your ${storeName} order #${orderNumber} has shipped`,
+            subject: `Your ${store.name} order #${orderNumber} has shipped`,
             html
         });
+        if (!result.ok) throw new Error(result.error || 'Failed to send order shipped email');
+        return result;
     } catch (error) {
         console.error('[EmailService] Error sending order shipped email:', error);
         throw error;
@@ -355,60 +365,64 @@ export type StoreEmailTemplateType = 'orderConfirmation' | 'orderStatusChanged' 
 
 interface StoreEmailTemplate {
     subject: string;
-    heading: string;
-    body: string;
+    blocks: IEmailBlock[];
 }
 
 const DEFAULT_STORE_EMAIL_TEMPLATES: Record<StoreEmailTemplateType, StoreEmailTemplate> = {
     orderConfirmation: {
         subject: 'Your order #{{orderNumber}} has been received',
-        heading: 'Thank you for your order!',
-        body: "Hi {{customerName}},\n\nWe've received your order #{{orderNumber}} for {{total}} EGP. We'll email you again as soon as its status changes.\n\nThanks for shopping with {{storeName}}!",
+        blocks: [
+            { id: 'default-heading', type: 'heading', text: 'Thank you for your order!', level: 'h1', align: 'center' },
+            { id: 'default-body', type: 'text', text: "Hi {{customerName}},\n\nWe've received your order #{{orderNumber}} for {{total}} EGP. We'll email you again as soon as its status changes.\n\nThanks for shopping with {{storeName}}!", align: 'center' },
+        ],
     },
     orderStatusChanged: {
         subject: 'Your order #{{orderNumber}} is now {{status}}',
-        heading: 'Order Update',
-        body: 'Hi {{customerName}},\n\nYour order #{{orderNumber}} from {{storeName}} has been updated to: {{status}}.\n\nYou can check the latest details any time on our track-order page.',
+        blocks: [
+            { id: 'default-heading', type: 'heading', text: 'Order Update', level: 'h1', align: 'center' },
+            { id: 'default-body', type: 'text', text: 'Hi {{customerName}},\n\nYour order #{{orderNumber}} from {{storeName}} has been updated to: {{status}}.\n\nYou can check the latest details any time on our track-order page.', align: 'center' },
+        ],
     },
     marketing: {
         subject: 'News from {{storeName}}',
-        heading: '{{storeName}} Update',
-        body: 'Hi {{customerName}},\n\nWe have something new to share with you!',
+        blocks: [
+            { id: 'default-heading', type: 'heading', text: '{{storeName}} Update', level: 'h1', align: 'center' },
+            { id: 'default-body', type: 'text', text: 'Hi {{customerName}},\n\nWe have something new to share with you!', align: 'center' },
+        ],
     },
 };
 
 /**
- * Merges a store's saved template override (if any) over the built-in
- * default — a field left blank on the store falls back to the default
- * individually, so a store that only customized the subject still gets a
- * real heading/body instead of an empty one.
+ * Resolves a store's saved template override (if any) over the built-in
+ * default — a blank subject falls back to the default individually; the
+ * blocks array is all-or-nothing (a store that customized its blocks uses
+ * exactly those, not a field-by-field merge, since blocks are a list, not
+ * a flat set of fields). Runs legacy heading/body data (saved before the
+ * block editor existed) through normalizeEmailTemplate first, so old
+ * stores never end up with a truly empty email.
  */
 function resolveStoreEmailTemplate(
-    store: { settings?: { emailNotifications?: { templates?: Partial<Record<StoreEmailTemplateType, Partial<StoreEmailTemplate>>> } } },
+    store: { settings?: { emailNotifications?: { templates?: Partial<Record<StoreEmailTemplateType, Partial<StoreEmailTemplate> & { heading?: string; body?: string }>> } } },
     type: StoreEmailTemplateType
 ): StoreEmailTemplate {
-    const custom = store.settings?.emailNotifications?.templates?.[type];
+    const custom = normalizeEmailTemplate(store.settings?.emailNotifications?.templates?.[type]);
     const fallback = DEFAULT_STORE_EMAIL_TEMPLATES[type];
     return {
-        subject: custom?.subject?.trim() || fallback.subject,
-        heading: custom?.heading?.trim() || fallback.heading,
-        body: custom?.body?.trim() || fallback.body,
+        subject: custom.subject?.trim() || fallback.subject,
+        blocks: custom.blocks.length > 0 ? custom.blocks : fallback.blocks,
     };
-}
-
-/** Replaces {{token}} placeholders with plain string substitution — deliberately NOT full Handlebars, since this text is merchant-authored and shouldn't be able to execute template logic/partials. */
-function interpolateTokens(text: string, vars: Record<string, string>): string {
-    return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key) => (key in vars ? vars[key] : ''));
 }
 
 /**
  * Sends one of a store's (possibly merchant-customized) transactional
- * templates to a customer. Callers are responsible for credit-gating
- * BEFORE calling this — see services/orderEmailService.ts.
+ * templates to a customer, routed through the store's own sender when
+ * configured (see services/mailer/storeMailer.ts). Callers are
+ * responsible for credit-gating BEFORE calling this — see
+ * services/orderEmailService.ts.
  */
 export const sendStoreTemplatedEmail = async (
     email: string,
-    store: { name: string; settings?: { emailNotifications?: { templates?: Partial<Record<StoreEmailTemplateType, Partial<StoreEmailTemplate>>> } } },
+    store: Pick<IStore, 'name' | 'settings'>,
     type: StoreEmailTemplateType,
     vars: Record<string, string>
 ) => {
@@ -416,17 +430,13 @@ export const sendStoreTemplatedEmail = async (
     const allVars = { storeName: store.name, ...vars };
 
     const subject = interpolateTokens(template.subject, allVars);
-    const heading = interpolateTokens(template.heading, allVars);
-    const bodyText = interpolateTokens(template.body, allVars);
+    const bodyHtml = renderBlocksToHtml(template.blocks, allVars);
 
     try {
-        const html = renderTemplate('store_generic.html', { storeName: store.name, heading, bodyText });
-        return await getResendClient().emails.send({
-            from: DEFAULT_FROM,
-            to: email,
-            subject,
-            html,
-        });
+        const html = renderTemplate('store_generic.html', { storeName: store.name, subject, bodyHtml });
+        const result = await sendStoreEmail(store, { to: email, subject, html });
+        if (!result.ok) throw new Error(result.error || 'Failed to send store templated email');
+        return result;
     } catch (error) {
         console.error(`[EmailService] Error sending store templated email (${type}):`, error);
         throw error;
@@ -440,10 +450,17 @@ export const sendStoreTemplatedEmail = async (
  */
 export const sendLowEmailBalanceAlert = async (merchantEmail: string, storeName: string, remaining: number) => {
     try {
+        const bodyHtml = renderBlocksToHtml(
+            [
+                { id: 'alert-heading', type: 'heading', text: 'Your email credits are running low', level: 'h1', align: 'center' },
+                { id: 'alert-body', type: 'text', text: `Your store "${storeName}" has ${remaining} email credit${remaining === 1 ? '' : 's'} left. Once it reaches 0, order confirmation and status update emails will stop going out to your customers automatically — top up or upgrade your plan to keep them running.`, align: 'center' },
+            ],
+            {}
+        );
         const html = renderTemplate('store_generic.html', {
             storeName: 'Buildora',
-            heading: 'Your email credits are running low',
-            bodyText: `Your store "${storeName}" has ${remaining} email credit${remaining === 1 ? '' : 's'} left. Once it reaches 0, order confirmation and status update emails will stop going out to your customers automatically — top up or upgrade your plan to keep them running.`,
+            subject: `Low email credits on ${storeName}`,
+            bodyHtml,
         });
         return await getResendClient().emails.send({
             from: DEFAULT_FROM,
@@ -469,10 +486,17 @@ export const sendZeroBalanceSkippedEmailAlert = async (
     context: string
 ) => {
     try {
+        const bodyHtml = renderBlocksToHtml(
+            [
+                { id: 'alert-heading', type: 'heading', text: "A customer email couldn't be sent", level: 'h1', align: 'center' },
+                { id: 'alert-body', type: 'text', text: `Your store "${storeName}" is out of email credits (0 remaining), so we could NOT send this to your customer:\n\n${context}\n\nYour customer was not notified. Top up your email credits to resume automatic order confirmation and status update emails.`, align: 'center' },
+            ],
+            {}
+        );
         const html = renderTemplate('store_generic.html', {
             storeName: 'Buildora',
-            heading: "A customer email couldn't be sent",
-            bodyText: `Your store "${storeName}" is out of email credits (0 remaining), so we could NOT send this to your customer:\n\n${context}\n\nYour customer was not notified. Top up your email credits to resume automatic order confirmation and status update emails.`,
+            subject: `Action needed: customer email not sent (${storeName})`,
+            bodyHtml,
         });
         return await getResendClient().emails.send({
             from: DEFAULT_FROM,

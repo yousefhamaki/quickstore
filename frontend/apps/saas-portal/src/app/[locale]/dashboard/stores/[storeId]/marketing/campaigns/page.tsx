@@ -12,8 +12,10 @@ import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
-import { Textarea } from "@shared/components/ui/textarea";
 import { Progress } from "@shared/components/ui/progress";
+import { EmailBlockEditor } from "@shared/components/merchant/EmailBlockEditor";
+import { getCampaignBlocksClient, renderBlocksToHtml, PREVIEW_SAMPLE_VARS } from "@shared/lib/emailBlockRenderer";
+import type { EmailBlock } from "@shared/types/store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import {
@@ -75,10 +77,10 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
     const [buyOpen, setBuyOpen] = useState(false);
 
     // Create Campaign Form state
-    const [campaignForm, setCampaignForm] = useState({
+    const [campaignForm, setCampaignForm] = useState<{ name: string; subject: string; blocks: EmailBlock[]; tags: string }>({
         name: "",
         subject: "",
-        content: "",
+        blocks: [],
         tags: ""
     });
 
@@ -114,8 +116,8 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
 
     const handleCreateCampaign = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!campaignForm.name || !campaignForm.subject || !campaignForm.content) {
-            toast.error("Please fill in all required fields");
+        if (!campaignForm.name || !campaignForm.subject || campaignForm.blocks.length === 0) {
+            toast.error("Please fill in all required fields and add at least one block");
             return;
         }
 
@@ -129,7 +131,7 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                 storeId,
                 name: campaignForm.name,
                 subject: campaignForm.subject,
-                content: campaignForm.content,
+                blocks: campaignForm.blocks,
                 segmentFilters: {
                     consentStatus: "subscribed",
                     tags: tagsArray
@@ -138,7 +140,7 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
 
             toast.success("Campaign template draft created successfully!");
             setCreateOpen(false);
-            setCampaignForm({ name: "", subject: "", content: "", tags: "" });
+            setCampaignForm({ name: "", subject: "", blocks: [], tags: "" });
             loadData();
         } catch (error: any) {
             console.error(error);
@@ -444,11 +446,11 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
 
             {/* Create Campaign Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogContent className="rounded-3xl max-w-xl border-2">
+                <DialogContent className="rounded-3xl max-w-4xl border-2 max-h-[85vh] overflow-y-auto">
                     <form onSubmit={handleCreateCampaign}>
                         <DialogHeader className="space-y-2">
                             <DialogTitle className="text-xl font-black uppercase tracking-tight">Create Campaign Template</DialogTitle>
-                            <DialogDescription className="font-medium text-xs">Define a reusable email newsletter body and configure target segment rules.</DialogDescription>
+                            <DialogDescription className="font-medium text-xs">Design your email with no code, and configure target segment rules.</DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-4 my-6">
@@ -489,15 +491,11 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="content" className="text-xs font-black uppercase tracking-wider">Email Content (HTML body markup)</Label>
-                                <Textarea 
-                                    id="content" 
-                                    placeholder="<h1>Summer is here!</h1><p>Enjoy our summer specials...</p>" 
-                                    rows={8}
-                                    className="rounded-xl font-mono text-xs"
-                                    value={campaignForm.content}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, content: e.target.value })}
-                                    required
+                                <Label className="text-xs font-black uppercase tracking-wider">Email Design</Label>
+                                <EmailBlockEditor
+                                    value={campaignForm.blocks}
+                                    onChange={(blocks) => setCampaignForm({ ...campaignForm, blocks })}
+                                    storeId={storeId}
                                 />
                             </div>
                         </div>
@@ -535,10 +533,13 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                         {/* Campaign Template Overview */}
                         <TabsContent value="overview" className="space-y-4 mt-4">
                             <div className="bg-muted/30 border rounded-2xl p-4 space-y-3">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Template HTML Body Preview</h4>
-                                <div className="max-h-[160px] overflow-y-auto p-3 border rounded-xl bg-white text-slate-700 font-mono text-[10px] whitespace-pre-wrap">
-                                    {selectedCampaign?.content}
-                                </div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Email Preview</h4>
+                                <iframe
+                                    title="Campaign preview"
+                                    className="w-full h-[300px] rounded-xl border bg-white"
+                                    sandbox=""
+                                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8" /><style>body{font-family:-apple-system,Arial,sans-serif;margin:0;padding:20px;} img{max-width:100%;}</style></head><body>${selectedCampaign ? renderBlocksToHtml(getCampaignBlocksClient(selectedCampaign), PREVIEW_SAMPLE_VARS) : ''}<p style="text-align:center;color:#a0aec0;font-size:11px;margin-top:24px;">Powered by Buildora</p></body></html>`}
+                                />
                             </div>
 
                             {selectedCampaign?.status === "draft" && (

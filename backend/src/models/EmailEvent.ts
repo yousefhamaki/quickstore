@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export type EmailEventType = 'sent' | 'delivered' | 'open' | 'click' | 'bounce' | 'complaint' | 'unsubscribe';
-export type EmailProviderType = 'ses' | 'sendgrid' | 'resend' | 'mailgun';
+export type EmailProviderType = 'ses' | 'sendgrid' | 'resend' | 'mailgun' | 'custom-smtp';
 
 export interface IEmailEvent extends Document {
     storeId: mongoose.Types.ObjectId;
@@ -38,7 +38,7 @@ const EmailEventSchema: Schema = new Schema(
         },
         provider: { 
             type: String, 
-            enum: ['ses', 'sendgrid', 'resend', 'mailgun'], 
+            enum: ['ses', 'sendgrid', 'resend', 'mailgun', 'custom-smtp'],
             required: true 
         },
         providerMessageId: { type: String, required: true },

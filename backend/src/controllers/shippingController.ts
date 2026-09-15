@@ -28,8 +28,8 @@ async function notifyCustomerOrderShipped(order: IOrder, store: IStore) {
         const trackUrl = order.trackingUrl || `${protocol}://${storeHost}/track-order`;
 
         await sendOrderShippedEmail(
+            store,
             customer.email,
-            store.name,
             order.orderNumber,
             order.shippingProvider || 'Courier',
             order.trackingNumber || '',

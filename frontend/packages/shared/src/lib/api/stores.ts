@@ -67,6 +67,35 @@ export const uploadStoreLogo = async (id: string, formData: FormData): Promise<{
     return data;
 };
 
+export const uploadEmailBlockImage = async (id: string, formData: FormData): Promise<{ url: string; publicId: string }> => {
+    const { data } = await api.post<{ url: string; publicId: string }>(`/stores/${id}/email-blocks/upload-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return data;
+};
+
+export interface EmailSenderTestPayload {
+    host: string;
+    port: number;
+    secure: boolean;
+    username: string;
+    password: string;
+    fromEmail?: string;
+    fromName?: string;
+    sendTestEmail?: boolean;
+}
+
+export const testEmailSender = async (id: string, payload: EmailSenderTestPayload): Promise<{ ok: boolean; error?: string }> => {
+    try {
+        const { data } = await api.post<{ ok: boolean }>(`/stores/${id}/email-sender/test`, payload);
+        return data;
+    } catch (err: any) {
+        return { ok: false, error: err?.response?.data?.error || 'Connection failed' };
+    }
+};
+
 export interface CustomDomainVerification {
     type: 'TXT';
     host: string;

@@ -130,6 +130,7 @@ async function testSends() {
     try {
         console.log('\n[5/6] Calling sendPasswordResetEmail...');
         const res = await sendPasswordResetEmail(
+            { name: 'Buildora Test Store', settings: {} } as any,
             testEmail,
             'https://www.quickstore.live/auth/reset-password?token=abc'
         );

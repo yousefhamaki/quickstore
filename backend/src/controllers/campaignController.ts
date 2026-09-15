@@ -8,6 +8,7 @@ import Store from '../models/Store';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { CampaignQuotaService } from '../services/CampaignQuotaService';
 import { triggerCampaignDispatch } from '../services/campaignDispatchService';
+import { validateEmailBlocks } from '../utils/validateEmailBlocks';
 
 /**
  * @desc    Get all campaigns for a merchant's store(s)
@@ -84,7 +85,7 @@ export const getCampaignById = async (req: AuthRequest, res: Response) => {
 export const createCampaign = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user._id;
-        const { storeId, name, subject, content, segmentFilters } = req.body;
+        const { storeId, name, subject, content, blocks, segmentFilters } = req.body;
 
         // Verify store belongs to merchant
         const store = await Store.findOne({ _id: storeId, ownerId: userId });
@@ -92,11 +93,20 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Store not found or unauthorized' });
         }
 
+        if (!blocks?.length && !content) {
+            return res.status(400).json({ message: 'A campaign needs at least one block of content' });
+        }
+        const blocksCheck = validateEmailBlocks(blocks);
+        if (!blocksCheck.valid) {
+            return res.status(400).json({ message: blocksCheck.error });
+        }
+
         const campaign = await Campaign.create({
             storeId,
             name,
             subject,
             content,
+            blocks: blocks || [],
             status: 'draft',
             segmentFilters: segmentFilters || { consentStatus: 'subscribed' }
         });
@@ -116,7 +126,7 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
 export const updateCampaign = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user._id;
-        const { name, subject, content, segmentFilters, status } = req.body;
+        const { name, subject, content, blocks, segmentFilters, status } = req.body;
 
         const campaign = await Campaign.findById(req.params.id);
         if (!campaign) {
@@ -132,6 +142,14 @@ export const updateCampaign = async (req: AuthRequest, res: Response) => {
         // Sent/scheduled campaigns are read-only to prevent audit drift
         if (campaign.status === 'sent') {
             return res.status(400).json({ message: 'Sent campaigns cannot be updated' });
+        }
+
+        if (blocks !== undefined) {
+            const blocksCheck = validateEmailBlocks(blocks);
+            if (!blocksCheck.valid) {
+                return res.status(400).json({ message: blocksCheck.error });
+            }
+            campaign.blocks = blocks;
         }
 
         campaign.name = name || campaign.name;

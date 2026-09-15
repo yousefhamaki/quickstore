@@ -2,6 +2,62 @@ import { MarketingSettings } from '../services/marketingService';
 
 export type StoreStatus = 'draft' | 'live' | 'paused';
 
+// No-code email design blocks — mirrors backend/src/models/Store.ts's
+// IEmailBlock exactly (backend/ and frontend/ are separate Node projects
+// with no shared module boundary, so this type is duplicated by hand; keep
+// both in sync when adding/changing a block type). The rendering mirror
+// lives in lib/emailBlockRenderer.ts and is used ONLY for the live-preview
+// iframe — the real send always goes through the backend's own renderer.
+export type EmailBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'spacer' | 'html';
+export type EmailBlockAlign = 'left' | 'center' | 'right';
+
+export interface EmailHeadingBlock { id: string; type: 'heading'; text: string; level: 'h1' | 'h2'; align: EmailBlockAlign; color?: string; }
+export interface EmailTextBlock { id: string; type: 'text'; text: string; align: EmailBlockAlign; color?: string; }
+export interface EmailImageBlock { id: string; type: 'image'; imageUrl: string; imagePublicId?: string; altText?: string; link?: string; }
+export interface EmailButtonBlock { id: string; type: 'button'; text: string; url: string; backgroundColor?: string; textColor?: string; align: EmailBlockAlign; }
+export interface EmailDividerBlock { id: string; type: 'divider'; color?: string; }
+export interface EmailSpacerBlock { id: string; type: 'spacer'; height: number; }
+/** Legacy-passthrough only — never offered in EmailBlockEditor's "Add block" UI. */
+export interface EmailHtmlBlock { id: string; type: 'html'; rawHtml: string; }
+
+export type EmailBlock =
+    | EmailHeadingBlock
+    | EmailTextBlock
+    | EmailImageBlock
+    | EmailButtonBlock
+    | EmailDividerBlock
+    | EmailSpacerBlock
+    | EmailHtmlBlock;
+
+export interface EmailTemplate {
+    subject: string;
+    blocks?: EmailBlock[];
+    // Legacy shape from before the block editor existed — still accepted
+    // when reading old data; see lib/emailBlockRenderer.ts's
+    // normalizeEmailTemplate for the fallback shim.
+    heading?: string;
+    body?: string;
+}
+
+export interface EmailSenderSMTP {
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    username?: string;
+    /** Never present in any API response — see the backend's EmailSenderSchema toJSON transform. Use `hasPassword` to know whether one is saved. */
+    hasPassword?: boolean;
+}
+
+export interface EmailSenderSettings {
+    mode: 'buildora' | 'custom';
+    fromName?: string;
+    fromEmail?: string;
+    smtp?: EmailSenderSMTP;
+    verified: boolean;
+    lastTestedAt?: string;
+    lastError?: string;
+}
+
 export interface StoreLogo {
     url: string;
     publicId: string;
@@ -138,11 +194,12 @@ export interface Store {
             sendOrderConfirmation: boolean;
             sendStatusUpdates: boolean;
             templates: {
-                orderConfirmation?: { subject: string; heading: string; body: string };
-                orderStatusChanged?: { subject: string; heading: string; body: string };
-                marketing?: { subject: string; heading: string; body: string };
+                orderConfirmation?: EmailTemplate;
+                orderStatusChanged?: EmailTemplate;
+                marketing?: EmailTemplate;
             };
         };
+        emailSender?: EmailSenderSettings;
         marketing?: MarketingSettings;
     };
     stats: StoreStats;

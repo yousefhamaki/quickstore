@@ -1,4 +1,5 @@
 import api from './api';
+import { EmailBlock } from '../types/store';
 
 export interface Coupon {
     _id: string;
@@ -107,7 +108,9 @@ export interface Campaign {
     storeId: string;
     name: string;
     subject: string;
-    content: string;
+    /** @deprecated raw HTML from before the no-code block editor existed — kept for legacy reads only. New campaigns use `blocks`. */
+    content?: string;
+    blocks?: EmailBlock[];
     status: 'draft' | 'scheduled' | 'sent' | 'archived';
     segmentFilters: {
         tags?: string[];

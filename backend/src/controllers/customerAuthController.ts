@@ -193,7 +193,7 @@ export const forgotPassword = async (req: CustomerAuthRequest, res: Response) =>
             const resetLink = `${protocol}://${storeHost}/account/reset-password?token=${resetToken}`;
 
             try {
-                await sendPasswordResetEmail(email, resetLink);
+                await sendPasswordResetEmail(store, email, resetLink);
             } catch (emailErr) {
                 console.error('Customer Forgot Password — email send failed:', emailErr);
                 // Don't leak the failure to the client — same generic response either way.

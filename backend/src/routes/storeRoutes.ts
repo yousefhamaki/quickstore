@@ -15,7 +15,9 @@ import {
     uploadStoreLogo,
     setCustomDomain,
     verifyCustomDomain,
-    removeCustomDomain
+    removeCustomDomain,
+    uploadEmailBlockImage,
+    testEmailSender
 } from '../controllers/storeController';
 import { protect, authorize } from '../middleware/authMiddleware';
 import { checkVerification } from '../middleware/verificationMiddleware';
@@ -34,6 +36,12 @@ router.route('/:id').get(getStore).put(updateStore).delete(deleteStore);
 
 // Store Logo Upload
 router.post('/:id/upload-logo', upload.single('logo'), uploadStoreLogo);
+
+// Email builder image upload (transactional templates + campaigns share this one stateless route)
+router.post('/:id/email-blocks/upload-image', upload.single('image'), uploadEmailBlockImage);
+
+// Custom SMTP sender: test a connection before/without saving it
+router.post('/:id/email-sender/test', testEmailSender);
 
 // Store Publishing
 router.post('/:id/publish', billingContext, protectStorePublish, publishStore);

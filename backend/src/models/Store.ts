@@ -92,10 +92,40 @@ export interface ISocialSharingSettings {
     defaultMessage?: string;
 }
 
+export type EmailBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'spacer' | 'html';
+export type EmailBlockAlign = 'left' | 'center' | 'right';
+
+// No-code email design blocks — see services/emailBlockRenderer.ts's
+// renderBlocksToHtml for how this becomes the actual sent HTML, and
+// frontend/packages/shared/src/types/store.ts's IEmailBlock +
+// frontend/packages/shared/src/lib/emailBlockRenderer.ts for the
+// client-side mirror used only to drive the live-preview iframe (backend/
+// and frontend/ are separate Node projects with no shared module boundary
+// — keep both copies in sync by hand when you add/change a block type).
+export interface IEmailHeadingBlock { id: string; type: 'heading'; text: string; level: 'h1' | 'h2'; align: EmailBlockAlign; color?: string; }
+export interface IEmailTextBlock { id: string; type: 'text'; text: string; align: EmailBlockAlign; color?: string; }
+export interface IEmailImageBlock { id: string; type: 'image'; imageUrl: string; imagePublicId?: string; altText?: string; link?: string; }
+export interface IEmailButtonBlock { id: string; type: 'button'; text: string; url: string; backgroundColor?: string; textColor?: string; align: EmailBlockAlign; }
+export interface IEmailDividerBlock { id: string; type: 'divider'; color?: string; }
+export interface IEmailSpacerBlock { id: string; type: 'spacer'; height: number; }
+// Legacy-passthrough only — wraps pre-block-editor raw HTML (an old
+// Campaign.content string, or a legacy Store email template heading/body
+// pair) so nothing crashes on old data. Never offered in the "Add block"
+// UI — see frontend's EmailBlockEditor.tsx.
+export interface IEmailHtmlBlock { id: string; type: 'html'; rawHtml: string; }
+
+export type IEmailBlock =
+    | IEmailHeadingBlock
+    | IEmailTextBlock
+    | IEmailImageBlock
+    | IEmailButtonBlock
+    | IEmailDividerBlock
+    | IEmailSpacerBlock
+    | IEmailHtmlBlock;
+
 export interface IEmailTemplate {
     subject: string;
-    heading: string;
-    body: string; // plain-text/simple-HTML with {{tokens}} — see emailService.renderStoreTemplate
+    blocks: IEmailBlock[];
 }
 
 export interface IEmailNotificationSettings {
@@ -113,6 +143,36 @@ export interface IEmailNotificationSettings {
         orderStatusChanged?: IEmailTemplate;
         marketing?: IEmailTemplate;
     };
+}
+
+export interface IEmailSenderSMTP {
+    host: string;
+    port: number;
+    secure: boolean;
+    username: string;
+    // AES-256-GCM ciphertext via utils/crypto.ts — see
+    // services/mailer/storeMailer.ts for where it's decrypted to actually
+    // send, and storeController's applyEmailSenderUpdate for the only place
+    // a plaintext password is ever accepted/encrypted. Stripped from every
+    // API response by EmailSenderSchema's toJSON transform below — never
+    // trust or echo this field to the frontend.
+    passwordEncrypted?: string;
+}
+
+export interface IEmailSenderSettings {
+    // 'buildora' = the shared Resend sender (no-reply@quickstore.live).
+    // 'custom' is only actually used at send time once `verified` is true
+    // AND all smtp fields are present — see resolveStoreSender in
+    // services/mailer/storeMailer.ts. A saved-but-unverified custom config
+    // silently keeps using Buildora's sender rather than risking a blind
+    // send through untested credentials.
+    mode: 'buildora' | 'custom';
+    fromName?: string;
+    fromEmail?: string;
+    smtp?: IEmailSenderSMTP;
+    verified: boolean;
+    lastTestedAt?: Date;
+    lastError?: string;
 }
 
 export interface IMarketingSettings {
@@ -146,6 +206,7 @@ export interface IStoreSettings {
     tax: ITaxSettings;
     policies: IPolicies;
     emailNotifications: IEmailNotificationSettings;
+    emailSender: IEmailSenderSettings;
     marketing: IMarketingSettings;
 }
 
@@ -241,6 +302,44 @@ export interface IStore extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
+
+// Its own nested Schema (not an inline object literal) specifically so it
+// can carry its own scoped toJSON transform below — Mongoose cascades a
+// subdocument's toJSON transform into the parent document's serialization,
+// so every res.json(store)/res.json(updatedStore) response automatically
+// gets the SMTP password ciphertext stripped without touching every
+// controller that returns a store. The Redis-cache path elsewhere uses
+// store.toObject() (a separate schema option from toJSON — transforms
+// don't cross over), so the ciphertext correctly stays cached there; only
+// the HTTP API response boundary needs stripping.
+const EmailSenderSchema = new Schema(
+    {
+        mode: { type: String, enum: ['buildora', 'custom'], default: 'buildora' },
+        fromName: { type: String },
+        fromEmail: { type: String },
+        smtp: {
+            host: { type: String },
+            port: { type: Number },
+            secure: { type: Boolean, default: false },
+            username: { type: String },
+            passwordEncrypted: { type: String }
+        },
+        verified: { type: Boolean, default: false },
+        lastTestedAt: { type: Date },
+        lastError: { type: String }
+    },
+    { _id: false }
+);
+
+EmailSenderSchema.set('toJSON', {
+    transform: (_doc: any, ret: any) => {
+        if (ret.smtp) {
+            ret.smtp = { ...ret.smtp, hasPassword: !!ret.smtp.passwordEncrypted };
+            delete ret.smtp.passwordEncrypted;
+        }
+        return ret;
+    }
+});
 
 const StoreSchema: Schema = new Schema(
     {
@@ -364,21 +463,20 @@ const StoreSchema: Schema = new Schema(
                 templates: {
                     orderConfirmation: {
                         subject: { type: String },
-                        heading: { type: String },
-                        body: { type: String }
+                        blocks: { type: [Schema.Types.Mixed], default: [] }
                     },
                     orderStatusChanged: {
                         subject: { type: String },
-                        heading: { type: String },
-                        body: { type: String }
+                        blocks: { type: [Schema.Types.Mixed], default: [] }
                     },
                     marketing: {
                         subject: { type: String },
-                        heading: { type: String },
-                        body: { type: String }
+                        blocks: { type: [Schema.Types.Mixed], default: [] }
                     }
                 }
             },
+
+            emailSender: { type: EmailSenderSchema, default: () => ({ mode: 'buildora', verified: false }) },
 
             marketing: {
                 facebookPixelId: { type: String },

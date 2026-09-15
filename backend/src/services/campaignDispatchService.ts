@@ -1,9 +1,12 @@
 import mongoose from 'mongoose';
-import { Resend } from 'resend';
 import CampaignRun from '../models/CampaignRun';
 import CampaignRecipient from '../models/CampaignRecipient';
 import EmailEvent from '../models/EmailEvent';
+import Store from '../models/Store';
 import { CampaignQuotaService } from './CampaignQuotaService';
+import { getCampaignBlocks, renderBlocksToHtml } from './emailBlockRenderer';
+import { renderTemplate } from './emailService';
+import { resolveStoreSender, sendViaResolvedSender } from './mailer/storeMailer';
 
 /**
  * Initiates the asynchronous email sending loop for a campaign run in the background
@@ -32,6 +35,23 @@ export const triggerCampaignDispatch = async (runId: string | mongoose.Types.Obj
     console.log(`[CampaignDispatcher] Starting execution for run ${runId} of campaign: ${campaign.name} (${run.totalRecipients} target recipients)`);
 
     try {
+        const store = await Store.findById(run.storeId);
+        if (!store) {
+            throw new Error('Store not found for this campaign run');
+        }
+
+        // Resolve the sender ONCE per run (builds/connects the SMTP
+        // transporter a single time when a custom sender is configured,
+        // rather than reconnecting per recipient) and render the campaign's
+        // blocks into HTML once too, since it's identical for every
+        // recipient — this is the same visual language + non-removable
+        // "Powered by Buildora" footer used by transactional store emails
+        // (see emailService.ts's sendStoreTemplatedEmail), via the shared
+        // store_generic.html wrapper.
+        const resolvedSender = await resolveStoreSender(store);
+        const bodyHtml = renderBlocksToHtml(getCampaignBlocks(campaign), { storeName: store.name });
+        const html = renderTemplate('store_generic.html', { storeName: store.name, subject: campaign.subject, bodyHtml });
+
         // Fetch all pending recipients for this run
         const pendingRecipients = await CampaignRecipient.find({
             campaignRunId: run._id,
@@ -40,11 +60,6 @@ export const triggerCampaignDispatch = async (runId: string | mongoose.Types.Obj
 
         let successfullySent = 0;
         let bouncedOrFailed = 0;
-
-        // Obtain a Resend client if key is configured, fallback to mock/simulate
-        const apiKey = process.env.RESEND_API_KEY;
-        const useRealClient = apiKey && apiKey !== 'placeholder';
-        const resend = useRealClient ? new Resend(apiKey) : null;
 
         for (const recipient of pendingRecipients) {
             // Double-send protection: claim recipient atomically
@@ -60,26 +75,17 @@ export const triggerCampaignDispatch = async (runId: string | mongoose.Types.Obj
             }
 
             try {
-                let providerMessageId = 'mock-' + new mongoose.Types.ObjectId().toString();
+                const result = await sendViaResolvedSender(resolvedSender, {
+                    to: recipient.email,
+                    subject: campaign.subject,
+                    html
+                });
 
-                if (resend) {
-                    const response = await resend.emails.send({
-                        from: 'Buildora <no-reply@quickstore.live>', // Default platform sender or store domain
-                        to: recipient.email,
-                        subject: campaign.subject,
-                        html: campaign.content
-                    });
-
-                    if (response.data?.id) {
-                        providerMessageId = response.data.id;
-                    } else if (response.error) {
-                        throw new Error(response.error.message || 'Resend API provider error');
-                    }
-                } else {
-                    // Simulate email transmission locally for test/development
-                    // Artificial delay to mimic HTTP latency (5ms)
-                    await new Promise(resolve => setTimeout(resolve, 5));
+                if (!result.ok) {
+                    throw new Error(result.error || 'Email provider error');
                 }
+
+                const providerMessageId = `${result.provider}-${new mongoose.Types.ObjectId().toString()}`;
 
                 // Update recipient status and provider message ID
                 claimed.providerMessageId = providerMessageId;
@@ -92,7 +98,7 @@ export const triggerCampaignDispatch = async (runId: string | mongoose.Types.Obj
                     contactId: recipient.contactId,
                     recipientEmail: recipient.email,
                     event: 'sent',
-                    provider: useRealClient ? 'resend' : 'ses', // default simulated provider is ses
+                    provider: result.provider,
                     providerMessageId,
                     timestamp: new Date()
                 });
@@ -102,7 +108,7 @@ export const triggerCampaignDispatch = async (runId: string | mongoose.Types.Obj
                 await CampaignRun.updateOne({ _id: run._id }, { $inc: { emailsDispatched: 1 } });
             } catch (err: any) {
                 console.error(`[CampaignDispatcher] Failed sending email to ${recipient.email}:`, err);
-                
+
                 claimed.status = 'failed';
                 claimed.errorMessage = err.message || 'Transmission error';
                 await claimed.save();
@@ -114,7 +120,7 @@ export const triggerCampaignDispatch = async (runId: string | mongoose.Types.Obj
                     contactId: recipient.contactId,
                     recipientEmail: recipient.email,
                     event: 'bounce',
-                    provider: useRealClient ? 'resend' : 'ses',
+                    provider: resolvedSender.mode === 'custom' ? 'custom-smtp' : 'resend',
                     providerMessageId: 'failed-' + new mongoose.Types.ObjectId().toString(),
                     deliveryMetadata: {
                         smtpStatusCode: 500,

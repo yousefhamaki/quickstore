@@ -13,6 +13,9 @@ import { DomainVerificationService } from '../services/domain/DomainVerification
 import EmailAccount from '../models/EmailAccount';
 import EmailLedgerEntry from '../models/EmailLedgerEntry';
 import { CampaignQuotaService } from '../services/CampaignQuotaService';
+import { validateEmailBlocks } from '../utils/validateEmailBlocks';
+import { applyEmailSenderUpdate } from '../utils/applyEmailSenderUpdate';
+import nodemailer from 'nodemailer';
 
 // @desc    Get all stores for logged-in merchant
 // @route   GET /api/stores
@@ -350,7 +353,30 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
                     message: `Payment provider '${requestedProvider}' is not yet available. Currently supported: ${IMPLEMENTED_PAYMENT_PROVIDERS.join(', ')}.`
                 });
             }
+            const templates = req.body.settings?.emailNotifications?.templates;
+            if (templates) {
+                for (const key of ['orderConfirmation', 'orderStatusChanged', 'marketing'] as const) {
+                    const check = validateEmailBlocks(templates[key]?.blocks);
+                    if (!check.valid) {
+                        return res.status(400).json({ message: `${key} template: ${check.error}` });
+                    }
+                }
+            }
+
             updateData.settings = req.body.settings;
+
+            // Carve-out: never trust a client-sent emailSender wholesale (see
+            // applyEmailSenderUpdate's doc-comment) — encrypts a freshly
+            // submitted plaintext SMTP password, preserves the existing
+            // encrypted one when the field is left blank, and recomputes
+            // verified/lastTestedAt/lastError server-side instead of
+            // trusting whatever the client sent for them.
+            if (req.body.settings.emailSender !== undefined) {
+                updateData.settings.emailSender = applyEmailSenderUpdate(
+                    store.settings?.emailSender,
+                    req.body.settings.emailSender
+                );
+            }
         }
         if (req.body.theme !== undefined) {
             // Plan gating: SubscriptionPlan.features.allowHeroSlider must be
@@ -954,5 +980,79 @@ export const uploadStoreLogo = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error('Upload Logo Error:', error);
         res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+// @desc    Upload an image to embed in an email builder Image block
+//          (transactional template or marketing campaign). Stateless —
+//          unlike upload-logo, this never mutates/saves the Store
+//          document; the URL is only persisted later when the template or
+//          campaign itself is saved.
+// @route   POST /api/stores/:id/email-blocks/upload-image
+// @access  Private/Merchant
+export const uploadEmailBlockImage = async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await Store.findOne({ _id: req.params.id, ownerId: req.user._id });
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        res.json({ url: req.file.path, publicId: req.file.filename });
+    } catch (error) {
+        console.error('Upload Email Block Image Error:', error);
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+// @desc    Test a (possibly not-yet-saved) SMTP configuration by verifying
+//          the connection and optionally sending a real test email to the
+//          merchant's OWN account address (never an arbitrary address from
+//          the request body). Stateless — never persists anything and
+//          never touches the store's Buildora email-credit ledger, since
+//          this exercises the merchant's own mail server, unrelated to
+//          Resend/CampaignQuotaService. The merchant must still click Save
+//          on the settings page to keep a working config.
+// @route   POST /api/stores/:id/email-sender/test
+// @access  Private/Merchant
+export const testEmailSender = async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await Store.findOne({ _id: req.params.id, ownerId: req.user._id });
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        const { host, port, secure, username, password, fromEmail, fromName, sendTestEmail } = req.body;
+        if (!host || !port || !username || !password) {
+            return res.status(400).json({ message: 'Host, port, username, and password are all required to test a connection' });
+        }
+
+        const transporter = nodemailer.createTransport({
+            host,
+            port: Number(port),
+            secure: !!secure,
+            auth: { user: username, pass: password },
+            connectionTimeout: 10000,
+            socketTimeout: 10000
+        });
+
+        await transporter.verify();
+
+        if (sendTestEmail) {
+            const toEmail = req.user.email;
+            await transporter.sendMail({
+                from: `"${fromName || store.name}" <${fromEmail || username}>`,
+                to: toEmail,
+                subject: 'Test email from Buildora',
+                html: `<p>This is a test email confirming your SMTP configuration for <strong>${store.name}</strong> is working. Once you save these settings, your store's order emails will be sent from this address.</p>`
+            });
+        }
+
+        res.json({ ok: true });
+    } catch (error: any) {
+        console.error('Test Email Sender Error:', error);
+        res.status(400).json({ ok: false, error: error?.message || 'Connection failed' });
     }
 };
