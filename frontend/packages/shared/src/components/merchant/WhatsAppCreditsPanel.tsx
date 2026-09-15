@@ -6,14 +6,14 @@ import {
     Loader2,
     Ban,
     AlertTriangle,
-    ShoppingBag,
+    Lock,
     TrendingUp,
     Wrench,
     TimerOff,
     History,
-    CalendarClock,
-    Infinity as InfinityIcon,
+    ShieldCheck,
     Archive,
+    ArrowUpRight,
 } from 'lucide-react';
 import { Card, CardContent } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
@@ -26,15 +26,18 @@ import { getWhatsAppAccountBalance, WhatsAppLedgerEntry } from '@shared/services
 
 interface WhatsAppCreditsPanelProps {
     storeId: string;
-    onBuyCredits?: () => void;
+    /** Shown when the plan doesn't include WhatsApp (or has no active plan at all) — wire to your billing/upgrade page. */
+    onUpgradePlan?: () => void;
     refreshToken?: number | string;
     compact?: boolean;
     onBalanceChange?: (balance: number | null) => void;
+    /** Fired whenever the plan's WhatsApp feature-inclusion status loads/changes — lets the host page gate its own connection UI without a second fetch. */
+    onFeatureIncludedChange?: (included: boolean) => void;
 }
 
 const LEDGER_META: Record<WhatsAppLedgerEntry['type'], { icon: any; label: string; tone: 'positive' | 'negative' | 'neutral' }> = {
-    monthly_grant: { icon: TrendingUp, label: 'Plan credit grant', tone: 'positive' },
-    purchase: { icon: ShoppingBag, label: 'Purchased', tone: 'positive' },
+    monthly_grant: { icon: TrendingUp, label: 'Plan grant', tone: 'positive' },
+    purchase: { icon: TrendingUp, label: 'Purchased', tone: 'positive' },
     transactional_debit: { icon: MessageCircle, label: 'Message sent', tone: 'negative' },
     correction: { icon: Wrench, label: 'Correction', tone: 'neutral' },
     expired: { icon: TimerOff, label: 'Expired', tone: 'negative' },
@@ -45,19 +48,23 @@ function daysUntil(iso: string): number {
 }
 
 /**
- * WhatsApp's equivalent of EmailBlockEditor's sibling EmailCreditsPanel —
- * same two-line plan/purchased design and "View full history" dialog,
- * against the WhatsApp-specific balance endpoint and its smaller ledger
- * type set (no campaign_debit/bounce_refund/transfer types yet — Phase 1
- * has no WhatsApp campaigns or cross-store transfers).
+ * WhatsApp's credits widget — deliberately NOT symmetrical with
+ * EmailCreditsPanel's plan+purchased two-line design, because WhatsApp has
+ * no purchasable add-on: on the unofficial (Baileys) connection a message
+ * costs Buildora nothing, so there's no real per-message cost to charge
+ * for, and no "buy more" mechanic exists. Access and volume are entirely
+ * plan-gated instead (SubscriptionPlan.features.allowWhatsApp +
+ * whatsappLimit) — the limit is a genuine SAFETY cap (higher volume on one
+ * unofficial number raises WhatsApp ban risk), not a monetized meter, so
+ * it's always shown, always a finite number, and scales with plan tier.
  */
-export function WhatsAppCreditsPanel({ storeId, onBuyCredits, refreshToken, compact, onBalanceChange }: WhatsAppCreditsPanelProps) {
+export function WhatsAppCreditsPanel({ storeId, onUpgradePlan, refreshToken, compact, onBalanceChange, onFeatureIncludedChange }: WhatsAppCreditsPanelProps) {
     const [loading, setLoading] = useState(true);
     const [balance, setBalance] = useState<number | null>(null);
     const [planBalance, setPlanBalance] = useState(0);
-    const [purchasedBalance, setPurchasedBalance] = useState(0);
     const [reserved, setReserved] = useState(0);
     const [planIsActive, setPlanIsActive] = useState(false);
+    const [featureIncluded, setFeatureIncluded] = useState(false);
     const [planRefreshAt, setPlanRefreshAt] = useState<string | null>(null);
     const [ledger, setLedger] = useState<WhatsAppLedgerEntry[]>([]);
     const [historyOpen, setHistoryOpen] = useState(false);
@@ -70,12 +77,13 @@ export function WhatsAppCreditsPanel({ storeId, onBuyCredits, refreshToken, comp
                 if (cancelled) return;
                 setBalance(res.balance);
                 setPlanBalance(res.planBalance || 0);
-                setPurchasedBalance(res.purchasedBalance || 0);
                 setReserved(res.reserved || 0);
                 setPlanIsActive(!!res.planIsActive);
+                setFeatureIncluded(!!res.featureIncluded);
                 setPlanRefreshAt(res.planRefreshAt || null);
                 setLedger(res.ledgerHistory || []);
                 onBalanceChange?.(res.balance);
+                onFeatureIncludedChange?.(!!res.featureIncluded);
             })
             .catch(() => {
                 if (!cancelled) {
@@ -105,6 +113,37 @@ export function WhatsAppCreditsPanel({ storeId, onBuyCredits, refreshToken, comp
         return null;
     }
 
+    // Not included in the current plan at all — a locked upsell state,
+    // distinct from "included but currently at 0 for this cycle."
+    if (!featureIncluded) {
+        return (
+            <Card className="border-2 border-dashed shadow-sm rounded-2xl overflow-hidden">
+                <CardContent className="p-6 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+                            <Lock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="font-semibold">
+                                {planIsActive ? 'WhatsApp is not included in your current plan' : 'No active subscription'}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-0.5">
+                                {planIsActive
+                                    ? 'Upgrade to a plan with WhatsApp support to connect a number and start sending order updates.'
+                                    : 'Subscribe to a plan that includes WhatsApp to use this feature.'}
+                            </p>
+                        </div>
+                    </div>
+                    {onUpgradePlan && (
+                        <Button type="button" className="rounded-xl gap-2" onClick={onUpgradePlan}>
+                            Upgrade plan <ArrowUpRight className="w-4 h-4" />
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
+        );
+    }
+
     const isZeroBalance = balance <= 0;
     const isLowBalance = balance > 0 && balance < 10;
 
@@ -126,23 +165,21 @@ export function WhatsAppCreditsPanel({ storeId, onBuyCredits, refreshToken, comp
                             <MessageCircle className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-3xl font-black tracking-tight leading-none">{balance}</p>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mt-1">WhatsApp credits available</p>
+                            <p className="text-3xl font-black tracking-tight leading-none">{planBalance}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mt-1">Messages remaining this cycle</p>
                         </div>
                     </div>
-                    {onBuyCredits && (
-                        <Button type="button" variant="outline" className="rounded-xl gap-2" onClick={onBuyCredits}>
-                            <ShoppingBag className="w-4 h-4" /> Buy more credits
-                        </Button>
-                    )}
+                    <Badge variant="outline" className="rounded-full text-[10px] font-semibold gap-1.5 whitespace-nowrap">
+                        <ShieldCheck className="w-3 h-3" /> Safety cap — included with your plan
+                    </Badge>
                 </div>
 
                 {isZeroBalance && (
                     <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-3.5 flex items-start gap-3">
                         <Ban className="w-4.5 h-4.5 text-destructive mt-0.5 shrink-0" />
                         <div>
-                            <p className="text-sm font-semibold text-destructive">No WhatsApp credits remaining</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Customer WhatsApp messages will not send right now — you'll be alerted by email instead. Top up or upgrade your plan to resume.</p>
+                            <p className="text-sm font-semibold text-destructive">Monthly WhatsApp limit reached</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Customer WhatsApp messages will not send until your limit refreshes — you'll be alerted by email instead. {onUpgradePlan ? 'Upgrade for a higher monthly limit.' : ''}</p>
                         </div>
                     </div>
                 )}
@@ -150,8 +187,8 @@ export function WhatsAppCreditsPanel({ storeId, onBuyCredits, refreshToken, comp
                     <div className="rounded-xl border-2 border-amber-400/40 bg-amber-50 dark:bg-amber-950/20 p-3.5 flex items-start gap-3">
                         <AlertTriangle className="w-4.5 h-4.5 text-amber-500 mt-0.5 shrink-0" />
                         <div>
-                            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Only {balance} credit{balance === 1 ? '' : 's'} left</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Top up soon to avoid interruptions.</p>
+                            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Only {balance} message{balance === 1 ? '' : 's'} left this cycle</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Your limit refreshes automatically — no action needed unless you want a higher cap sooner.</p>
                         </div>
                     </div>
                 )}
@@ -159,63 +196,33 @@ export function WhatsAppCreditsPanel({ storeId, onBuyCredits, refreshToken, comp
                     <div className="rounded-xl border bg-muted/30 p-3.5 flex items-start gap-3">
                         <TimerOff className="w-4.5 h-4.5 text-muted-foreground mt-0.5 shrink-0" />
                         <div>
-                            <p className="text-sm font-medium">{Math.abs(latestExpiry.amount)} plan credit{Math.abs(latestExpiry.amount) === 1 ? '' : 's'} expired</p>
+                            <p className="text-sm font-medium">{Math.abs(latestExpiry.amount)} unused message{Math.abs(latestExpiry.amount) === 1 ? '' : 's'} expired</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{latestExpiry.description}</p>
                         </div>
                     </div>
                 )}
 
-                <div className="space-y-3">
-                    <div className="rounded-xl border-2 p-4 space-y-2.5">
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
-                                    <CalendarClock className="w-4.5 h-4.5" />
-                                </div>
-                                <div>
-                                    <p className="text-lg font-black tracking-tight leading-none">{planBalance}</p>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">Plan credits</p>
-                                </div>
-                            </div>
-                            {planIsActive ? (
-                                <Badge variant="outline" className="rounded-full text-[10px] font-semibold whitespace-nowrap">
-                                    {planRefreshAt && daysUntil(planRefreshAt) === 0 ? 'Refreshes today' : `Refreshes in ${planRefreshAt ? daysUntil(planRefreshAt) : 30}d`}
-                                </Badge>
-                            ) : (
-                                <Badge variant="outline" className="rounded-full text-[10px] font-semibold whitespace-nowrap border-destructive/40 text-destructive">
-                                    No active plan
-                                </Badge>
-                            )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Renewed every 30 days from your subscription — used first on every send. Unused credits don't roll over.</p>
-                        {cycleUsedPercent !== null && (
-                            <div className="space-y-1">
-                                <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    <span>This cycle</span>
-                                    <span>{cycleAllowance - planBalance} / {cycleAllowance} used</span>
-                                </div>
-                                <Progress value={cycleUsedPercent} className="h-2" />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="rounded-xl border-2 p-4 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                <ShoppingBag className="w-4.5 h-4.5" />
-                            </div>
-                            <div>
-                                <p className="text-lg font-black tracking-tight leading-none text-emerald-600 dark:text-emerald-400">{purchasedBalance}</p>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">Purchased credits</p>
-                            </div>
-                        </div>
-                        <Badge variant="outline" className="rounded-full text-[10px] font-semibold gap-1 whitespace-nowrap">
-                            <InfinityIcon className="w-3 h-3" /> Never expires
+                <div className="rounded-xl border-2 p-4 space-y-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Monthly limit</span>
+                        <Badge variant="outline" className="rounded-full text-[10px] font-semibold whitespace-nowrap">
+                            {planRefreshAt && daysUntil(planRefreshAt) === 0 ? 'Refreshes today' : `Refreshes in ${planRefreshAt ? daysUntil(planRefreshAt) : 30}d`}
                         </Badge>
                     </div>
-
+                    <p className="text-xs text-muted-foreground">
+                        This cap exists to keep your WhatsApp number safe — sending too many messages too fast is what gets unofficial WhatsApp connections banned. Higher plans get a higher monthly limit. Unused messages don't roll over.
+                    </p>
+                    {cycleUsedPercent !== null && (
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                <span>This cycle</span>
+                                <span>{cycleAllowance - planBalance} / {cycleAllowance} used</span>
+                            </div>
+                            <Progress value={cycleUsedPercent} className="h-2" />
+                        </div>
+                    )}
                     {reserved > 0 && (
-                        <p className="text-xs text-muted-foreground text-center">{reserved} credit{reserved === 1 ? '' : 's'} currently held.</p>
+                        <p className="text-xs text-muted-foreground">{reserved} message{reserved === 1 ? '' : 's'} currently held.</p>
                     )}
                 </div>
 
@@ -249,8 +256,8 @@ export function WhatsAppCreditsPanel({ storeId, onBuyCredits, refreshToken, comp
             <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
                 <DialogContent className="max-w-2xl rounded-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>WhatsApp Credit History</DialogTitle>
-                        <DialogDescription>Every credit grant, purchase, send, and expiry for this store's last {ledger.length} transactions.</DialogDescription>
+                        <DialogTitle>WhatsApp Message History</DialogTitle>
+                        <DialogDescription>Every grant, send, and expiry for this store's last {ledger.length} transactions.</DialogDescription>
                     </DialogHeader>
                     <Table>
                         <TableHeader>

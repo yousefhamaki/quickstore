@@ -24,7 +24,10 @@ export interface WhatsAppAccountBalanceResponse {
     planBalance: number;
     purchasedBalance: number;
     reserved: number;
+    /** Whether the store has an active subscription at all (regardless of whether it includes WhatsApp). */
     planIsActive: boolean;
+    /** Whether that active plan specifically includes the WhatsApp feature — distinct from planIsActive, since a merchant can have a perfectly active subscription that just doesn't include it. */
+    featureIncluded: boolean;
     planRefreshAt: string;
     ledgerHistory: WhatsAppLedgerEntry[];
 }

@@ -54,6 +54,7 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
     const router = useRouter();
 
     const [balance, setBalance] = useState<number | null>(null);
+    const [featureIncluded, setFeatureIncluded] = useState(true); // optimistic default while loading, avoids a locked-state flash
     const [activeTab, setActiveTab] = useState<TemplateKey>('orderConfirmation');
     const [connStatus, setConnStatus] = useState<WhatsAppConnectionStatus>('disconnected');
     const [qrCode, setQrCode] = useState<string | null>(null);
@@ -169,7 +170,8 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
             <WhatsAppCreditsPanel
                 storeId={storeId}
                 onBalanceChange={setBalance}
-                onBuyCredits={() => router.push(`/dashboard/stores/${storeId}/marketing/campaigns`)}
+                onFeatureIncludedChange={setFeatureIncluded}
+                onUpgradePlan={() => router.push('/merchant/billing')}
             />
 
             {/* Connection */}
@@ -182,7 +184,16 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
                     <CardDescription>Link your own WhatsApp number — the same way you'd link WhatsApp Web on a computer.</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6">
-                    {isConnected ? (
+                    {!featureIncluded && !isConnected ? (
+                        <div className="flex flex-col items-center gap-3 py-6 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
+                                <QrCode className="w-7 h-7 text-muted-foreground" />
+                            </div>
+                            <p className="text-sm text-muted-foreground max-w-sm">
+                                WhatsApp is not included in your current plan — upgrade to connect a number.
+                            </p>
+                        </div>
+                    ) : isConnected ? (
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                             <div className="flex items-center gap-3">
                                 <div className="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">

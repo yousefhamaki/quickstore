@@ -31,6 +31,18 @@ export interface ISubscriptionPlan extends Document {
          * from the admin dashboard's Plans page without a code change.
          */
         allowHeroSlider: boolean;
+        /**
+         * Controls whether the store can connect WhatsApp at all (checked
+         * by whatsappController.connectWhatsApp before starting a
+         * connection, and by WhatsAppCreditService.getCreditBalance before
+         * granting any plan allowance — a store without this stays at 0
+         * WhatsApp credits even if `whatsappLimit` is set on the plan).
+         * Deliberately NOT on by default (unlike allowHeroSlider) — this is
+         * a genuine safety-gated feature (unofficial WhatsApp ban risk
+         * scales with volume), not a cosmetic one, so it should only be
+         * enabled per-plan intentionally.
+         */
+        allowWhatsApp: boolean;
     }; // Logic-based features
     emailLimit?: number; // Monthly emails allowance
     whatsappLimit?: number; // Monthly WhatsApp messages allowance
@@ -59,6 +71,7 @@ const SubscriptionPlanSchema: Schema = new Schema({
         customDomain: { type: Boolean, default: false },
         allowUCD: { type: Boolean, default: false },
         allowHeroSlider: { type: Boolean, default: true },
+        allowWhatsApp: { type: Boolean, default: false },
     },
     emailLimit: { type: Number, default: 0 },
     whatsappLimit: { type: Number, default: 0 },

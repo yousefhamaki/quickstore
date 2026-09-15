@@ -9,6 +9,19 @@ import Subscription from '../models/Subscription';
 import '../models/SubscriptionPlan';
 
 /**
+ * A hard ceiling on the monthly WhatsApp plan allowance, enforced here
+ * regardless of what any plan document says. This is a deliberate,
+ * unconditional safety cap — "the user cannot use an open/unlimited
+ * messages" is a system guarantee, not just an admin-configuration
+ * convention that a plan edit could accidentally violate (unlike
+ * `productLimit`, which legitimately uses -1 for "unlimited" elsewhere in
+ * this codebase, WhatsApp volume must NEVER be unbounded, since higher
+ * volume on one unofficial number directly raises the account's WhatsApp
+ * ban risk).
+ */
+const MAX_SAFE_WHATSAPP_MONTHLY_LIMIT = 2000;
+
+/**
  * WhatsApp's own credit ledger — a deliberate near-duplicate of
  * CampaignQuotaService's getCreditBalance/debitTransactional (email),
  * rather than a `channel` discriminator retrofitted onto EmailAccount/
@@ -36,12 +49,19 @@ export class WhatsAppCreditService {
 
         const sub = await Subscription.findOne({ userId: store.ownerId }).populate('planId');
 
+        // WhatsApp is gated behind its own plan feature flag — a store
+        // whose plan doesn't include it stays at 0 allowance even if
+        // `whatsappLimit` happens to be set on the plan document (belt and
+        // suspenders: connectWhatsApp in whatsappController.ts also
+        // refuses to even start a connection for a plan without this flag,
+        // so this is the second, independent enforcement point).
         let allowance = 0;
         let planName = 'Free';
-        if (sub && sub.status === 'active' && sub.planId) {
+        const planHasWhatsApp = !!(sub && sub.status === 'active' && sub.planId && (sub.planId as any).features?.allowWhatsApp);
+        if (planHasWhatsApp) {
             const plan = sub.planId as any;
             planName = plan.name || 'Free';
-            allowance = plan.whatsappLimit || 0;
+            allowance = Math.min(plan.whatsappLimit || 0, MAX_SAFE_WHATSAPP_MONTHLY_LIMIT);
         }
 
         if (!account) {
@@ -72,7 +92,7 @@ export class WhatsAppCreditService {
             }
         } else {
             const now = new Date();
-            const planIsActive = !!(sub && sub.status === 'active' && sub.planId);
+            const planIsActive = planHasWhatsApp;
 
             if (!planIsActive && account.planBalance > 0) {
                 const expiredAmount = account.planBalance;

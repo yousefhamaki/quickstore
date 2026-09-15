@@ -19,6 +19,23 @@ export const connectWhatsApp = async (req: AuthRequest, res: Response) => {
         const store = await ownedStore(req);
         if (!store) return res.status(404).json({ message: 'Store not found' });
 
+        // Plan gating: SubscriptionPlan.features.allowWhatsApp must be true
+        // to even START a connection — checked here (not just hidden in
+        // the dashboard UI) so a direct API call can't bypass it, same
+        // FEATURE_LOCKED pattern already used for heroSlider/customDomain
+        // in storeController.ts. WhatsAppCreditService.getCreditBalance is
+        // the second, independent enforcement point (0 allowance without
+        // this flag), so even a race between a downgrade and a connect
+        // attempt still can't grant messages the plan doesn't include.
+        const subscription = await Subscription.findOne({ userId: req.user._id }).populate('planId');
+        const plan = subscription?.planId as any;
+        if (!subscription || subscription.status !== 'active' || !plan?.features?.allowWhatsApp) {
+            return res.status(403).json({
+                message: 'WhatsApp is not included in your current plan. Upgrade to a plan with WhatsApp support to connect.',
+                code: 'FEATURE_LOCKED'
+            });
+        }
+
         await startConnection(store._id);
         res.json({ message: 'Connecting — scan the QR code shown to link your WhatsApp.' });
     } catch (error) {
@@ -75,8 +92,14 @@ export const getWhatsAppAccountBalance = async (req: AuthRequest, res: Response)
         const balanceInfo = await WhatsAppCreditService.getCreditBalance(store._id);
         const ledgerHistory = await WhatsAppLedgerEntry.find({ storeId: store._id }).sort({ createdAt: -1 }).limit(50);
 
-        const sub = await Subscription.findOne({ userId: store.ownerId });
+        const sub = await Subscription.findOne({ userId: store.ownerId }).populate('planId');
+        const plan = sub?.planId as any;
         const planIsActive = !!(sub && sub.status === 'active');
+        // Distinct from planIsActive — a merchant can have a perfectly
+        // active subscription that simply doesn't include WhatsApp, and
+        // the UI needs to tell those two "why is my limit 0" cases apart
+        // ("no active plan" vs. "upgrade to get WhatsApp").
+        const featureIncluded = planIsActive && !!plan?.features?.allowWhatsApp;
         const planRefreshAt = new Date(balanceInfo.lastRefreshedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
 
         res.json({
@@ -85,6 +108,7 @@ export const getWhatsAppAccountBalance = async (req: AuthRequest, res: Response)
             purchasedBalance: balanceInfo.purchasedBalance,
             reserved: balanceInfo.reserved,
             planIsActive,
+            featureIncluded,
             planRefreshAt,
             ledgerHistory
         });
