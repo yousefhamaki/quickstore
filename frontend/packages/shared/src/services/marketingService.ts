@@ -139,7 +139,7 @@ export interface CampaignRun {
 export interface EmailLedgerEntry {
     _id: string;
     storeId: string;
-    type: 'monthly_grant' | 'purchase' | 'campaign_debit' | 'bounce_refund' | 'correction';
+    type: 'monthly_grant' | 'purchase' | 'campaign_debit' | 'transactional_debit' | 'bounce_refund' | 'correction' | 'transfer_out' | 'transfer_in' | 'expired';
     amount: number;
     referenceId?: string;
     description: string;

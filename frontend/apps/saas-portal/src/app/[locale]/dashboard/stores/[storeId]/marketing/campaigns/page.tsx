@@ -12,9 +12,10 @@ import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
-import { Progress } from "@shared/components/ui/progress";
 import { EmailBlockEditor } from "@shared/components/merchant/EmailBlockEditor";
-import { getCampaignBlocksClient, renderBlocksToHtml, PREVIEW_SAMPLE_VARS } from "@shared/lib/emailBlockRenderer";
+import { EmailCreditsPanel } from "@shared/components/merchant/EmailCreditsPanel";
+import { getCampaignBlocksClient, renderBlocksToHtml, PREVIEW_SAMPLE_VARS, buildDefaultTemplateBlocks, getDefaultTemplateSubject } from "@shared/lib/emailBlockRenderer";
+import { useStore } from "@shared/lib/hooks/useStore";
 import type { EmailBlock } from "@shared/types/store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
@@ -29,7 +30,6 @@ import {
 import {
     Mail,
     Plus,
-    Coins,
     TrendingUp,
     AlertTriangle,
     CheckCircle2,
@@ -40,7 +40,8 @@ import {
     FileText,
     ExternalLink,
     Sparkles,
-    ShoppingBag
+    ShoppingBag,
+    RotateCcw
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -60,16 +61,15 @@ import { toast } from "sonner";
 export default function CampaignsPage({ params }: { params: Promise<{ storeId: string }> }) {
     const { storeId } = use(params);
     const router = useRouter();
+    const { data: store } = useStore(storeId);
 
     const [campaigns, setCampaigns] = useState<CampaignType[]>([]);
-    const [balance, setBalance] = useState<number>(0);
-    const [planBalance, setPlanBalance] = useState<number>(0);
-    const [purchasedBalance, setPurchasedBalance] = useState<number>(0);
-    const [reserved, setReserved] = useState<number>(0);
     const [ledger, setLedger] = useState<EmailLedgerEntryType[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [buying, setBuying] = useState(false);
+    // Bumped whenever credits change (send/buy) to force EmailCreditsPanel to refetch.
+    const [creditsRefreshKey, setCreditsRefreshKey] = useState(0);
 
     // Dialog state controllers
     const [createOpen, setCreateOpen] = useState(false);
@@ -101,10 +101,6 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                 getEmailAccountBalance(storeId)
             ]);
             setCampaigns(campaignsData.campaigns || []);
-            setBalance(balanceData.balance);
-            setPlanBalance((balanceData as any).planBalance || 0);
-            setPurchasedBalance((balanceData as any).purchasedBalance || 0);
-            setReserved(balanceData.reserved);
             setLedger(balanceData.ledgerHistory || []);
         } catch (error) {
             console.error("Failed to load campaigns data:", error);
@@ -112,6 +108,32 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
         } finally {
             setLoading(false);
         }
+    };
+
+    // A fresh campaign should start as a REAL working template (the store's
+    // own logo + real default copy) instead of an empty canvas — same
+    // store-aware defaults used by the Emails settings page, reused here
+    // via the 'marketing' template type since a campaign is a marketing
+    // email. Wired to every place that opens the create dialog.
+    const handleOpenCreateDialog = () => {
+        setCampaignForm({
+            name: "",
+            subject: getDefaultTemplateSubject('marketing'),
+            blocks: store ? buildDefaultTemplateBlocks(store, 'marketing') : [],
+            tags: "",
+        });
+        setCreateOpen(true);
+    };
+
+    const handleResetCampaignTemplate = () => {
+        if (!store) return;
+        if (!confirm('Reset this email back to the original template? Your current design will be discarded.')) return;
+        setCampaignForm((f) => ({
+            ...f,
+            subject: getDefaultTemplateSubject('marketing'),
+            blocks: buildDefaultTemplateBlocks(store, 'marketing'),
+        }));
+        toast.success('Reset to the original template.');
     };
 
     const handleCreateCampaign = async (e: React.FormEvent) => {
@@ -176,6 +198,7 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
             toast.success(`Success! Campaign queued for ${res.totalRecipients} subscribers.`);
             setDetailOpen(false);
             loadData();
+            setCreditsRefreshKey((k) => k + 1);
         } catch (error: any) {
             console.error(error);
             toast.error(error.response?.data?.message || "Send execution failed. Verify your credit limits.");
@@ -210,6 +233,7 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
             toast.success(res.message || `Successfully purchased ${emailCount} emails!`);
             setBuyOpen(false);
             loadData();
+            setCreditsRefreshKey((k) => k + 1);
         } catch (error: any) {
             console.error(error);
             toast.error(error.response?.data?.message || "Insufficient wallet balance. Recharge your wallet first.");
@@ -255,11 +279,6 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
         );
     }
 
-    // Capacity math logic:
-    // Let's assume standard monthly paid plans maximum limit is plan allowance, default gauge max is 1500
-    const maxGaugeVal = Math.max(1500, planBalance);
-    const progressPercent = Math.max(0, Math.min(100, (balance / maxGaugeVal) * 100));
-
     return (
         <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
             {/* Header */}
@@ -270,67 +289,20 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                     </h1>
                     <p className="text-muted-foreground text-sm font-medium">Create targeted campaigns, monitor delivery logs, and audit limits.</p>
                 </div>
-                <Button 
-                    onClick={() => setCreateOpen(true)} 
+                <Button
+                    onClick={handleOpenCreateDialog}
                     className="rounded-2xl font-black uppercase tracking-widest text-xs h-12 shadow-xl shadow-primary/10 gap-2"
                 >
                     <Plus className="w-4 h-4 stroke-[3px]" /> New Campaign
                 </Button>
             </div>
 
-            {/* Quota Indicator Banner Card */}
-            <Card className="border-2 shadow-sm rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-50/50 via-background to-background relative group">
-                <div className="absolute right-0 top-0 h-full w-1/3 bg-indigo-50/20 blur-3xl pointer-events-none rounded-full" />
-                <CardContent className="p-6 md:p-8 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-8">
-                    <div className="space-y-4 flex-1">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                                <Coins className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="font-black uppercase tracking-tight text-sm">Monthly Quota Limits</h3>
-                                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Email credit balances (consumed plan first, purchased second)</p>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-xs font-black uppercase tracking-wider">
-                                <span>{balance} Total Credits Available</span>
-                                <span className="text-indigo-600 font-black">{Math.round(progressPercent)}%</span>
-                            </div>
-                            <Progress value={progressPercent} className="h-3 rounded-full bg-slate-100" />
-                        </div>
-                    </div>
-
-                    {/* Detailed Split Breakdown */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 lg:border-l lg:pl-8 min-w-[300px]">
-                        <div className="bg-white/40 backdrop-blur-sm border rounded-2xl p-3 text-center">
-                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-0.5">Plan Balance</span>
-                            <span className="text-lg font-black tracking-tight text-slate-800">{planBalance}</span>
-                            <span className="text-[8px] text-muted-foreground font-bold tracking-widest block uppercase">Monthly Quota</span>
-                        </div>
-                        <div className="bg-white/40 backdrop-blur-sm border rounded-2xl p-3 text-center">
-                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-0.5">Add-on Balance</span>
-                            <span className="text-lg font-black tracking-tight text-indigo-600">{purchasedBalance}</span>
-                            <span className="text-[8px] text-indigo-500 font-bold tracking-widest block uppercase">1 Year Expiry</span>
-                        </div>
-                        <div className="bg-white/40 backdrop-blur-sm border rounded-2xl p-3 text-center col-span-2 md:col-span-1">
-                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-0.5">Held / Reserved</span>
-                            <span className="text-lg font-black tracking-tight text-amber-600">{reserved}</span>
-                            <span className="text-[8px] text-amber-500 font-bold tracking-widest block uppercase">Active Runs</span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-start lg:justify-end min-w-[120px]">
-                        <Button 
-                            variant="outline" 
-                            className="rounded-2xl h-11 w-full font-black uppercase tracking-widest text-[9px] gap-2 border-indigo-200 text-indigo-700 bg-indigo-50/30 hover:bg-indigo-50"
-                            onClick={() => setBuyOpen(true)}
-                        >
-                            Buy Credits <Plus className="w-3.5 h-3.5" />
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Email credits — full picture: available, plan/purchased/reserved, this cycle's usage, expired credits, and recent activity */}
+            <EmailCreditsPanel
+                storeId={storeId}
+                onBuyCredits={() => setBuyOpen(true)}
+                refreshToken={creditsRefreshKey}
+            />
 
             {/* Main Tabs Workspace */}
             <Tabs defaultValue="campaigns" className="space-y-6">
@@ -352,7 +324,7 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                                 <h3 className="font-black uppercase tracking-tight text-md">No Campaigns Created Yet</h3>
                                 <p className="text-xs text-muted-foreground font-medium">Create your first newsletter or promotional email template to grow your sales.</p>
                             </div>
-                            <Button onClick={() => setCreateOpen(true)} className="rounded-xl font-bold uppercase tracking-wider text-[10px] h-10">
+                            <Button onClick={handleOpenCreateDialog} className="rounded-xl font-bold uppercase tracking-wider text-[10px] h-10">
                                 Create Draft Template
                             </Button>
                         </div>
@@ -491,7 +463,12 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs font-black uppercase tracking-wider">Email Design</Label>
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-black uppercase tracking-wider">Email Design</Label>
+                                    <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 h-8 text-[10px] font-bold uppercase tracking-wider" onClick={handleResetCampaignTemplate}>
+                                        <RotateCcw className="w-3 h-3" /> Reset to original
+                                    </Button>
+                                </div>
                                 <EmailBlockEditor
                                     value={campaignForm.blocks}
                                     onChange={(blocks) => setCampaignForm({ ...campaignForm, blocks })}

@@ -94,11 +94,27 @@ export class CampaignQuotaService {
             if (monthElapsed || planChanged) {
                 console.log(`[CampaignQuotaService] Refreshing monthly allowance for store ${storeId} (monthElapsed=${monthElapsed}, planChanged=${planChanged}).`);
 
-                // Old planBalance expires. Purchased credits are kept intact.
+                // Old planBalance expires — it does NOT roll over into the
+                // new cycle (unlike purchasedBalance, which is kept intact
+                // below). Audited via its own 'expired' ledger entry so the
+                // merchant can see exactly how many unused monthly credits
+                // they lost, rather than the number just silently vanishing
+                // from their balance with no trace in the ledger.
+                const expiredAmount = account.planBalance;
+
                 account.planBalance = allowance;
                 account.lastRefreshedAt = now;
                 account.balance = account.planBalance + account.purchasedBalance;
                 await account.save();
+
+                if (expiredAmount > 0) {
+                    await EmailLedgerEntry.create({
+                        storeId,
+                        type: 'expired',
+                        amount: -expiredAmount,
+                        description: `${expiredAmount} unused monthly email credit${expiredAmount === 1 ? '' : 's'} expired at cycle renewal (did not roll over)`
+                    });
+                }
 
                 await EmailLedgerEntry.create({
                     storeId,

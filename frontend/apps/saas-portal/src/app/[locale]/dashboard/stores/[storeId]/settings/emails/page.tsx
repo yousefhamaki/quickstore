@@ -1,9 +1,9 @@
 'use client';
 
-import { use, useEffect, useState } from "react";
+import { use, useState } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { useStore, useUpdateStore } from "@shared/lib/hooks/useStore";
-import { getEmailAccountBalance } from "@shared/services/marketingService";
 import { testEmailSender } from "@shared/lib/api/stores";
 import { useForm, Controller } from "react-hook-form";
 import {
@@ -20,6 +20,7 @@ import { Label } from "@shared/components/ui/label";
 import { Switch } from "@shared/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
 import { EmailBlockEditor } from "@shared/components/merchant/EmailBlockEditor";
+import { EmailCreditsPanel } from "@shared/components/merchant/EmailCreditsPanel";
 import { normalizeEmailTemplate, buildDefaultTemplateBlocks, getDefaultTemplateSubject } from "@shared/lib/emailBlockRenderer";
 import {
     Mail,
@@ -28,12 +29,9 @@ import {
     PackageCheck,
     Truck,
     Megaphone,
-    AlertTriangle,
-    Ban,
     Send,
     CheckCircle2,
     Cloud,
-    Coins,
     RotateCcw
 } from "lucide-react";
 
@@ -49,25 +47,12 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
     const { storeId } = use(params);
     const { data: store, isLoading } = useStore(storeId);
     const updateMutation = useUpdateStore(storeId);
+    const router = useRouter();
 
     const [balance, setBalance] = useState<number | null>(null);
-    const [planBalance, setPlanBalance] = useState<number>(0);
-    const [purchasedBalance, setPurchasedBalance] = useState<number>(0);
-    const [balanceLoading, setBalanceLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TemplateKey>('orderConfirmation');
     const [testing, setTesting] = useState(false);
     const [testedOk, setTestedOk] = useState(false);
-
-    useEffect(() => {
-        getEmailAccountBalance(storeId)
-            .then((res) => {
-                setBalance(res.balance);
-                setPlanBalance(res.planBalance || 0);
-                setPurchasedBalance(res.purchasedBalance || 0);
-            })
-            .catch(() => setBalance(null))
-            .finally(() => setBalanceLoading(false));
-    }, [storeId]);
 
     // A template a store never customized should still show (and send) a
     // REAL starting template -- the store's own logo plus real heading/body
@@ -127,7 +112,6 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
     const sendStatusUpdates = watch("emailNotifications.sendStatusUpdates");
     const senderMode = watch("emailSender.mode");
     const isZeroBalance = balance !== null && balance <= 0;
-    const isLowBalance = balance !== null && balance > 0 && balance < 10;
     const hasSavedPassword = !!store?.settings?.emailSender?.smtp?.hasPassword;
     const isVerified = !!store?.settings?.emailSender?.verified;
 
@@ -176,56 +160,12 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                 <p className="text-muted-foreground">Design your emails with no code, choose who they're sent from, and control which ones your customers receive.</p>
             </div>
 
-            {/* Email credits — always visible, not just when low/zero */}
-            {!balanceLoading && balance !== null && (
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
-                    <CardContent className="p-5 flex flex-wrap items-center gap-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                <Coins className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold leading-none">{balance}</p>
-                                <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mt-1">Emails remaining</p>
-                            </div>
-                        </div>
-                        <div className="h-8 w-px bg-border hidden sm:block" />
-                        <div className="flex items-center gap-6 text-sm">
-                            <div>
-                                <span className="text-muted-foreground">Plan allowance: </span>
-                                <span className="font-semibold">{planBalance}</span>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Purchased add-ons: </span>
-                                <span className="font-semibold">{purchasedBalance}</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Balance banner */}
-            {!balanceLoading && isZeroBalance && (
-                <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
-                    <Ban className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
-                    <div>
-                        <p className="font-semibold text-destructive">No email credits remaining</p>
-                        <p className="text-sm text-muted-foreground">
-                            Your store has 0 email credits, so order confirmation and status update emails will NOT be sent to customers right now —
-                            we'll email you instead so you know when a customer email is skipped. Top up or upgrade your plan to resume sending.
-                        </p>
-                    </div>
-                </div>
-            )}
-            {!balanceLoading && isLowBalance && (
-                <div className="rounded-2xl border-2 border-amber-400/40 bg-amber-50 dark:bg-amber-950/20 p-4 flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
-                    <div>
-                        <p className="font-semibold text-amber-700 dark:text-amber-400">Only {balance} email credit{balance === 1 ? '' : 's'} left</p>
-                        <p className="text-sm text-muted-foreground">Top up soon so your customers keep getting order emails without interruption.</p>
-                    </div>
-                </div>
-            )}
+            {/* Email credits — full picture: available, plan/purchased/reserved, this cycle's usage, expired credits, and recent activity */}
+            <EmailCreditsPanel
+                storeId={storeId}
+                onBalanceChange={setBalance}
+                onBuyCredits={() => router.push(`/dashboard/stores/${storeId}/marketing/campaigns`)}
+            />
 
             <form onSubmit={onSubmit} className="space-y-8">
                 {/* Sender */}
