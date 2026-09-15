@@ -212,9 +212,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
                                 <span className="text-xs text-gray-400 font-medium">({product.ratingCount} review{product.ratingCount === 1 ? '' : 's'})</span>
                             </div>
                         )}
-                        <p className="text-3xl font-black">
-                            EGP {product.price.toLocaleString()}
-                        </p>
                     </div>
 
                     <div className="h-px bg-gray-100" />
@@ -257,6 +254,23 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </div>
 
             </div>
+
+            {/* Specifications / Features spec table — merchant-defined,
+                free-form label/value pairs (see Product.features). Only
+                rendered when non-empty. */}
+            {Array.isArray(product.features) && product.features.length > 0 && (
+                <div className="pb-20">
+                    <h2 className="text-2xl font-black tracking-tight mb-6">{t('specifications')}</h2>
+                    <div className="rounded-3xl border overflow-hidden divide-y max-w-2xl">
+                        {product.features.map((feature: any, i: number) => (
+                            <div key={i} className="flex items-center justify-between gap-6 px-6 py-4 odd:bg-gray-50/50">
+                                <span className="text-sm font-bold text-gray-500">{feature.label}</span>
+                                <span className="text-sm font-bold text-foreground text-right">{feature.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Reviews Section */}
             <ReviewsSection

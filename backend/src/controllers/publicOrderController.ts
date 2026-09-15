@@ -230,16 +230,20 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 return res.status(400).json({ success: false, message: `Product ${item.name} is no longer available.` });
             }
 
+            let matchedVariant: any = null;
+            if (item.variantId) {
+                matchedVariant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString());
+            }
+
             // Stock check (if tracking enabled)
             if (product.trackInventory) {
                 if (item.variantId) {
-                    const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString());
-                    if (!variant || variant.isDeleted) {
+                    if (!matchedVariant || matchedVariant.isDeleted) {
                         return res.status(400).json({ success: false, message: `Selected variant for ${product.name} no longer exists.` });
                     }
-                    const available = (variant.inventory || 0) - (variant.reserved || 0);
+                    const available = (matchedVariant.inventory || 0) - (matchedVariant.reserved || 0);
                     if (available < item.quantity) {
-                        return res.status(400).json({ success: false, message: `Insufficient stock for ${product.name} (${variant.name}). Only ${available} left.` });
+                        return res.status(400).json({ success: false, message: `Insufficient stock for ${product.name} (${matchedVariant.name}). Only ${available} left.` });
                     }
                 } else {
                     const available = (product.inventory.quantity || 0) - (product.inventory.reserved || 0);
@@ -248,6 +252,29 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                     }
                 }
             }
+
+            // ================================================================
+            // PRICING INTEGRITY FIX: never trust the client-submitted
+            // item.price for the amount actually charged/recorded. Campaign
+            // checkouts (campaignId set) already computed an authoritative
+            // unit price above from the campaign's own pricing tier — that
+            // intentionally-discounted bundle price must NOT be overwritten
+            // here. Standard storefront checkouts previously trusted
+            // req.body's item.price verbatim, so a tampered client request
+            // could charge/record any price it liked; resolve the real price
+            // from the selected variant (if any) or the base product instead.
+            // ================================================================
+            if (!campaignId) {
+                item.price = (matchedVariant && typeof matchedVariant.price === 'number')
+                    ? matchedVariant.price
+                    : product.price;
+            }
+
+            // Snapshot cost-at-purchase for historical profit analytics (see
+            // Order.ts IOrderItem.costAtPurchase and analyticsController.ts).
+            // Only one cost field exists at the product level (no per-variant
+            // cost yet), so it's used regardless of which variant was ordered.
+            item.costAtPurchase = typeof product.costPerItem === 'number' ? product.costPerItem : undefined;
         }
 
         // Generate unique order number
@@ -255,7 +282,13 @@ export const createPublicOrder = async (req: Request, res: Response) => {
         const randomStr = Math.floor(1000 + Math.random() * 9000);
         const orderNumber = `QS-${dateStr}-${randomStr}`;
 
-                const numericTotal = Number(totalAmount);
+                // For campaign checkouts totalAmount was already computed
+        // authoritatively above from the campaign's pricing tier. For
+        // standard checkouts this client-submitted value is only a
+        // placeholder — it gets recomputed from authoritative item prices
+        // once the coupon discount is finalized below (see "PRICING
+        // INTEGRITY FIX (continued)").
+        let numericTotal = Number(totalAmount);
         const resolvedShippingFee = campaignId ? shippingFee : 50;
         let finalDiscount = Number(discountAmount || 0);
 
@@ -311,6 +344,22 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 }
             }
 
+            // ================================================================
+            // PRICING INTEGRITY FIX (continued): for standard checkouts, the
+            // order total must be derived from the authoritative per-item
+            // prices resolved during the pre-check loop above, plus shipping,
+            // minus the now-finalized coupon discount — never from the
+            // client-submitted totalAmount, or a tampered request could set
+            // totalAmount to whatever it wants regardless of what the items
+            // actually cost. Campaign checkouts already computed an
+            // authoritative totalAmount server-side earlier, so they're left
+            // untouched here.
+            // ================================================================
+            if (!campaignId) {
+                const authoritativeSubtotal = items.reduce((sum: number, item: any) => sum + Number(item.price) * Number(item.quantity), 0);
+                numericTotal = Number((authoritativeSubtotal + resolvedShippingFee - finalDiscount).toFixed(2));
+            }
+
             // Calculate transaction fee based on plan
             const plan = (activeStore.subscriptionId as any)?.planId;
             const feePercent = plan?.transactionFeePercent || 0;
@@ -323,9 +372,15 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 orderNumber,
                 items: items.map((item: any) => ({
                     productId: new mongoose.Types.ObjectId(item._id),
+                    // Previously never persisted, even though orderController.ts's
+                    // cancel/fulfillment stock release relies on it to target the
+                    // right variant — without this every variant order silently
+                    // released/decremented base inventory instead.
+                    variantId: item.variantId ? new mongoose.Types.ObjectId(item.variantId) : undefined,
                     name: item.name,
                     quantity: Number(item.quantity),
                     price: Number(item.price),
+                    costAtPurchase: item.costAtPurchase,
                     image: item.image,
                     variant: item.selectedOptions ? Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ') : undefined
                 })),

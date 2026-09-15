@@ -191,7 +191,12 @@
       "visitors": "Visitors",
       "conversion": "Conversion",
       "completed": "Completed",
-      "waiting": "Waiting"
+      "waiting": "Waiting",
+      "grossProfit": "Gross Profit",
+      "margin": "Margin",
+      "topProducts": "Top Products",
+      "unitsSold": "units sold",
+      "profit": "Profit"
     },
     "banner": {
       "unlock": "Unlock Full Potential",
@@ -995,7 +1000,8 @@
       "fastDelivery": "Fast Delivery",
       "easyReturns": "Easy Returns",
       "relatedProducts": "Related Products",
-      "viewDetails": "View Details"
+      "viewDetails": "View Details",
+      "specifications": "Specifications"
     },
     "home": {
       "welcome": "Welcome to",

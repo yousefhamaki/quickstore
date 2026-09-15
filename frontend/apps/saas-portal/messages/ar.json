@@ -191,7 +191,12 @@
       "visitors": "الزوار",
       "conversion": "معدل التحويل",
       "completed": "مكتمل",
-      "waiting": "قيد الانتظار"
+      "waiting": "قيد الانتظار",
+      "grossProfit": "إجمالي الربح",
+      "margin": "هامش الربح",
+      "topProducts": "أفضل المنتجات",
+      "unitsSold": "وحدة مباعة",
+      "profit": "الربح"
     },
     "banner": {
       "unlock": "أطلق العنان لكامل إمكاناتك",
@@ -995,7 +1000,8 @@
       "fastDelivery": "توصيل سريع",
       "easyReturns": "إرجاع سهل",
       "relatedProducts": "منتجات ذات صلة",
-      "viewDetails": "عرض التفاصيل"
+      "viewDetails": "عرض التفاصيل",
+      "specifications": "المواصفات"
     },
     "home": {
       "welcome": "مرحباً بكم في",

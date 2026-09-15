@@ -16,3 +16,11 @@ export const useRecentOrdersAnalytics = (limit = 5) => {
         queryFn: () => analyticsApi.getRecentOrdersAnalytics(limit),
     });
 };
+
+export const useTopProductsAnalytics = (limit = 5) => {
+    return useQuery({
+        queryKey: ['topProductsAnalytics', limit],
+        queryFn: () => analyticsApi.getTopProductsAnalytics(limit),
+        staleTime: 120000,
+    });
+};

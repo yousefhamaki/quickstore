@@ -54,6 +54,50 @@ export const getOverview = async (req: AuthRequest, res: Response) => {
         const completedRevenue = revenueStats.length > 0 ? revenueStats[0].completed : 0;
         const pendingRevenue = revenueStats.length > 0 ? revenueStats[0].pending : 0;
 
+        // Gross Profit / Margin — derived from each order item's
+        // costAtPurchase snapshot (see Order.ts IOrderItem.costAtPurchase),
+        // NOT from the product's current costPerItem, so editing a
+        // product's cost later never rewrites past profit history.
+        //
+        // Orders placed before this field existed (or line items on a
+        // product that had no costPerItem set) have costAtPurchase ===
+        // null/undefined. We treat that as "no known cost" and contribute
+        // $0 to the cost side of the sum via $ifNull, rather than either
+        // (a) crashing, or (b) assuming a cost equal to the sale price
+        // (which would silently zero out profit for perfectly normal
+        // orders). We chose this over excluding such orders' revenue
+        // entirely because revenue is still real and known — only the cost
+        // is unknown. The tradeoff: Gross Profit/Margin will read as
+        // OVERSTATED for any store with pre-migration orders or products
+        // that never had a cost price entered, since those items' real
+        // (unknown) cost is treated as zero rather than average/estimated.
+        const profitStats = await Order.aggregate([
+            {
+                $match: {
+                    storeId: store._id,
+                    status: { $nin: ['cancelled', 'refunded'] },
+                    paymentStatus: { $ne: 'failed' }
+                }
+            },
+            { $unwind: '$items' },
+            {
+                $group: {
+                    _id: null,
+                    totalCost: {
+                        $sum: {
+                            $multiply: [
+                                { $ifNull: ['$items.costAtPurchase', 0] },
+                                '$items.quantity'
+                            ]
+                        }
+                    }
+                }
+            }
+        ]);
+        const totalCost = profitStats.length > 0 ? profitStats[0].totalCost : 0;
+        const grossProfit = Number((totalRevenue - totalCost).toFixed(2));
+        const marginPercent = totalRevenue > 0 ? Number(((grossProfit / totalRevenue) * 100).toFixed(2)) : 0;
+
         // Recent revenue
         const recentRevenueResult = await Order.aggregate([
             {
@@ -96,6 +140,8 @@ export const getOverview = async (req: AuthRequest, res: Response) => {
             completedRevenue,
             pendingRevenue,
             recentRevenue,
+            grossProfit,
+            marginPercent,
             totalCustomers,
             recentCustomers,
             totalProducts,
@@ -191,8 +237,25 @@ export const getTopProducts = async (req: AuthRequest, res: Response) => {
                     _id: '$items.productId',
                     totalSold: { $sum: '$items.quantity' },
                     revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+                    // See getOverview's grossProfit comment: missing/null
+                    // costAtPurchase (pre-migration orders, or a product with
+                    // no cost price set) contributes $0 cost via $ifNull, so
+                    // profit here is a floor, not an exact historical figure.
+                    cost: {
+                        $sum: {
+                            $multiply: [
+                                { $ifNull: ['$items.costAtPurchase', 0] },
+                                '$items.quantity'
+                            ]
+                        }
+                    },
                     productName: { $first: '$items.name' },
                     productImage: { $first: '$items.image' }
+                }
+            },
+            {
+                $addFields: {
+                    profit: { $subtract: ['$revenue', '$cost'] }
                 }
             },
             { $sort: { totalSold: -1 } },

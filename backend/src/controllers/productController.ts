@@ -7,6 +7,44 @@ import { AuthRequest, resolveStore } from '../middleware/authMiddleware';
 import { redisClient } from '../config/redis';
 import { withStockVirtuals, withStockVirtualsMany } from '../utils/productStock';
 
+// Merchant-defined spec table (Product.features) — light abuse-prevention
+// limits only, not a hard product requirement: a reasonable cap on how many
+// rows and how long each label/value can be.
+const MAX_FEATURES = 30;
+const MAX_FEATURE_LABEL_LENGTH = 100;
+const MAX_FEATURE_VALUE_LENGTH = 300;
+
+/**
+ * Validates/sanitizes the `features` spec-table array from a create/update
+ * request body. Returns `undefined` when the input isn't an array (so
+ * callers can distinguish "not provided" from "explicitly empty"), or throws
+ * a plain Error with a user-facing message when it fails validation.
+ */
+function sanitizeFeatures(features: unknown): { label: string; value: string }[] | undefined {
+    if (features === undefined) return undefined;
+    if (!Array.isArray(features)) {
+        throw new Error('features must be an array of { label, value } pairs');
+    }
+    if (features.length > MAX_FEATURES) {
+        throw new Error(`features cannot have more than ${MAX_FEATURES} entries`);
+    }
+    return features
+        .map((f: any) => ({
+            label: typeof f?.label === 'string' ? f.label.trim() : '',
+            value: typeof f?.value === 'string' ? f.value.trim() : ''
+        }))
+        .filter(f => f.label !== '' || f.value !== '')
+        .map(f => {
+            if (f.label.length > MAX_FEATURE_LABEL_LENGTH) {
+                throw new Error(`feature label cannot exceed ${MAX_FEATURE_LABEL_LENGTH} characters`);
+            }
+            if (f.value.length > MAX_FEATURE_VALUE_LENGTH) {
+                throw new Error(`feature value cannot exceed ${MAX_FEATURE_VALUE_LENGTH} characters`);
+            }
+            return f;
+        });
+}
+
 // @desc    Get all products for a store with pagination and filters
 // @route   GET /api/products?page=1&limit=20&status=active&category=Clothing&search=shirt&stockLevel=low
 // @access  Private/Merchant
@@ -126,6 +164,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
             images,
             options,
             variants,
+            features,
             category,
             categoryId,
             tags,
@@ -133,6 +172,13 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
             seo,
             isActive
         } = req.body;
+
+        let sanitizedFeatures;
+        try {
+            sanitizedFeatures = sanitizeFeatures(features);
+        } catch (validationError: any) {
+            return res.status(400).json({ message: validationError.message });
+        }
 
         // Generate slug from name
         let slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -174,6 +220,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
             images,
             options,
             variants,
+            features: sanitizedFeatures,
             category: resolvedCategoryName,
             categoryId: categoryId || undefined,
             tags,
@@ -209,6 +256,14 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 
         // Prevent mass assignment of storeId, slug, and id
         const { storeId, slug, _id, ...allowedBody } = req.body;
+
+        if (allowedBody.features !== undefined) {
+            try {
+                allowedBody.features = sanitizeFeatures(allowedBody.features);
+            } catch (validationError: any) {
+                return res.status(400).json({ message: validationError.message });
+            }
+        }
 
         // Same categoryId -> denormalized category-name sync as createProduct.
         if (allowedBody.categoryId !== undefined) {

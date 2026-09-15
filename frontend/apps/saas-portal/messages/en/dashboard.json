@@ -32,7 +32,12 @@
         "visitors": "Visitors",
         "conversion": "Conversion",
         "completed": "Completed",
-        "waiting": "Waiting"
+        "waiting": "Waiting",
+        "grossProfit": "Gross Profit",
+        "margin": "Margin",
+        "topProducts": "Top Products",
+        "unitsSold": "units sold",
+        "profit": "Profit"
     },
     "quickActions": {
         "title": "Quick Actions",

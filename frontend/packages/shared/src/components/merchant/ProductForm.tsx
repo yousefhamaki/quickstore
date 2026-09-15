@@ -53,6 +53,7 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
         costPerItem: '',
         trackInventory: true,
         variants: [] as any[],
+        features: [] as { label: string; value: string }[],
         storeId
     });
 
@@ -76,6 +77,7 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
                 inventory: initialData.inventory?.quantity?.toString() || (initialData.inventory?.quantity?.toString() || '0'),
                 images: initialData.images || [],
                 options: initialData.options || [],
+                features: initialData.features || [],
                 status: initialData.status || 'active'
             });
         }
@@ -183,6 +185,28 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
         setForm(prev => ({ ...prev, variants: newVariants }));
     };
 
+    // Features / spec table — free-form merchant-defined label/value rows
+    // (e.g. "Material" / "Cotton"), rendered as a spec table on the PDP.
+    const addFeature = () => {
+        setForm(prev => ({
+            ...prev,
+            features: [...prev.features, { label: '', value: '' }]
+        }));
+    };
+
+    const updateFeature = (index: number, field: 'label' | 'value', value: string) => {
+        const newFeatures = [...form.features];
+        newFeatures[index] = { ...newFeatures[index], [field]: value };
+        setForm(prev => ({ ...prev, features: newFeatures }));
+    };
+
+    const removeFeature = (index: number) => {
+        setForm(prev => ({
+            ...prev,
+            features: prev.features.filter((_, i) => i !== index)
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -201,6 +225,13 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
                 }))
                 .filter(opt => opt.values.length > 0);
 
+            // Drop blank rows (both label and value empty) — a merchant who
+            // clicked "Add Feature" then changed their mind shouldn't submit
+            // an empty spec row.
+            const cleanFeatures = form.features
+                .map(f => ({ label: (f.label || '').trim(), value: (f.value || '').trim() }))
+                .filter(f => f.label !== '' || f.value !== '');
+
             const data = {
                 ...form,
                 price: parseFloat(form.price),
@@ -208,6 +239,7 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
                 costPerItem: form.costPerItem ? parseFloat(form.costPerItem) : undefined,
                 inventory: form.trackInventory ? { quantity: parseInt(form.inventory), lowStockThreshold: 5 } : undefined,
                 options: cleanOptions,
+                features: cleanFeatures,
                 variants: form.variants.map(v => ({
                     ...v,
                     price: parseFloat(v.price),
@@ -401,6 +433,55 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
                                     <p className="text-xs text-muted-foreground italic">
                                         Total stock will be automatically calculated from individual variants.
                                     </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-xl border-0 overflow-hidden glass">
+                        <CardContent className="p-8 space-y-6 pt-8">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-xl font-bold">Features</h2>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Add spec-table rows shoppers see on the product page (e.g. Material / Cotton, Battery life / 10 hours).
+                                    </p>
+                                </div>
+                                <Button type="button" variant="outline" size="sm" onClick={addFeature} className="rounded-full">
+                                    <Plus className="w-4 h-4 mr-2" /> Add Feature
+                                </Button>
+                            </div>
+
+                            {form.features.length === 0 ? (
+                                <p className="text-gray-500 text-center py-8">No features added yet.</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {form.features.map((feature, i) => (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <Input
+                                                value={feature.label}
+                                                onChange={e => updateFeature(i, 'label', e.target.value)}
+                                                placeholder="Label (e.g. Material)"
+                                                maxLength={100}
+                                                className="rounded-xl flex-1"
+                                            />
+                                            <Input
+                                                value={feature.value}
+                                                onChange={e => updateFeature(i, 'value', e.target.value)}
+                                                placeholder="Value (e.g. Cotton)"
+                                                maxLength={300}
+                                                className="rounded-xl flex-1"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeFeature(i)}
+                                                className="text-gray-400 hover:text-red-600 shrink-0"
+                                                aria-label="Remove feature"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </CardContent>

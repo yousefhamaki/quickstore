@@ -80,6 +80,18 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
         placement?: 'product_page' | 'cart' | 'checkout' | 'post_purchase' | 'standalone',
         parentCartItemId?: string
     ) => {
+        // Resolve the actual charged price from the matched variant's own
+        // price (when one exists) rather than always the base product
+        // price — mirrors the server-side pricing-integrity fix in
+        // publicOrderController.createPublicOrder, which independently
+        // re-derives the same authoritative price at order-creation time.
+        const matchedVariant = variantId
+            ? product.variants?.find((v: any) => String(v._id) === String(variantId))
+            : undefined;
+        const unitPrice = (matchedVariant && typeof matchedVariant.price === 'number')
+            ? matchedVariant.price
+            : product.price;
+
         setCart(prevCart => {
             const optionsString = selectedOptions ? JSON.stringify(selectedOptions) : '';
             let cartItemId = variantId ? `${product._id}_${variantId}` : `${product._id}_${optionsString}`;
@@ -106,7 +118,7 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
                 _id: product._id,
                 variantId: variantId,
                 name: product.name,
-                price: product.price,
+                price: unitPrice,
                 originalPrice: product.originalPrice,
                 quantity: quantity,
                 image: product.images?.[0]?.url,
@@ -123,7 +135,7 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
         trackAddToCart({
             id: product._id,
             name: product.name,
-            price: product.price,
+            price: unitPrice,
             quantity,
             currency: 'EGP',
         });

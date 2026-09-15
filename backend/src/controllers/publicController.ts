@@ -136,7 +136,11 @@ export const getStoreProducts = async (req: Request, res: Response) => {
         // the virtual system entirely; `{virtuals:true}` here is a no-op
         // without the mongoose-lean-virtuals plugin), so those are
         // recomputed manually via withStockVirtualsMany instead.
-        const rawProducts = await Product.find(filter).sort({ createdAt: -1 }).lean();
+        // .select('-costPerItem') keeps the merchant's cost price out of the
+        // anonymous storefront API response — same pattern as the SMTP
+        // password exclusion above; `features` is intentionally NOT excluded
+        // since the spec table is meant to be public.
+        const rawProducts = await Product.find(filter).sort({ createdAt: -1 }).select('-costPerItem').lean();
         const products = withStockVirtualsMany(rawProducts);
 
         try {
@@ -186,7 +190,8 @@ export const getProductDetails = async (req: Request, res: Response) => {
             return res.json(JSON.parse(cachedProduct));
         }
 
-        const rawProduct = await Product.findOne({ _id: productId, status: 'active' }).lean();
+        // .select('-costPerItem') — see getStoreProducts above.
+        const rawProduct = await Product.findOne({ _id: productId, status: 'active' }).select('-costPerItem').lean();
 
         if (!rawProduct) {
             return res.status(404).json({ message: 'Product not found' });

@@ -12,6 +12,16 @@ export interface IInventory {
     lowStockThreshold: number;
 }
 
+/**
+ * A merchant-defined spec-table row (e.g. "Material" / "Cotton",
+ * "Battery life" / "10 hours"). Free-form — not a fixed schema of known
+ * attributes — rendered as-is on the storefront PDP when non-empty.
+ */
+export interface IProductFeature {
+    label: string;
+    value: string;
+}
+
 export interface ISEO {
     title?: string;
     description?: string;
@@ -52,6 +62,8 @@ export interface IProduct extends Document {
     inventory: IInventory;
     variants: IProductVariant[];
     options: { name: string; values: string[] }[]; // Keep option definitions
+    /** Merchant-defined spec table — see IProductFeature. Public (rendered on the PDP). */
+    features: IProductFeature[];
     /**
      * @deprecated Legacy freeform category name — kept only as a
      * denormalized display string, auto-synced from `categoryId`'s name
@@ -118,6 +130,13 @@ const ProductSchema: Schema = new Schema(
             {
                 name: { type: String },
                 values: [{ type: String }],
+            },
+        ],
+        features: [
+            {
+                _id: false,
+                label: { type: String, maxlength: 100 },
+                value: { type: String, maxlength: 300 },
             },
         ],
         category: { type: String },

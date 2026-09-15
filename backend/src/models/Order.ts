@@ -8,6 +8,17 @@ export interface IOrderItem {
     variant?: string;
     quantity: number;
     price: number;
+    /**
+     * Snapshot of the product's costPerItem at the moment this order was
+     * placed (see publicOrderController.createPublicOrder) — mirrors how
+     * `price` is already snapshotted, so a merchant editing costPerItem
+     * later can't silently rewrite historical profit numbers. Only one cost
+     * field exists at the product level (not per-variant), so this applies
+     * regardless of which variant was ordered. Undefined/null on orders
+     * placed before this field existed, or when the product had no
+     * costPerItem set — see analyticsController.ts for how that's handled.
+     */
+    costAtPurchase?: number;
     image?: string;
 }
 
@@ -145,6 +156,7 @@ const OrderSchema: Schema = new Schema(
                 variant: { type: String },
                 quantity: { type: Number, required: true },
                 price: { type: Number, required: true },
+                costAtPurchase: { type: Number },
                 image: { type: String },
             },
         ],

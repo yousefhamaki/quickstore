@@ -3,7 +3,7 @@
 import React, { Suspense, memo } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { useAnalyticsOverview } from '@shared/lib/hooks/useAnalytics';
+import { useAnalyticsOverview, useTopProductsAnalytics } from '@shared/lib/hooks/useAnalytics';
 import { useStores } from '@shared/lib/hooks/useStores';
 import { Card, CardContent } from '@shared/components/ui/card';
 
@@ -76,6 +76,7 @@ export default function MerchantDashboard() {
 
     const { data: analytics } = useAnalyticsOverview();
     const { data: allStores } = useStores();
+    const { data: topProducts } = useTopProductsAnalytics(5);
 
     return (
         <div className="p-8">
@@ -114,6 +115,8 @@ export default function MerchantDashboard() {
                         <StatCard title={tStats('totalOrders')} value={analytics.totalOrders?.toString() || '0'} trend="+0%" />
                         <StatCard title={tStats('visitors')} value={analytics.totalVisitors?.toString() || '0'} trend="+0%" />
                         <StatCard title={tStats('conversion')} value={`${analytics.conversion?.toFixed(2) || '0.00'}%`} trend="0%" />
+                        <StatCard title={tStats('grossProfit')} value={`${analytics.grossProfit?.toFixed(2) ?? '0.00'} EGP`} trend="+0%" />
+                        <StatCard title={tStats('margin')} value={`${analytics.marginPercent?.toFixed(2) ?? '0.00'}%`} trend="+0%" />
                     </>
                 ) : (
                     <>
@@ -134,6 +137,37 @@ export default function MerchantDashboard() {
                     <SubscriptionCard />
                 </Suspense>
             </div>
+
+            {/* Top Products — revenue + per-product profit, from costAtPurchase snapshots */}
+            {topProducts && topProducts.length > 0 && (
+                <Card className="shadow-xl border-0 overflow-hidden glass mt-8">
+                    <CardContent className="p-8">
+                        <h2 className="text-xl font-bold mb-6">{tStats('topProducts')}</h2>
+                        <div className="space-y-3">
+                            {topProducts.map((p) => (
+                                <div key={p._id} className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-gray-50/50">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        {p.productImage ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={p.productImage} alt={p.productName} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-xl bg-gray-200 shrink-0" />
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="font-bold truncate">{p.productName}</p>
+                                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wide">{p.totalSold} {tStats('unitsSold')}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="font-black">{p.revenue?.toFixed(2)} EGP</p>
+                                        <p className="text-xs font-bold text-green-600">{tStats('profit')}: {p.profit?.toFixed(2)} EGP</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }

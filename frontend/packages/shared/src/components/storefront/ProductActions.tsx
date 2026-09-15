@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCart } from "@shared/context/CartContext";
 import { Plus, Minus, ShoppingCart, Heart, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -47,6 +47,24 @@ export function ProductActions({ product }: { product: any }) {
 
     const { currentOffer, isProcessing, triggerEvaluation, handleAccept, handleDecline } = useOfferEngine(handleOfferAccept);
 
+    // Resolve the variant matching the currently-selected options (if any),
+    // so the displayed price and add-to-cart charge reflect ITS price
+    // rather than always the base product price — a variant with its own
+    // price previously never showed up anywhere on the storefront.
+    const selectedVariant = useMemo(() => {
+        const hasOptions = product.options && product.options.length > 0;
+        if (!hasOptions || !product.variants?.length) return null;
+        const allOptionsSelected = product.options.every((opt: any) => selectedOptions[opt.name]);
+        if (!allOptionsSelected) return null;
+        return product.variants.find((v: any) =>
+            Object.entries(selectedOptions).every(([key, value]) => v.options?.[key] === value)
+        ) || null;
+    }, [product, selectedOptions]);
+
+    const displayPrice = (selectedVariant && typeof selectedVariant.price === 'number')
+        ? selectedVariant.price
+        : product.price;
+
     useEffect(() => {
         if (!product || !product.storeId) return;
         
@@ -77,7 +95,6 @@ export function ProductActions({ product }: { product: any }) {
     const handleAddToCart = () => {
         // Validation: Ensure all options are selected
         const hasOptions = product.options && product.options.length > 0;
-        let variantId = undefined;
         if (hasOptions) {
             const missingOptions = product.options.filter((opt: any) => !selectedOptions[opt.name]);
             if (missingOptions.length > 0) {
@@ -86,17 +103,12 @@ export function ProductActions({ product }: { product: any }) {
                 });
                 return;
             }
-
-            // Find matching variant
-            const matchingVariant = product.variants?.find((v: any) => {
-                return Object.entries(selectedOptions).every(([key, value]) => {
-                    return v.options[key] === value;
-                });
-            });
-            variantId = matchingVariant?._id;
         }
 
-        addToCart(product, quantity, selectedOptions, variantId);
+        // CartContext resolves the actual charged price itself from
+        // product.variants + variantId, so it stays correct even if this
+        // component's own displayPrice logic ever drifts from it.
+        addToCart(product, quantity, selectedOptions, selectedVariant?._id);
         toast.success(t('addedToCart', { quantity, name: product.name }));
     };
 
@@ -106,6 +118,19 @@ export function ProductActions({ product }: { product: any }) {
 
     return (
         <div className="space-y-8 pt-4">
+            {/* Price — reflects the selected variant's own price when one is
+                resolved, falling back to the base product price otherwise. */}
+            <div className="flex items-baseline gap-3">
+                <p className="text-3xl font-black">
+                    EGP {displayPrice.toLocaleString()}
+                </p>
+                {typeof product.compareAtPrice === 'number' && product.compareAtPrice > displayPrice && (
+                    <p className="text-lg font-bold text-gray-400 line-through">
+                        EGP {product.compareAtPrice.toLocaleString()}
+                    </p>
+                )}
+            </div>
+
             {/* Options Selection */}
             {product.options && product.options.length > 0 && (
                 <div className="space-y-6">
