@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type LedgerEntryType = 'monthly_grant' | 'purchase' | 'campaign_debit' | 'bounce_refund' | 'correction' | 'transfer_out' | 'transfer_in';
+export type LedgerEntryType = 'monthly_grant' | 'purchase' | 'campaign_debit' | 'transactional_debit' | 'bounce_refund' | 'correction' | 'transfer_out' | 'transfer_in';
 
 export interface IEmailLedgerEntry extends Document {
     storeId: mongoose.Types.ObjectId;
@@ -17,7 +17,7 @@ const EmailLedgerEntrySchema: Schema = new Schema(
         storeId: { type: Schema.Types.ObjectId, ref: 'Store', required: true },
         type: { 
             type: String, 
-            enum: ['monthly_grant', 'purchase', 'campaign_debit', 'bounce_refund', 'correction', 'transfer_out', 'transfer_in'],
+            enum: ['monthly_grant', 'purchase', 'campaign_debit', 'transactional_debit', 'bounce_refund', 'correction', 'transfer_out', 'transfer_in'],
             required: true 
         },
         amount: { type: Number, required: true },

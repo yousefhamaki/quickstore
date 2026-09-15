@@ -134,6 +134,15 @@ export interface Store {
             termsOfService?: string;
             shippingPolicy?: string;
         };
+        emailNotifications?: {
+            sendOrderConfirmation: boolean;
+            sendStatusUpdates: boolean;
+            templates: {
+                orderConfirmation?: { subject: string; heading: string; body: string };
+                orderStatusChanged?: { subject: string; heading: string; body: string };
+                marketing?: { subject: string; heading: string; body: string };
+            };
+        };
         marketing?: MarketingSettings;
     };
     stats: StoreStats;

@@ -207,7 +207,8 @@
                 "payments": "Payments",
                 "shipping": "Shipping",
                 "domain": "Domain",
-                "policies": "Policies"
+                "policies": "Policies",
+                "emails": "Emails"
             }
         },
         "checklist": {

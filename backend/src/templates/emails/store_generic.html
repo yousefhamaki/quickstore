@@ -1,0 +1,12 @@
+{{#> layout
+    title=heading
+    accentColor="#2d3748"
+    logoUrl="https://www.quickstore.live/logo.png"
+    logoFallbackUrl=(concat "https://placehold.co/180x48/2d3748/ffffff?text=" storeName)
+    brandingName=storeName
+    showFooterPoweredBy=true
+    footerText=(concat "You received this email because you have an order or account at " storeName ".")
+}}
+    <h1 class="title">{{heading}}</h1>
+    <p class="description" style="white-space: pre-line;">{{bodyText}}</p>
+{{/layout}}

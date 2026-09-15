@@ -13,6 +13,7 @@ import { PaymentFactory } from '../services/payment/PaymentFactory';
 import { clearStoreProductCaches } from './productController';
 import { redisClient } from '../config/redis';
 import { createNotification } from '../services/notificationService';
+import { sendGatedCustomerEmail } from '../services/orderEmailService';
 
 // @desc    Create new order from storefront
 // @route   POST /api/public/orders
@@ -680,6 +681,22 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 message: `Order #${createdOrder.orderNumber} for ${numericTotal.toLocaleString()} EGP was just placed.`,
                 link: `/dashboard/stores/${oidStoreId}/orders/${createdOrder._id}`,
             }).catch(() => {});
+
+            if (activeStore.settings?.emailNotifications?.sendOrderConfirmation !== false && customerData.email) {
+                sendGatedCustomerEmail({
+                    store: activeStore,
+                    type: 'orderConfirmation',
+                    customerEmail: customerData.email,
+                    vars: {
+                        customerName: `${customerData.firstName} ${customerData.lastName}`.trim(),
+                        orderNumber: createdOrder.orderNumber,
+                        total: numericTotal.toLocaleString(),
+                    },
+                    context: `Order confirmation for order #${createdOrder.orderNumber} to ${customerData.email}`,
+                    ledgerDescription: `Order confirmation email for order #${createdOrder.orderNumber}`,
+                    referenceId: createdOrder._id.toString(),
+                }).catch(() => {});
+            }
 
             res.status(201).json({
                 success: true,

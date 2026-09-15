@@ -207,7 +207,8 @@
                 "payments": "المدفوعات",
                 "shipping": "الشحن",
                 "domain": "نطاق",
-                "policies": "السياسات"
+                "policies": "السياسات",
+                "emails": "البريد الإلكتروني"
             }
         },
         "checklist": {

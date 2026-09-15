@@ -26,7 +26,8 @@ import {
     Zap,
     Tags,
     Star,
-    HandCoins
+    HandCoins,
+    Mail
 } from "lucide-react";
 import { NavLink, useSafeNavigation } from "@shared/components/NavLink";
 import { SetupProgressBanner } from "@shared/components/dashboard/SetupProgressBanner";
@@ -86,6 +87,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
         { name: t('items.shipping'), href: `/dashboard/stores/${storeId}/settings/shipping`, icon: Truck },
         { name: t('items.domain'), href: `/dashboard/stores/${storeId}/settings/domain`, icon: Globe },
         { name: t('items.policies'), href: `/dashboard/stores/${storeId}/settings/policies`, icon: ShieldCheck },
+        { name: t('items.emails'), href: `/dashboard/stores/${storeId}/settings/emails`, icon: Mail },
     ];
 
     const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');

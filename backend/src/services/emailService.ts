@@ -341,6 +341,151 @@ export const sendPasswordChangedEmail = async (email: string) => {
     }
 };
 
+// ============================================================================
+// Store-customizable transactional emails (order confirmation / status
+// changed / a reusable marketing template) — see models/Store.ts's
+// IEmailNotificationSettings. Every store gets a sensible default; a
+// merchant only needs to touch the Emails settings section to override
+// pieces of it. Credit-gating (checking/debiting the store's email
+// balance) lives in services/orderEmailService.ts, which calls
+// sendStoreTemplatedEmail below only once it's confirmed there's balance.
+// ============================================================================
+
+export type StoreEmailTemplateType = 'orderConfirmation' | 'orderStatusChanged' | 'marketing';
+
+interface StoreEmailTemplate {
+    subject: string;
+    heading: string;
+    body: string;
+}
+
+const DEFAULT_STORE_EMAIL_TEMPLATES: Record<StoreEmailTemplateType, StoreEmailTemplate> = {
+    orderConfirmation: {
+        subject: 'Your order #{{orderNumber}} has been received',
+        heading: 'Thank you for your order!',
+        body: "Hi {{customerName}},\n\nWe've received your order #{{orderNumber}} for {{total}} EGP. We'll email you again as soon as its status changes.\n\nThanks for shopping with {{storeName}}!",
+    },
+    orderStatusChanged: {
+        subject: 'Your order #{{orderNumber}} is now {{status}}',
+        heading: 'Order Update',
+        body: 'Hi {{customerName}},\n\nYour order #{{orderNumber}} from {{storeName}} has been updated to: {{status}}.\n\nYou can check the latest details any time on our track-order page.',
+    },
+    marketing: {
+        subject: 'News from {{storeName}}',
+        heading: '{{storeName}} Update',
+        body: 'Hi {{customerName}},\n\nWe have something new to share with you!',
+    },
+};
+
+/**
+ * Merges a store's saved template override (if any) over the built-in
+ * default — a field left blank on the store falls back to the default
+ * individually, so a store that only customized the subject still gets a
+ * real heading/body instead of an empty one.
+ */
+function resolveStoreEmailTemplate(
+    store: { settings?: { emailNotifications?: { templates?: Partial<Record<StoreEmailTemplateType, Partial<StoreEmailTemplate>>> } } },
+    type: StoreEmailTemplateType
+): StoreEmailTemplate {
+    const custom = store.settings?.emailNotifications?.templates?.[type];
+    const fallback = DEFAULT_STORE_EMAIL_TEMPLATES[type];
+    return {
+        subject: custom?.subject?.trim() || fallback.subject,
+        heading: custom?.heading?.trim() || fallback.heading,
+        body: custom?.body?.trim() || fallback.body,
+    };
+}
+
+/** Replaces {{token}} placeholders with plain string substitution — deliberately NOT full Handlebars, since this text is merchant-authored and shouldn't be able to execute template logic/partials. */
+function interpolateTokens(text: string, vars: Record<string, string>): string {
+    return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key) => (key in vars ? vars[key] : ''));
+}
+
+/**
+ * Sends one of a store's (possibly merchant-customized) transactional
+ * templates to a customer. Callers are responsible for credit-gating
+ * BEFORE calling this — see services/orderEmailService.ts.
+ */
+export const sendStoreTemplatedEmail = async (
+    email: string,
+    store: { name: string; settings?: { emailNotifications?: { templates?: Partial<Record<StoreEmailTemplateType, Partial<StoreEmailTemplate>>> } } },
+    type: StoreEmailTemplateType,
+    vars: Record<string, string>
+) => {
+    const template = resolveStoreEmailTemplate(store, type);
+    const allVars = { storeName: store.name, ...vars };
+
+    const subject = interpolateTokens(template.subject, allVars);
+    const heading = interpolateTokens(template.heading, allVars);
+    const bodyText = interpolateTokens(template.body, allVars);
+
+    try {
+        const html = renderTemplate('store_generic.html', { storeName: store.name, heading, bodyText });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: email,
+            subject,
+            html,
+        });
+    } catch (error) {
+        console.error(`[EmailService] Error sending store templated email (${type}):`, error);
+        throw error;
+    }
+};
+
+/**
+ * Alerts the merchant that their store's email credit balance is running
+ * low (crossed below 10) — sent once per crossing, not on every send while
+ * still under the threshold. See CampaignQuotaService.debitTransactional.
+ */
+export const sendLowEmailBalanceAlert = async (merchantEmail: string, storeName: string, remaining: number) => {
+    try {
+        const html = renderTemplate('store_generic.html', {
+            storeName: 'Buildora',
+            heading: 'Your email credits are running low',
+            bodyText: `Your store "${storeName}" has ${remaining} email credit${remaining === 1 ? '' : 's'} left. Once it reaches 0, order confirmation and status update emails will stop going out to your customers automatically — top up or upgrade your plan to keep them running.`,
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `Low email credits on ${storeName}`,
+            html,
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending low-balance alert:', error);
+        throw error;
+    }
+};
+
+/**
+ * Tells the merchant a specific customer email was skipped because the
+ * store's email credit balance is at 0 — fires per incident (once per
+ * failed send) so the merchant knows exactly which customer/order didn't
+ * get notified and can follow up manually if needed.
+ */
+export const sendZeroBalanceSkippedEmailAlert = async (
+    merchantEmail: string,
+    storeName: string,
+    context: string
+) => {
+    try {
+        const html = renderTemplate('store_generic.html', {
+            storeName: 'Buildora',
+            heading: "A customer email couldn't be sent",
+            bodyText: `Your store "${storeName}" is out of email credits (0 remaining), so we could NOT send this to your customer:\n\n${context}\n\nYour customer was not notified. Top up your email credits to resume automatic order confirmation and status update emails.`,
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `Action needed: customer email not sent (${storeName})`,
+            html,
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending zero-balance alert:', error);
+        throw error;
+    }
+};
+
 /**
  * Sends a support ticket receipt notification email.
  */

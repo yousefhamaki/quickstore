@@ -192,6 +192,62 @@ export class CampaignQuotaService {
     }
 
     /**
+     * Atomically debits ONE credit for a single transactional email (order
+     * confirmation / status update) — unlike reserveCredits/settleCredits
+     * (built for a whole bulk campaign run), this is an immediate
+     * debit-or-fail for exactly one recipient, with no reservation step.
+     *
+     * Returns `debited: false` (never throws) when the balance is 0 — the
+     * caller is expected to alert the merchant instead of the customer in
+     * that case, not treat it as a server error.
+     */
+    static async debitTransactional(
+        storeId: string | mongoose.Types.ObjectId,
+        description: string,
+        referenceId?: string
+    ): Promise<{ debited: boolean; newBalance: number; justCrossedLowThreshold: boolean }> {
+        await this.getCreditBalance(storeId); // ensure account exists/refreshed
+
+        const updated = await EmailAccount.findOneAndUpdate(
+            { storeId, balance: { $gte: 1 } },
+            { $inc: { balance: -1 } },
+            { new: true }
+        );
+
+        if (!updated) {
+            const existing = await EmailAccount.findOne({ storeId });
+            return { debited: false, newBalance: existing?.balance ?? 0, justCrossedLowThreshold: false };
+        }
+
+        // Best-effort bucket bookkeeping: drain the monthly plan allowance
+        // before purchased add-on credits, same order as settleCredits().
+        // A rare race here could leave planBalance/purchasedBalance very
+        // slightly inconsistent with the top-level `balance` under heavy
+        // concurrent single-email sends, but `balance` itself (the only
+        // number that gates "can we send") was already updated atomically
+        // above, so that's a minor internal-accounting nuance, not a
+        // double-spend risk.
+        if (updated.planBalance > 0) {
+            await EmailAccount.updateOne({ storeId, planBalance: { $gt: 0 } }, { $inc: { planBalance: -1 } });
+        } else {
+            await EmailAccount.updateOne({ storeId, purchasedBalance: { $gt: 0 } }, { $inc: { purchasedBalance: -1 } });
+        }
+
+        await EmailLedgerEntry.create({
+            storeId,
+            type: 'transactional_debit',
+            amount: -1,
+            referenceId,
+            description,
+        });
+
+        const oldBalance = updated.balance + 1;
+        const justCrossedLowThreshold = oldBalance >= 10 && updated.balance < 10;
+
+        return { debited: true, newBalance: updated.balance, justCrossedLowThreshold };
+    }
+
+    /**
      * Reserve credits atomically for a campaign run
      */
     static async reserveCredits(

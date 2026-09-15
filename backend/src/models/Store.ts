@@ -92,6 +92,29 @@ export interface ISocialSharingSettings {
     defaultMessage?: string;
 }
 
+export interface IEmailTemplate {
+    subject: string;
+    heading: string;
+    body: string; // plain-text/simple-HTML with {{tokens}} — see emailService.renderStoreTemplate
+}
+
+export interface IEmailNotificationSettings {
+    // Merchant-facing on/off switches — order confirmation stays on by
+    // default (customers expect it unconditionally), status updates can be
+    // turned off if a merchant would rather not notify on every transition.
+    sendOrderConfirmation: boolean;
+    sendStatusUpdates: boolean;
+    // Overrides for the built-in defaults (see emailService's
+    // DEFAULT_STORE_EMAIL_TEMPLATES) — any field left blank falls back to
+    // the default at send time, so a store never ends up with a truly
+    // empty subject/body just because it was never edited.
+    templates: {
+        orderConfirmation?: IEmailTemplate;
+        orderStatusChanged?: IEmailTemplate;
+        marketing?: IEmailTemplate;
+    };
+}
+
 export interface IMarketingSettings {
     facebookPixelId?: string;
     googleAnalyticsId?: string;
@@ -122,6 +145,7 @@ export interface IStoreSettings {
     shipping: IShippingSettings;
     tax: ITaxSettings;
     policies: IPolicies;
+    emailNotifications: IEmailNotificationSettings;
     marketing: IMarketingSettings;
 }
 
@@ -332,6 +356,28 @@ const StoreSchema: Schema = new Schema(
                 privacyPolicy: { type: String },
                 termsOfService: { type: String },
                 shippingPolicy: { type: String }
+            },
+
+            emailNotifications: {
+                sendOrderConfirmation: { type: Boolean, default: true },
+                sendStatusUpdates: { type: Boolean, default: true },
+                templates: {
+                    orderConfirmation: {
+                        subject: { type: String },
+                        heading: { type: String },
+                        body: { type: String }
+                    },
+                    orderStatusChanged: {
+                        subject: { type: String },
+                        heading: { type: String },
+                        body: { type: String }
+                    },
+                    marketing: {
+                        subject: { type: String },
+                        heading: { type: String },
+                        body: { type: String }
+                    }
+                }
             },
 
             marketing: {

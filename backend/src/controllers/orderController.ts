@@ -11,6 +11,38 @@ import Wallet from '../models/Wallet';
 import WalletLedger from '../models/WalletLedger';
 import Coupon from '../models/Coupon';
 import { WALLET_LEDGER_REASONS } from '../constants/walletLedgerReasons';
+import { sendGatedCustomerEmail } from '../services/orderEmailService';
+
+/**
+ * Emails the customer that their order's status changed, gated by the
+ * store's own emailNotifications.sendStatusUpdates toggle and its email
+ * credit balance (see sendGatedCustomerEmail). Never thrown from — a failed
+ * notification email must not fail the status update it's describing.
+ */
+async function notifyCustomerStatusChanged(order: InstanceType<typeof Order>, store: InstanceType<typeof Store>, newStatus: string) {
+    try {
+        if (store.settings?.emailNotifications?.sendStatusUpdates === false) return;
+
+        const customer = await Customer.findById(order.customerId);
+        if (!customer?.email) return;
+
+        await sendGatedCustomerEmail({
+            store,
+            type: 'orderStatusChanged',
+            customerEmail: customer.email,
+            vars: {
+                customerName: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'there',
+                orderNumber: order.orderNumber,
+                status: newStatus,
+            },
+            context: `Order status update (${newStatus}) for order #${order.orderNumber} to ${customer.email}`,
+            ledgerDescription: `Order status update email for order #${order.orderNumber}`,
+            referenceId: order._id.toString(),
+        });
+    } catch (error) {
+        console.error('[OrderController] Failed to send order status changed email:', error);
+    }
+}
 
 // @desc    Get all orders for a store
 // @route   GET /api/orders
@@ -371,6 +403,11 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
 
         const updatedOrder = await order.save({ session });
         await session.commitTransaction();
+
+        if (status !== previousStatus) {
+            notifyCustomerStatusChanged(updatedOrder, store, status).catch(() => {});
+        }
+
         res.json(updatedOrder);
     } catch (error) {
         if (session) await session.abortTransaction();
