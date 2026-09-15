@@ -327,10 +327,13 @@ export interface IStore extends Document {
 // subdocument's toJSON transform into the parent document's serialization,
 // so every res.json(store)/res.json(updatedStore) response automatically
 // gets the SMTP password ciphertext stripped without touching every
-// controller that returns a store. The Redis-cache path elsewhere uses
-// store.toObject() (a separate schema option from toJSON — transforms
-// don't cross over), so the ciphertext correctly stays cached there; only
-// the HTTP API response boundary needs stripping.
+// controller that returns a store. This transform only fires for a
+// hydrated document's .toJSON() — a .lean() query result or a
+// .toObject() call skips it entirely, so any code path that builds a
+// store payload that way (e.g. the store_customization Redis cache,
+// or publicController's own .lean() query) must strip
+// settings.emailSender.smtp.passwordEncrypted itself rather than relying
+// on this transform.
 const EmailSenderSchema = new Schema(
     {
         mode: { type: String, enum: ['buildora', 'custom'], default: 'buildora' },

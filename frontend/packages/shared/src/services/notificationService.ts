@@ -7,7 +7,8 @@ export type NotificationType =
     | 'review_submitted'
     | 'subscription_renewed'
     | 'subscription_past_due'
-    | 'subscription_expired';
+    | 'subscription_expired'
+    | 'signup_gift';
 
 export interface NotificationEntry {
     _id: string;

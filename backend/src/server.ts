@@ -35,11 +35,14 @@ import chatRoutes from './routes/chatRoutes';
 import campaignRoutes from './routes/campaignRoutes';
 import whatsappRoutes from './routes/whatsappRoutes';
 import { publicOfferRouter, merchantOfferRouter } from './routes/offerRoutes';
+import publicMarketingDripRoutes from './routes/publicMarketingDripRoutes';
 import { CampaignQuotaService } from './services/CampaignQuotaService';
 import './workers/adminWorker';
 import './workers/billingWorker';
+import './workers/marketingWorker';
 import { startAnalyticsCron } from './jobs/analyticsCron';
 import { scheduleSubscriptionRenewalSweep } from './queues/billingQueue';
+import { scheduleMarketingDripSweep } from './queues/marketingQueue';
 import { reconnectAllOnBoot } from './services/whatsapp/connectionManager';
 
 import helmet from 'helmet';
@@ -87,6 +90,7 @@ app.use('/api/articles', articleRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/public/offers', publicOfferRouter);
 app.use('/api/merchant/offers', merchantOfferRouter);
+app.use('/api/public/marketing', publicMarketingDripRoutes);
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Buildora API is running...');
@@ -117,6 +121,10 @@ if (process.env.NODE_ENV !== 'test') {
             // Schedule the recurring subscription renewal/expiry sweep (BullMQ)
             scheduleSubscriptionRenewalSweep().catch(err =>
                 console.error('[Server] Failed to schedule subscription renewal sweep:', err)
+            );
+            // Schedule the recurring merchant onboarding/activation drip sweep (BullMQ)
+            scheduleMarketingDripSweep().catch(err =>
+                console.error('[Server] Failed to schedule marketing drip sweep:', err)
             );
             // Resume every store's WhatsApp connection that was live before
             // this restart — required because ts-node-dev --respawn (and

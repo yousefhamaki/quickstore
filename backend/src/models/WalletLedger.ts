@@ -38,4 +38,15 @@ const WalletLedgerSchema = new Schema({
     balanceAfter: { type: Number, required: true }
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
+// --- Signup-gift idempotency guard -----------------------------------------
+// Structural (DB-level) guarantee that a user can never receive the signup
+// gift ledger credit twice, mirroring how Wallet.userId's unique index blocks
+// duplicate wallets. Partial so it only applies to reason: 'gift' entries —
+// every other reason may legitimately recur per user (recharges, order fees,
+// plan payments, ...). See services/platformConfigService.ts.
+WalletLedgerSchema.index(
+    { userId: 1, reason: 1 },
+    { unique: true, partialFilterExpression: { reason: 'gift' } }
+);
+
 export default mongoose.model<IWalletLedger>('WalletLedger', WalletLedgerSchema);

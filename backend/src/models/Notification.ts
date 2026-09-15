@@ -7,7 +7,8 @@ export type NotificationType =
     | 'review_submitted'
     | 'subscription_renewed'
     | 'subscription_past_due'
-    | 'subscription_expired';
+    | 'subscription_expired'
+    | 'signup_gift';
 
 export interface INotification extends Document {
     userId: mongoose.Types.ObjectId; // the merchant who should see this
@@ -26,7 +27,7 @@ const NotificationSchema: Schema = new Schema({
     type: {
         type: String,
         required: true,
-        enum: ['order_created', 'order_shipped', 'refund_requested', 'review_submitted', 'subscription_renewed', 'subscription_past_due', 'subscription_expired'],
+        enum: ['order_created', 'order_shipped', 'refund_requested', 'review_submitted', 'subscription_renewed', 'subscription_past_due', 'subscription_expired', 'signup_gift'],
     },
     title: { type: String, required: true },
     message: { type: String, required: true },

@@ -1,0 +1,65 @@
+{{#> layout
+    title=(concat "New order #" orderNumber)
+    accentColor="#38a169"
+    logoUrl="https://www.quickstore.live/logo.png"
+    logoFallbackUrl="https://placehold.co/180x48/38a169/ffffff?text=Buildora"
+    brandingName="Buildora"
+    showFooterPoweredBy=false
+    footerText=(concat "You are receiving this because you own " storeName " on Buildora.")
+}}
+    <h1 class="title">You've got a new order! 🎉</h1>
+    <p class="description">
+        {{#if ownerName}}Hi {{ownerName}}, {{/if}}order <strong>#{{orderNumber}}</strong> was just placed on <strong>{{storeName}}</strong>.
+    </p>
+
+    <div class="meta-grid">
+        <div class="meta-row">
+            <div class="meta-col label">Order #</div>
+            <div class="meta-col">{{orderNumber}}</div>
+        </div>
+        <div class="meta-row">
+            <div class="meta-col label">Customer</div>
+            <div class="meta-col">{{customerName}}</div>
+        </div>
+        {{#if customerPhone}}
+        <div class="meta-row">
+            <div class="meta-col label">Phone</div>
+            <div class="meta-col">{{customerPhone}}</div>
+        </div>
+        {{/if}}
+        {{#if customerEmail}}
+        <div class="meta-row">
+            <div class="meta-col label">Email</div>
+            <div class="meta-col">{{customerEmail}}</div>
+        </div>
+        {{/if}}
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th class="items-th">Item</th>
+                <th class="items-th items-th-center">Qty</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each items}}
+            <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #4a5568;">{{name}}</td>
+                <td style="padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #4a5568; text-align: center;">{{quantity}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+
+    <div class="total-container">
+        <div class="total-row">
+            <div class="total-col label">Order Total</div>
+            <div class="total-col value" style="color: #38a169;">{{formatCurrency orderTotal currency}}</div>
+        </div>
+    </div>
+
+    <div class="btn-container" style="margin-top: 32px;">
+        <a href="{{orderLink}}" target="_blank" class="btn" style="background-color: #38a169; box-shadow: 0 10px 15px -3px rgba(56, 161, 105, 0.3);">View Order in Dashboard</a>
+    </div>
+{{/layout}}

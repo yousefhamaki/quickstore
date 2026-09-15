@@ -27,6 +27,12 @@ export interface IUser extends Document {
     twoFactorLoginCodeExpiresAt?: Date;
     twoFactorFailedAttempts: number;
     twoFactorLockedUntil?: Date;
+    // Merchant-facing onboarding/activation drip marketing emails (see
+    // services/marketing/MerchantDripService.ts) — set via the signed
+    // unsubscribe link in every drip email's footer. Distinct from any
+    // shopper-facing consent tracking (Customer.consentHistory), which is
+    // unrelated (storefront newsletter, not this SaaS's own merchant email).
+    marketingOptOut: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -61,6 +67,7 @@ const UserSchema: Schema = new Schema(
         twoFactorLoginCodeExpiresAt: { type: Date, select: false },
         twoFactorFailedAttempts: { type: Number, default: 0 },
         twoFactorLockedUntil: { type: Date },
+        marketingOptOut: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

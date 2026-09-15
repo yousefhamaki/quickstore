@@ -12,6 +12,7 @@ import {
     StoreEmailTemplateType
 } from './emailBlockRenderer';
 import { sendStoreEmail } from './mailer/storeMailer';
+import { generateMarketingUnsubscribeToken } from '../utils/marketingUnsubscribeToken';
 
 let resendInstance: Resend | null = null;
 const getResendClient = () => {
@@ -530,6 +531,53 @@ export const sendWhatsAppZeroBalanceAlert = async (
     }
 };
 
+// ============================================================================
+// Signup-gift wallet credit email (services/platformConfigService.ts calls
+// this once, only on an actual grant — see grantSignupGiftAndNotify). Kept
+// as its own self-contained block so it merges cleanly alongside other
+// concurrent additions to this file.
+// ============================================================================
+
+/**
+ * Sends the "you just got X EGP" welcome-gift email when a new/newly
+ * verified user is credited the signup gift wallet balance. The amount is
+ * always the live, admin-configured value (see PlatformConfig / superadmin
+ * settings), never hardcoded.
+ */
+export const sendSignupGiftEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    amount: number,
+    dashboardLink: string = 'https://www.quickstore.live/merchant/billing',
+    currency: string = 'EGP'
+) => {
+    try {
+        console.log(`[EmailService] Sending signup gift email to ${merchantEmail} for ${amount} ${currency}`);
+
+        const html = renderTemplate('signup_gift.html', {
+            merchantName: merchantName || 'there',
+            amount,
+            currency,
+            dashboardLink
+        });
+
+        const response = await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `You just got ${amount} ${currency} on Buildora!`,
+            html
+        });
+        return response;
+    } catch (error) {
+        console.error('[EmailService] Error sending signup gift email:', error);
+        throw error;
+    }
+};
+
+// ============================================================================
+// End signup-gift wallet credit email block
+// ============================================================================
+
 /**
  * Sends a support ticket receipt notification email.
  */
@@ -555,6 +603,212 @@ export const sendSupportTicketEmail = async (
         return response;
     } catch (error) {
         console.error('[EmailService] Error sending support ticket email:', error);
+        throw error;
+    }
+};
+
+// ============================================================================
+// New-order owner alert email (storefront checkout -> merchant's own inbox).
+// This is a FREE, UNGATED platform email — it must NEVER be routed through
+// CampaignQuotaService / sendGatedCustomerEmail's credit debit, unlike the
+// customer-facing order confirmation email. It's the operational, "your
+// dashboard bell isn't enough" alert so a merchant who isn't watching the
+// dashboard still finds out about a new order immediately. Sent straight to
+// the merchant's own account email (User.email), same treatment as
+// sendLowEmailBalanceAlert / sendZeroBalanceSkippedEmailAlert above.
+// ============================================================================
+
+export interface NewOrderOwnerItem {
+    name: string;
+    quantity: number;
+}
+
+export const sendNewOrderOwnerEmail = async (params: {
+    ownerEmail: string;
+    ownerName?: string;
+    storeName: string;
+    orderNumber: string;
+    orderTotal: number;
+    currency?: string;
+    customerName: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    items: NewOrderOwnerItem[];
+    orderLink: string;
+}) => {
+    const {
+        ownerEmail,
+        ownerName,
+        storeName,
+        orderNumber,
+        orderTotal,
+        currency,
+        customerName,
+        customerPhone,
+        customerEmail,
+        items,
+        orderLink,
+    } = params;
+
+    try {
+        const html = renderTemplate('new_order_owner.html', {
+            ownerName: ownerName || '',
+            storeName,
+            orderNumber,
+            orderTotal,
+            currency: currency || 'EGP',
+            customerName,
+            customerPhone: customerPhone || '',
+            customerEmail: customerEmail || '',
+            items,
+            orderLink,
+        });
+
+        const response = await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: ownerEmail,
+            subject: `New order #${orderNumber} on ${storeName}`,
+            html,
+        });
+        return response;
+    } catch (error) {
+        console.error('[EmailService] Error sending new-order owner alert email:', error);
+        throw error;
+    }
+};
+
+// ============================================================================
+// Merchant onboarding/activation drip (marketing) — see
+// services/marketing/MerchantDripService.ts for the sweep that decides
+// *when* each of these fires (state-gated, not a flat calendar blast) and
+// models/MarketingEmailLog.ts for the send-once bookkeeping. This is
+// Buildora-to-merchant nurture email, NOT the storefront Campaign/
+// CampaignRecipient broadcast tool (that's merchant-to-shopper, unrelated).
+// Every email here carries a one-click unsubscribe link (signed via
+// utils/marketingUnsubscribeToken.ts) so opting out never requires a login.
+// ============================================================================
+
+const getBackendBaseUrl = (): string =>
+    process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+
+/** Builds the one-click unsubscribe link embedded in every drip email footer. */
+const buildMarketingUnsubscribeLink = (userId: string): string => {
+    const token = generateMarketingUnsubscribeToken(userId);
+    return `${getBackendBaseUrl()}/api/public/marketing/unsubscribe?token=${encodeURIComponent(token)}`;
+};
+
+/**
+ * Day-1 nudge: sent ~24h after registration if the merchant still hasn't
+ * created a store at all.
+ */
+export const sendMerchantDripCreateStoreEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    userId: string,
+    dashboardLink: string = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`
+) => {
+    try {
+        const html = renderTemplate('marketing_drip_create_store.html', {
+            merchantName,
+            dashboardLink,
+            unsubscribeLink: buildMarketingUnsubscribeLink(userId),
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: "Let's get your store live on Buildora",
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending marketing drip (create store) email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Sent once a merchant has a store but still has zero products in it a few
+ * days after signing up.
+ */
+export const sendMerchantDripAddFirstProductEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    userId: string,
+    dashboardLink: string = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`
+) => {
+    try {
+        const html = renderTemplate('marketing_drip_add_first_product.html', {
+            merchantName,
+            dashboardLink,
+            unsubscribeLink: buildMarketingUnsubscribeLink(userId),
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: 'Add your first product and start selling',
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending marketing drip (add first product) email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Sent once a merchant has added at least one product but their store is
+ * still unpublished (status 'draft').
+ */
+export const sendMerchantDripPublishStoreEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    storeName: string,
+    userId: string,
+    dashboardLink: string = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`
+) => {
+    try {
+        const html = renderTemplate('marketing_drip_publish_store.html', {
+            merchantName,
+            storeName,
+            dashboardLink,
+            unsubscribeLink: buildMarketingUnsubscribeLink(userId),
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `${storeName} is ready — go live today`,
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending marketing drip (publish store) email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Sent once a merchant's store has been live for about a week and they're
+ * still on the free plan — a feature-highlight/upgrade nudge.
+ */
+export const sendMerchantDripUpgradePlanEmail = async (
+    merchantEmail: string,
+    merchantName: string,
+    storeName: string,
+    userId: string,
+    plansLink: string = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/merchant/plans`
+) => {
+    try {
+        const html = renderTemplate('marketing_drip_upgrade_plan.html', {
+            merchantName,
+            storeName,
+            plansLink,
+            unsubscribeLink: buildMarketingUnsubscribeLink(userId),
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `${storeName} is live! See what Pro unlocks`,
+            html
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending marketing drip (upgrade plan) email:', error);
         throw error;
     }
 };

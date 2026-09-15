@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
-import { Bell, ShoppingCart, Truck, HandCoins, Star, CreditCard, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
+import { Bell, ShoppingCart, Truck, HandCoins, Star, CreditCard, AlertTriangle, XCircle, Loader2, Gift } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { cn } from '@shared/lib/utils';
 import {
@@ -24,6 +24,7 @@ const TYPE_ICON: Record<NotificationType, React.ElementType> = {
     subscription_renewed: CreditCard,
     subscription_past_due: AlertTriangle,
     subscription_expired: XCircle,
+    signup_gift: Gift,
 };
 
 const TYPE_COLOR: Record<NotificationType, string> = {
@@ -34,6 +35,7 @@ const TYPE_COLOR: Record<NotificationType, string> = {
     subscription_renewed: 'text-green-600 bg-green-50',
     subscription_past_due: 'text-amber-600 bg-amber-50',
     subscription_expired: 'text-red-600 bg-red-50',
+    signup_gift: 'text-emerald-600 bg-emerald-50',
 };
 
 // Polling, not a websocket — this app has no real-time transport, and a
