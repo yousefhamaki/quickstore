@@ -558,3 +558,73 @@ export const sendSupportTicketEmail = async (
         throw error;
     }
 };
+
+// ============================================================================
+// New-order owner alert email (storefront checkout -> merchant's own inbox).
+// This is a FREE, UNGATED platform email — it must NEVER be routed through
+// CampaignQuotaService / sendGatedCustomerEmail's credit debit, unlike the
+// customer-facing order confirmation email. It's the operational, "your
+// dashboard bell isn't enough" alert so a merchant who isn't watching the
+// dashboard still finds out about a new order immediately. Sent straight to
+// the merchant's own account email (User.email), same treatment as
+// sendLowEmailBalanceAlert / sendZeroBalanceSkippedEmailAlert above.
+// ============================================================================
+
+export interface NewOrderOwnerItem {
+    name: string;
+    quantity: number;
+}
+
+export const sendNewOrderOwnerEmail = async (params: {
+    ownerEmail: string;
+    ownerName?: string;
+    storeName: string;
+    orderNumber: string;
+    orderTotal: number;
+    currency?: string;
+    customerName: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    items: NewOrderOwnerItem[];
+    orderLink: string;
+}) => {
+    const {
+        ownerEmail,
+        ownerName,
+        storeName,
+        orderNumber,
+        orderTotal,
+        currency,
+        customerName,
+        customerPhone,
+        customerEmail,
+        items,
+        orderLink,
+    } = params;
+
+    try {
+        const html = renderTemplate('new_order_owner.html', {
+            ownerName: ownerName || '',
+            storeName,
+            orderNumber,
+            orderTotal,
+            currency: currency || 'EGP',
+            customerName,
+            customerPhone: customerPhone || '',
+            customerEmail: customerEmail || '',
+            items,
+            orderLink,
+        });
+
+        const response = await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: ownerEmail,
+            subject: `New order #${orderNumber} on ${storeName}`,
+            html,
+        });
+        return response;
+    } catch (error) {
+        console.error('[EmailService] Error sending new-order owner alert email:', error);
+        throw error;
+    }
+};
