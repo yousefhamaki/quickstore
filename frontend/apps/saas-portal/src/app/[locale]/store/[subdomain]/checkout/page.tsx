@@ -336,15 +336,28 @@ export default function CheckoutPage() {
                                                         ))}
                                                     </div>
                                                 )}
+                                                {item.selectedExtras && item.selectedExtras.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        {item.selectedExtras.map((extra) => (
+                                                            <span key={extra._id} className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border text-gray-400 uppercase tracking-tight">
+                                                                + {extra.name} (EGP {extra.price.toLocaleString()})
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                                 <div className="flex flex-col md:items-start items-end mt-1">
-                                                    {item.originalPrice && item.originalPrice > item.price ? (
-                                                        <>
-                                                            <span className="font-bold text-green-600">EGP {item.price.toLocaleString()}</span>
-                                                            <span className="text-xs text-muted-foreground line-through">EGP {item.originalPrice.toLocaleString()}</span>
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-gray-500 font-bold">EGP {item.price.toLocaleString()}</span>
-                                                    )}
+                                                    {(() => {
+                                                        const extrasTotal = (item.selectedExtras || []).reduce((sum, ex) => sum + (Number(ex.price) || 0), 0);
+                                                        const lineUnitPrice = item.price + extrasTotal;
+                                                        return item.originalPrice && item.originalPrice > lineUnitPrice ? (
+                                                            <>
+                                                                <span className="font-bold text-green-600">EGP {lineUnitPrice.toLocaleString()}</span>
+                                                                <span className="text-xs text-muted-foreground line-through">EGP {item.originalPrice.toLocaleString()}</span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-gray-500 font-bold">EGP {lineUnitPrice.toLocaleString()}</span>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
                                             <div className="flex items-center justify-between gap-4 mt-4 md:mt-0">

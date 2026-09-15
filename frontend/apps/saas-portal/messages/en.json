@@ -1001,7 +1001,9 @@
       "easyReturns": "Easy Returns",
       "relatedProducts": "Related Products",
       "viewDetails": "View Details",
-      "specifications": "Specifications"
+      "specifications": "Specifications",
+      "extras": "Extras",
+      "total": "Total"
     },
     "home": {
       "welcome": "Welcome to",

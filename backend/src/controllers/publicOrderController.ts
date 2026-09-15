@@ -270,10 +270,38 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                     : product.price;
             }
 
+            // ================================================================
+            // Same pricing-integrity treatment for optional paid extras
+            // (Product.extras, e.g. "1-year extended warranty, +100 EGP"): a
+            // client can request one by _id, but its price always comes from
+            // the product's own extras array, never from the request body.
+            // Unmatched/unknown ids (deleted extra, tampered id, etc.) are
+            // silently dropped rather than failing the whole order. Their
+            // prices are folded into item.price (per unit, like the base/
+            // variant price) so they flow through existing quantity*price
+            // revenue math (cart totals, analytics) for free — `resolvedExtras`
+            // is kept separately only as an audit-trail snapshot for the order.
+            // ================================================================
+            let resolvedExtras: { name: string; price: number }[] = [];
+            if (Array.isArray(item.selectedExtras) && item.selectedExtras.length > 0) {
+                const requestedExtraIds = item.selectedExtras
+                    .map((e: any) => (e && typeof e === 'object' ? e._id : e))
+                    .filter(Boolean)
+                    .map((id: any) => id.toString());
+                resolvedExtras = (product.extras || [])
+                    .filter((ex: any) => requestedExtraIds.includes(ex._id.toString()))
+                    .map((ex: any) => ({ name: ex.name, price: ex.price }));
+            }
+            item.resolvedExtras = resolvedExtras;
+            const extrasUnitTotal = resolvedExtras.reduce((sum, ex) => sum + Number(ex.price || 0), 0);
+            item.price = Number(item.price) + extrasUnitTotal;
+
             // Snapshot cost-at-purchase for historical profit analytics (see
             // Order.ts IOrderItem.costAtPurchase and analyticsController.ts).
             // Only one cost field exists at the product level (no per-variant
             // cost yet), so it's used regardless of which variant was ordered.
+            // Extras have no cost concept — they're pure add-on revenue and
+            // never affect this.
             item.costAtPurchase = typeof product.costPerItem === 'number' ? product.costPerItem : undefined;
         }
 
@@ -381,6 +409,7 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                     quantity: Number(item.quantity),
                     price: Number(item.price),
                     costAtPurchase: item.costAtPurchase,
+                    extras: (item.resolvedExtras && item.resolvedExtras.length > 0) ? item.resolvedExtras : undefined,
                     image: item.image,
                     variant: item.selectedOptions ? Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ') : undefined
                 })),

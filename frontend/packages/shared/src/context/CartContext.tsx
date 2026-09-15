@@ -8,11 +8,21 @@ export interface CartItem {
     _id: string;
     variantId?: string;
     name: string;
+    /** Base/variant unit price only — extras are NOT folded in here, see selectedExtras. */
     price: number;
     originalPrice?: number;
     quantity: number;
     image?: string;
     selectedOptions?: Record<string, string>;
+    /**
+     * Optional paid add-ons (Product.extras) selected for this line, with
+     * the price resolved at add-to-cart time (from product.extras, not
+     * user input) purely for display/totals here — the order-creation
+     * endpoint independently re-validates and re-resolves these against the
+     * product's own extras array, so a tampered client value can't change
+     * what's actually charged.
+     */
+    selectedExtras?: { _id: string; name: string; price: number }[];
     campaignId?: string;
     impressionId?: string;
     revenueSource?: 'order' | 'upsell' | 'bogo' | 'threshold' | 'bundle';
@@ -31,7 +41,8 @@ interface CartContextType {
         impressionId?: string,
         revenueSource?: 'order' | 'upsell' | 'bogo' | 'threshold' | 'bundle',
         placement?: 'product_page' | 'cart' | 'checkout' | 'post_purchase' | 'standalone',
-        parentCartItemId?: string
+        parentCartItemId?: string,
+        selectedExtraIds?: string[]
     ) => void;
     removeFromCart: (cartItemId: string) => void;
     updateQuantity: (cartItemId: string, quantity: number) => void;
@@ -78,7 +89,8 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
         impressionId?: string,
         revenueSource?: 'order' | 'upsell' | 'bogo' | 'threshold' | 'bundle',
         placement?: 'product_page' | 'cart' | 'checkout' | 'post_purchase' | 'standalone',
-        parentCartItemId?: string
+        parentCartItemId?: string,
+        selectedExtraIds?: string[]
     ) => {
         // Resolve the actual charged price from the matched variant's own
         // price (when one exists) rather than always the base product
@@ -92,6 +104,17 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
             ? matchedVariant.price
             : product.price;
 
+        // Same treatment for optional paid extras: resolve each selected
+        // extra's price from product.extras here (never trust a caller-
+        // supplied price), purely for local display/totals — the server
+        // independently re-validates and re-resolves these at order time.
+        const resolvedExtras: { _id: string; name: string; price: number }[] = (selectedExtraIds && selectedExtraIds.length > 0)
+            ? (product.extras || [])
+                .filter((ex: any) => selectedExtraIds.includes(String(ex._id)))
+                .map((ex: any) => ({ _id: String(ex._id), name: ex.name, price: ex.price }))
+            : [];
+        const extrasTotal = resolvedExtras.reduce((sum, ex) => sum + (Number(ex.price) || 0), 0);
+
         setCart(prevCart => {
             const optionsString = selectedOptions ? JSON.stringify(selectedOptions) : '';
             let cartItemId = variantId ? `${product._id}_${variantId}` : `${product._id}_${optionsString}`;
@@ -100,6 +123,12 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
             }
             if (parentCartItemId) {
                 cartItemId += `_child_${parentCartItemId}`;
+            }
+            if (resolvedExtras.length > 0) {
+                // Sorted so the same set of extras always produces the same
+                // id regardless of selection order — a different set of
+                // extras is a genuinely different cart line.
+                cartItemId += `_extras_${resolvedExtras.map(ex => ex._id).sort().join('-')}`;
             }
 
             const existingItemIndex = prevCart.findIndex(item => item.cartItemId === cartItemId);
@@ -123,6 +152,7 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
                 quantity: quantity,
                 image: product.images?.[0]?.url,
                 selectedOptions: selectedOptions,
+                selectedExtras: resolvedExtras.length > 0 ? resolvedExtras : undefined,
                 campaignId,
                 impressionId,
                 revenueSource,
@@ -135,7 +165,7 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
         trackAddToCart({
             id: product._id,
             name: product.name,
-            price: unitPrice,
+            price: unitPrice + extrasTotal,
             quantity,
             currency: 'EGP',
         });
@@ -170,7 +200,10 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
     };
 
     const getCartTotal = () => {
-        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        return cart.reduce((total, item) => {
+            const extrasTotal = (item.selectedExtras || []).reduce((sum, ex) => sum + (Number(ex.price) || 0), 0);
+            return total + ((item.price + extrasTotal) * item.quantity);
+        }, 0);
     };
 
     const getCartCount = () => {

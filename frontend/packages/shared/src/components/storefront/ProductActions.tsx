@@ -15,6 +15,7 @@ export function ProductActions({ product }: { product: any }) {
     const t = useTranslations('store.product');
     const [quantity, setQuantity] = useState(1);
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+    const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>([]);
     const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
     const { addToCart, updateQuantity, removeFromCart, cart } = useCart();
 
@@ -65,6 +66,21 @@ export function ProductActions({ product }: { product: any }) {
         ? selectedVariant.price
         : product.price;
 
+    // Optional paid add-ons (Product.extras) — a shopper can pick zero, one,
+    // or several; each selected one adds its own price to the total. The
+    // authoritative price is still re-resolved server-side at order-creation
+    // time (see publicOrderController.createPublicOrder) — this is only for
+    // display and to tell the cart which ones were picked.
+    const selectedExtras = useMemo(() => {
+        if (!product.extras?.length || selectedExtraIds.length === 0) return [];
+        return product.extras.filter((ex: any) => selectedExtraIds.includes(String(ex._id)));
+    }, [product, selectedExtraIds]);
+    const extrasTotal = selectedExtras.reduce((sum: number, ex: any) => sum + (Number(ex.price) || 0), 0);
+
+    const toggleExtra = (extraId: string) => {
+        setSelectedExtraIds(prev => prev.includes(extraId) ? prev.filter(id => id !== extraId) : [...prev, extraId]);
+    };
+
     useEffect(() => {
         if (!product || !product.storeId) return;
         
@@ -106,9 +122,10 @@ export function ProductActions({ product }: { product: any }) {
         }
 
         // CartContext resolves the actual charged price itself from
-        // product.variants + variantId, so it stays correct even if this
-        // component's own displayPrice logic ever drifts from it.
-        addToCart(product, quantity, selectedOptions, selectedVariant?._id);
+        // product.variants + variantId (and product.extras + the selected
+        // extra ids), so it stays correct even if this component's own
+        // displayPrice/extrasTotal logic ever drifts from it.
+        addToCart(product, quantity, selectedOptions, selectedVariant?._id, undefined, undefined, undefined, undefined, undefined, selectedExtraIds);
         toast.success(t('addedToCart', { quantity, name: product.name }));
     };
 
@@ -130,6 +147,53 @@ export function ProductActions({ product }: { product: any }) {
                     </p>
                 )}
             </div>
+
+            {/* Extras — optional paid add-ons. Selecting one visibly adds
+                its price to a "Total" line below. */}
+            {product.extras && product.extras.length > 0 && (
+                <div className="space-y-3">
+                    <label className="text-sm font-bold uppercase tracking-widest text-gray-400">
+                        {t('extras')}
+                    </label>
+                    <div className="space-y-2">
+                        {product.extras.map((extra: any) => (
+                            <label
+                                key={extra._id}
+                                className={cn(
+                                    "flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition duration-300",
+                                    selectedExtraIds.includes(String(extra._id))
+                                        ? "border-primary bg-primary/5"
+                                        : "border-gray-100 hover:border-gray-200"
+                                )}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedExtraIds.includes(String(extra._id))}
+                                    onChange={() => toggleExtra(String(extra._id))}
+                                    className="mt-1 rounded border-gray-300 text-primary focus:ring-primary"
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="text-sm font-bold">{extra.name}</span>
+                                        <span className="text-sm font-black shrink-0">+ EGP {Number(extra.price).toLocaleString()}</span>
+                                    </div>
+                                    {extra.description && (
+                                        <p className="text-xs text-gray-400 font-medium mt-1">{extra.description}</p>
+                                    )}
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Total — only shown once at least one extra is selected, since
+                otherwise it would just duplicate the price above. */}
+            {selectedExtraIds.length > 0 && (
+                <p className="text-sm font-bold text-gray-500">
+                    {t('total')}: <span className="text-foreground font-black">EGP {(displayPrice + extrasTotal).toLocaleString()}</span>
+                </p>
+            )}
 
             {/* Options Selection */}
             {product.options && product.options.length > 0 && (

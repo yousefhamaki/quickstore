@@ -54,6 +54,7 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
         trackInventory: true,
         variants: [] as any[],
         features: [] as { label: string; value: string }[],
+        extras: [] as { name: string; description: string; price: string }[],
         storeId
     });
 
@@ -78,6 +79,11 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
                 images: initialData.images || [],
                 options: initialData.options || [],
                 features: initialData.features || [],
+                extras: (initialData.extras || []).map((e: any) => ({
+                    name: e.name || '',
+                    description: e.description || '',
+                    price: e.price?.toString() || ''
+                })),
                 status: initialData.status || 'active'
             });
         }
@@ -207,6 +213,28 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
         }));
     };
 
+    // Extras — optional paid add-ons (e.g. "1-year extended warranty, +100
+    // EGP"). Never required, never inventory-tracked, unlike variants.
+    const addExtra = () => {
+        setForm(prev => ({
+            ...prev,
+            extras: [...prev.extras, { name: '', description: '', price: '' }]
+        }));
+    };
+
+    const updateExtra = (index: number, field: 'name' | 'description' | 'price', value: string) => {
+        const newExtras = [...form.extras];
+        newExtras[index] = { ...newExtras[index], [field]: value };
+        setForm(prev => ({ ...prev, extras: newExtras }));
+    };
+
+    const removeExtra = (index: number) => {
+        setForm(prev => ({
+            ...prev,
+            extras: prev.extras.filter((_, i) => i !== index)
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -232,6 +260,18 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
                 .map(f => ({ label: (f.label || '').trim(), value: (f.value || '').trim() }))
                 .filter(f => f.label !== '' || f.value !== '');
 
+            // Drop rows with no name (a required field) — a merchant who
+            // added a row then changed their mind shouldn't submit a
+            // half-filled extra.
+            const cleanExtras = form.extras
+                .map(e => ({ name: (e.name || '').trim(), description: (e.description || '').trim(), price: e.price }))
+                .filter(e => e.name !== '')
+                .map(e => ({
+                    name: e.name,
+                    description: e.description || undefined,
+                    price: parseFloat(e.price as any) || 0
+                }));
+
             const data = {
                 ...form,
                 price: parseFloat(form.price),
@@ -240,6 +280,7 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
                 inventory: form.trackInventory ? { quantity: parseInt(form.inventory), lowStockThreshold: 5 } : undefined,
                 options: cleanOptions,
                 features: cleanFeatures,
+                extras: cleanExtras,
                 variants: form.variants.map(v => ({
                     ...v,
                     price: parseFloat(v.price),
@@ -477,6 +518,65 @@ export default function ProductForm({ initialData, isEdit, storeId }: ProductFor
                                                 onClick={() => removeFeature(i)}
                                                 className="text-gray-400 hover:text-red-600 shrink-0"
                                                 aria-label="Remove feature"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-xl border-0 overflow-hidden glass">
+                        <CardContent className="p-8 space-y-6 pt-8">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-xl font-bold">Extras</h2>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Optional paid add-ons shoppers can choose to buy alongside this product (e.g. "1-year extended warranty, +100 EGP"). Never required, never stock-tracked.
+                                    </p>
+                                </div>
+                                <Button type="button" variant="outline" size="sm" onClick={addExtra} className="rounded-full">
+                                    <Plus className="w-4 h-4 mr-2" /> Add Extra
+                                </Button>
+                            </div>
+
+                            {form.extras.length === 0 ? (
+                                <p className="text-gray-500 text-center py-8">No extras added yet.</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {form.extras.map((extra, i) => (
+                                        <div key={i} className="flex items-start gap-3 p-4 rounded-2xl bg-gray-50/50 border border-gray-100">
+                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <Input
+                                                    value={extra.name}
+                                                    onChange={e => updateExtra(i, 'name', e.target.value)}
+                                                    placeholder="Name (e.g. Extended Warranty)"
+                                                    maxLength={100}
+                                                    className="rounded-xl bg-white"
+                                                />
+                                                <Input
+                                                    type="number"
+                                                    value={extra.price}
+                                                    onChange={e => updateExtra(i, 'price', e.target.value)}
+                                                    placeholder="Price (e.g. 100)"
+                                                    step="0.01"
+                                                    className="rounded-xl bg-white"
+                                                />
+                                                <Input
+                                                    value={extra.description}
+                                                    onChange={e => updateExtra(i, 'description', e.target.value)}
+                                                    placeholder="Description (optional)"
+                                                    maxLength={300}
+                                                    className="rounded-xl bg-white md:col-span-2"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExtra(i)}
+                                                className="text-gray-400 hover:text-red-600 shrink-0 mt-2"
+                                                aria-label="Remove extra"
                                             >
                                                 <Trash2 size={18} />
                                             </button>

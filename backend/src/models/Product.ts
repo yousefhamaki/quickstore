@@ -22,6 +22,21 @@ export interface IProductFeature {
     value: string;
 }
 
+/**
+ * An optional, per-product paid add-on (e.g. "1-year extended warranty,
+ * +100 EGP") — never required, never inventory-tracked. Defined per-product
+ * (not a shared/reusable store-wide library) to keep this simple. Mongoose
+ * gives each subdocument its own `_id` automatically, which the cart/order
+ * reference to know which extra(s) a shopper picked — see CartContext.tsx
+ * and publicOrderController.createPublicOrder.
+ */
+export interface IProductExtra {
+    _id?: mongoose.Types.ObjectId;
+    name: string;
+    description?: string;
+    price: number;
+}
+
 export interface ISEO {
     title?: string;
     description?: string;
@@ -64,6 +79,8 @@ export interface IProduct extends Document {
     options: { name: string; values: string[] }[]; // Keep option definitions
     /** Merchant-defined spec table — see IProductFeature. Public (rendered on the PDP). */
     features: IProductFeature[];
+    /** Optional paid add-ons — see IProductExtra. Public (rendered on the PDP). */
+    extras: IProductExtra[];
     /**
      * @deprecated Legacy freeform category name — kept only as a
      * denormalized display string, auto-synced from `categoryId`'s name
@@ -137,6 +154,16 @@ const ProductSchema: Schema = new Schema(
                 _id: false,
                 label: { type: String, maxlength: 100 },
                 value: { type: String, maxlength: 300 },
+            },
+        ],
+        extras: [
+            // No `_id: false` here (unlike features) — the auto-generated
+            // subdocument _id is exactly what the cart/order reference to
+            // identify which extra(s) were selected.
+            {
+                name: { type: String, required: true, maxlength: 100 },
+                description: { type: String, maxlength: 300 },
+                price: { type: Number, required: true },
             },
         ],
         category: { type: String },

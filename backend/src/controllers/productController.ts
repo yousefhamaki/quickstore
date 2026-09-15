@@ -45,6 +45,51 @@ function sanitizeFeatures(features: unknown): { label: string; value: string }[]
         });
 }
 
+// Optional paid add-ons (Product.extras) — same abuse-prevention approach as
+// features: a reasonable cap on count and string length, plus a sane check
+// that price is an actual non-negative number (these are charged amounts,
+// unlike features' free-form label/value strings).
+const MAX_EXTRAS = 20;
+const MAX_EXTRA_NAME_LENGTH = 100;
+const MAX_EXTRA_DESCRIPTION_LENGTH = 300;
+
+/**
+ * Validates/sanitizes the `extras` add-on array from a create/update request
+ * body. Same `undefined` vs. "explicitly empty" contract as sanitizeFeatures.
+ */
+function sanitizeExtras(extras: unknown): { name: string; description?: string; price: number }[] | undefined {
+    if (extras === undefined) return undefined;
+    if (!Array.isArray(extras)) {
+        throw new Error('extras must be an array of { name, description, price } add-ons');
+    }
+    if (extras.length > MAX_EXTRAS) {
+        throw new Error(`extras cannot have more than ${MAX_EXTRAS} entries`);
+    }
+    return extras
+        .map((e: any) => ({
+            name: typeof e?.name === 'string' ? e.name.trim() : '',
+            description: typeof e?.description === 'string' ? e.description.trim() : '',
+            price: e?.price
+        }))
+        .filter(e => e.name !== '' || e.description !== '' || e.price !== undefined)
+        .map(e => {
+            if (e.name === '') {
+                throw new Error('every extra requires a name');
+            }
+            if (e.name.length > MAX_EXTRA_NAME_LENGTH) {
+                throw new Error(`extra name cannot exceed ${MAX_EXTRA_NAME_LENGTH} characters`);
+            }
+            if (e.description.length > MAX_EXTRA_DESCRIPTION_LENGTH) {
+                throw new Error(`extra description cannot exceed ${MAX_EXTRA_DESCRIPTION_LENGTH} characters`);
+            }
+            const price = Number(e.price);
+            if (!Number.isFinite(price) || price < 0) {
+                throw new Error(`extra "${e.name}" needs a valid non-negative price`);
+            }
+            return { name: e.name, description: e.description || undefined, price };
+        });
+}
+
 // @desc    Get all products for a store with pagination and filters
 // @route   GET /api/products?page=1&limit=20&status=active&category=Clothing&search=shirt&stockLevel=low
 // @access  Private/Merchant
@@ -165,6 +210,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
             options,
             variants,
             features,
+            extras,
             category,
             categoryId,
             tags,
@@ -174,8 +220,10 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
         } = req.body;
 
         let sanitizedFeatures;
+        let sanitizedExtras;
         try {
             sanitizedFeatures = sanitizeFeatures(features);
+            sanitizedExtras = sanitizeExtras(extras);
         } catch (validationError: any) {
             return res.status(400).json({ message: validationError.message });
         }
@@ -221,6 +269,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
             options,
             variants,
             features: sanitizedFeatures,
+            extras: sanitizedExtras,
             category: resolvedCategoryName,
             categoryId: categoryId || undefined,
             tags,
@@ -260,6 +309,14 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
         if (allowedBody.features !== undefined) {
             try {
                 allowedBody.features = sanitizeFeatures(allowedBody.features);
+            } catch (validationError: any) {
+                return res.status(400).json({ message: validationError.message });
+            }
+        }
+
+        if (allowedBody.extras !== undefined) {
+            try {
+                allowedBody.extras = sanitizeExtras(allowedBody.extras);
             } catch (validationError: any) {
                 return res.status(400).json({ message: validationError.message });
             }

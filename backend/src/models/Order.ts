@@ -19,6 +19,19 @@ export interface IOrderItem {
      * costPerItem set — see analyticsController.ts for how that's handled.
      */
     costAtPurchase?: number;
+    /**
+     * Snapshot of the optional paid add-ons (Product.extras) selected for
+     * this line, by name + authoritative price at purchase time — same
+     * validate-then-snapshot treatment as `price` (see
+     * publicOrderController.createPublicOrder): a client can request an
+     * extra by _id, but never dictate its price. Their prices are folded
+     * into `price` above (so existing quantity*price revenue math — cart
+     * totals, analytics — picks them up automatically); this array is only
+     * a breakdown/audit trail of what was actually included. Extras have no
+     * cost concept, so they never affect costAtPurchase/profit — pure
+     * add-on revenue.
+     */
+    extras?: { name: string; price: number }[];
     image?: string;
 }
 
@@ -157,6 +170,13 @@ const OrderSchema: Schema = new Schema(
                 quantity: { type: Number, required: true },
                 price: { type: Number, required: true },
                 costAtPurchase: { type: Number },
+                extras: [
+                    {
+                        _id: false,
+                        name: { type: String },
+                        price: { type: Number },
+                    },
+                ],
                 image: { type: String },
             },
         ],

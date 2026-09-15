@@ -1001,7 +1001,9 @@
       "easyReturns": "إرجاع سهل",
       "relatedProducts": "منتجات ذات صلة",
       "viewDetails": "عرض التفاصيل",
-      "specifications": "المواصفات"
+      "specifications": "المواصفات",
+      "extras": "إضافات",
+      "total": "الإجمالي"
     },
     "home": {
       "welcome": "مرحباً بكم في",
