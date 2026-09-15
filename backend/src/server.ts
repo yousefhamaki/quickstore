@@ -33,12 +33,14 @@ import seoRoutes from './routes/seo';
 import articleRoutes from './routes/articleRoutes';
 import chatRoutes from './routes/chatRoutes';
 import campaignRoutes from './routes/campaignRoutes';
+import whatsappRoutes from './routes/whatsappRoutes';
 import { publicOfferRouter, merchantOfferRouter } from './routes/offerRoutes';
 import { CampaignQuotaService } from './services/CampaignQuotaService';
 import './workers/adminWorker';
 import './workers/billingWorker';
 import { startAnalyticsCron } from './jobs/analyticsCron';
 import { scheduleSubscriptionRenewalSweep } from './queues/billingQueue';
+import { reconnectAllOnBoot } from './services/whatsapp/connectionManager';
 
 import helmet from 'helmet';
 
@@ -64,6 +66,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/stores', storeRoutes);
+app.use('/api/stores', whatsappRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/support', supportRoutes);
@@ -114,6 +117,12 @@ if (process.env.NODE_ENV !== 'test') {
             // Schedule the recurring subscription renewal/expiry sweep (BullMQ)
             scheduleSubscriptionRenewalSweep().catch(err =>
                 console.error('[Server] Failed to schedule subscription renewal sweep:', err)
+            );
+            // Resume every store's WhatsApp connection that was live before
+            // this restart — required because ts-node-dev --respawn (and
+            // any real deploy) tears down every live Baileys socket.
+            reconnectAllOnBoot().catch(err =>
+                console.error('[Server] Failed to resume WhatsApp connections:', err)
             );
         });
     });

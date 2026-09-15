@@ -27,7 +27,8 @@ import {
     Tags,
     Star,
     HandCoins,
-    Mail
+    Mail,
+    MessageCircle
 } from "lucide-react";
 import { NavLink, useSafeNavigation } from "@shared/components/NavLink";
 import { SetupProgressBanner } from "@shared/components/dashboard/SetupProgressBanner";
@@ -88,6 +89,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
         { name: t('items.domain'), href: `/dashboard/stores/${storeId}/settings/domain`, icon: Globe },
         { name: t('items.policies'), href: `/dashboard/stores/${storeId}/settings/policies`, icon: ShieldCheck },
         { name: t('items.emails'), href: `/dashboard/stores/${storeId}/settings/emails`, icon: Mail },
+        { name: t('items.whatsapp'), href: `/dashboard/stores/${storeId}/settings/whatsapp`, icon: MessageCircle },
     ];
 
     const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');

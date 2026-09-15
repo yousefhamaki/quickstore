@@ -14,6 +14,7 @@ import { clearStoreProductCaches } from './productController';
 import { redisClient } from '../config/redis';
 import { createNotification } from '../services/notificationService';
 import { sendGatedCustomerEmail } from '../services/orderEmailService';
+import { sendGatedWhatsAppMessage } from '../services/whatsapp/whatsappMessageService';
 
 // @desc    Create new order from storefront
 // @route   POST /api/public/orders
@@ -694,6 +695,22 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                     },
                     context: `Order confirmation for order #${createdOrder.orderNumber} to ${customerData.email}`,
                     ledgerDescription: `Order confirmation email for order #${createdOrder.orderNumber}`,
+                    referenceId: createdOrder._id.toString(),
+                }).catch(() => {});
+            }
+
+            if (activeStore.settings?.whatsappNotifications?.sendOrderConfirmation !== false && customerData.phone) {
+                sendGatedWhatsAppMessage({
+                    store: activeStore,
+                    type: 'orderConfirmation',
+                    customerPhone: customerData.phone,
+                    vars: {
+                        customerName: `${customerData.firstName} ${customerData.lastName}`.trim(),
+                        orderNumber: createdOrder.orderNumber,
+                        total: numericTotal.toLocaleString(),
+                    },
+                    context: `Order confirmation for order #${createdOrder.orderNumber} to ${customerData.phone}`,
+                    ledgerDescription: `Order confirmation WhatsApp message for order #${createdOrder.orderNumber}`,
                     referenceId: createdOrder._id.toString(),
                 }).catch(() => {});
             }

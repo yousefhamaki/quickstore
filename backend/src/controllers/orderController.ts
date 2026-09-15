@@ -12,6 +12,7 @@ import WalletLedger from '../models/WalletLedger';
 import Coupon from '../models/Coupon';
 import { WALLET_LEDGER_REASONS } from '../constants/walletLedgerReasons';
 import { sendGatedCustomerEmail } from '../services/orderEmailService';
+import { sendGatedWhatsAppMessage } from '../services/whatsapp/whatsappMessageService';
 
 /**
  * Emails the customer that their order's status changed, gated by the
@@ -21,26 +22,42 @@ import { sendGatedCustomerEmail } from '../services/orderEmailService';
  */
 async function notifyCustomerStatusChanged(order: InstanceType<typeof Order>, store: InstanceType<typeof Store>, newStatus: string) {
     try {
-        if (store.settings?.emailNotifications?.sendStatusUpdates === false) return;
-
         const customer = await Customer.findById(order.customerId);
-        if (!customer?.email) return;
+        if (!customer) return;
 
-        await sendGatedCustomerEmail({
-            store,
-            type: 'orderStatusChanged',
-            customerEmail: customer.email,
-            vars: {
-                customerName: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'there',
-                orderNumber: order.orderNumber,
-                status: newStatus,
-            },
-            context: `Order status update (${newStatus}) for order #${order.orderNumber} to ${customer.email}`,
-            ledgerDescription: `Order status update email for order #${order.orderNumber}`,
-            referenceId: order._id.toString(),
-        });
+        if (store.settings?.emailNotifications?.sendStatusUpdates !== false && customer.email) {
+            await sendGatedCustomerEmail({
+                store,
+                type: 'orderStatusChanged',
+                customerEmail: customer.email,
+                vars: {
+                    customerName: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'there',
+                    orderNumber: order.orderNumber,
+                    status: newStatus,
+                },
+                context: `Order status update (${newStatus}) for order #${order.orderNumber} to ${customer.email}`,
+                ledgerDescription: `Order status update email for order #${order.orderNumber}`,
+                referenceId: order._id.toString(),
+            });
+        }
+
+        if (store.settings?.whatsappNotifications?.sendStatusUpdates !== false && customer.phone) {
+            await sendGatedWhatsAppMessage({
+                store,
+                type: 'orderStatusChanged',
+                customerPhone: customer.phone,
+                vars: {
+                    customerName: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'there',
+                    orderNumber: order.orderNumber,
+                    status: newStatus,
+                },
+                context: `Order status update (${newStatus}) for order #${order.orderNumber} to ${customer.phone}`,
+                ledgerDescription: `Order status update WhatsApp message for order #${order.orderNumber}`,
+                referenceId: order._id.toString(),
+            });
+        }
     } catch (error) {
-        console.error('[OrderController] Failed to send order status changed email:', error);
+        console.error('[OrderController] Failed to send order status changed notification:', error);
     }
 }
 

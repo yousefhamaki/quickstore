@@ -33,6 +33,7 @@ export interface ISubscriptionPlan extends Document {
         allowHeroSlider: boolean;
     }; // Logic-based features
     emailLimit?: number; // Monthly emails allowance
+    whatsappLimit?: number; // Monthly WhatsApp messages allowance
     duration: number; // in days
     maxStores: number;
     storeLimit?: number; // Alias for maxStores
@@ -60,6 +61,7 @@ const SubscriptionPlanSchema: Schema = new Schema({
         allowHeroSlider: { type: Boolean, default: true },
     },
     emailLimit: { type: Number, default: 0 },
+    whatsappLimit: { type: Number, default: 0 },
     duration: { type: Number, required: true, default: 30 },
     maxStores: { type: Number, default: 1 },
     storeLimit: { type: Number },

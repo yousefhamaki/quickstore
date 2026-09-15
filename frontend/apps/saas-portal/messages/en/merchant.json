@@ -208,7 +208,8 @@
                 "shipping": "Shipping",
                 "domain": "Domain",
                 "policies": "Policies",
-                "emails": "Emails"
+                "emails": "Emails",
+                "whatsapp": "WhatsApp"
             }
         },
         "checklist": {

@@ -175,6 +175,24 @@ export interface IEmailSenderSettings {
     lastError?: string;
 }
 
+export interface IWhatsAppTemplate {
+    body: string; // plain text + {{tokens}} — WhatsApp formatting is *bold*/_italic_, not HTML, so no block editor here (see EmailBlockEditor for the email equivalent, which doesn't apply)
+}
+
+export interface IWhatsAppNotificationSettings {
+    sendOrderConfirmation: boolean;
+    sendStatusUpdates: boolean;
+    templates: {
+        orderConfirmation?: IWhatsAppTemplate;
+        orderStatusChanged?: IWhatsAppTemplate;
+        // Stored for a future Meta Cloud migration, but inert on the
+        // Baileys provider — see services/whatsapp/whatsappSender.ts,
+        // which hard-refuses to send anything categorized 'marketing'
+        // over the unofficial channel regardless of what's saved here.
+        marketing?: IWhatsAppTemplate;
+    };
+}
+
 export interface IMarketingSettings {
     facebookPixelId?: string;
     googleAnalyticsId?: string;
@@ -207,6 +225,7 @@ export interface IStoreSettings {
     policies: IPolicies;
     emailNotifications: IEmailNotificationSettings;
     emailSender: IEmailSenderSettings;
+    whatsappNotifications: IWhatsAppNotificationSettings;
     marketing: IMarketingSettings;
 }
 
@@ -477,6 +496,16 @@ const StoreSchema: Schema = new Schema(
             },
 
             emailSender: { type: EmailSenderSchema, default: () => ({ mode: 'buildora', verified: false }) },
+
+            whatsappNotifications: {
+                sendOrderConfirmation: { type: Boolean, default: true },
+                sendStatusUpdates: { type: Boolean, default: true },
+                templates: {
+                    orderConfirmation: { body: { type: String } },
+                    orderStatusChanged: { body: { type: String } },
+                    marketing: { body: { type: String } }
+                }
+            },
 
             marketing: {
                 facebookPixelId: { type: String },

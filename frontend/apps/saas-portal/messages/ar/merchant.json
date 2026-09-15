@@ -208,7 +208,8 @@
                 "shipping": "الشحن",
                 "domain": "نطاق",
                 "policies": "السياسات",
-                "emails": "البريد الإلكتروني"
+                "emails": "البريد الإلكتروني",
+                "whatsapp": "واتساب"
             }
         },
         "checklist": {

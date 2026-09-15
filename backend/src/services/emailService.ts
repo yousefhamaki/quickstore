@@ -494,6 +494,43 @@ export const sendZeroBalanceSkippedEmailAlert = async (
 };
 
 /**
+ * WhatsApp's equivalent of sendZeroBalanceSkippedEmailAlert — tells the
+ * merchant a customer WhatsApp message was skipped because the store's
+ * WhatsApp credit balance is at 0. Always sent via Buildora's own email
+ * sender (this is Buildora-to-merchant, not store-to-customer), same as
+ * every other merchant-facing alert.
+ */
+export const sendWhatsAppZeroBalanceAlert = async (
+    merchantEmail: string,
+    storeName: string,
+    context: string
+) => {
+    try {
+        const bodyHtml = renderBlocksToHtml(
+            [
+                { id: 'alert-heading', type: 'heading', text: "A customer WhatsApp message couldn't be sent", level: 'h1', align: 'center' },
+                { id: 'alert-body', type: 'text', text: `Your store "${storeName}" is out of WhatsApp credits (0 remaining), so we could NOT send this to your customer:\n\n${context}\n\nYour customer was not notified. Top up your WhatsApp credits to resume automatic order confirmation and status update messages.`, align: 'center' },
+            ],
+            {}
+        );
+        const html = renderTemplate('store_generic.html', {
+            storeName: 'Buildora',
+            subject: `Action needed: customer WhatsApp message not sent (${storeName})`,
+            bodyHtml,
+        });
+        return await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: merchantEmail,
+            subject: `Action needed: customer WhatsApp message not sent (${storeName})`,
+            html,
+        });
+    } catch (error) {
+        console.error('[EmailService] Error sending WhatsApp zero-balance alert:', error);
+        throw error;
+    }
+};
+
+/**
  * Sends a support ticket receipt notification email.
  */
 export const sendSupportTicketEmail = async (

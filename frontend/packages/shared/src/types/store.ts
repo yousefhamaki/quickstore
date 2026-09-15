@@ -39,6 +39,10 @@ export interface EmailTemplate {
     body?: string;
 }
 
+export interface WhatsAppTemplate {
+    body: string; // plain text + {{tokens}} — no blocks, WhatsApp is plain text with *bold*/_italic_, not HTML
+}
+
 export interface EmailSenderSMTP {
     host?: string;
     port?: number;
@@ -200,6 +204,15 @@ export interface Store {
             };
         };
         emailSender?: EmailSenderSettings;
+        whatsappNotifications?: {
+            sendOrderConfirmation: boolean;
+            sendStatusUpdates: boolean;
+            templates: {
+                orderConfirmation?: WhatsAppTemplate;
+                orderStatusChanged?: WhatsAppTemplate;
+                marketing?: WhatsAppTemplate;
+            };
+        };
         marketing?: MarketingSettings;
     };
     stats: StoreStats;
