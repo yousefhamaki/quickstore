@@ -110,6 +110,30 @@ export async function getProductsSEO(storeId: string, token: string): Promise<Pr
 }
 
 /**
+ * Bulk-fill default SEO (title/description/keywords) for every product in
+ * the store that doesn't have its own yet. Products with existing custom
+ * SEO are left untouched.
+ */
+export async function generateAllProductsSEO(
+    storeId: string,
+    token: string
+): Promise<{ updatedCount: number; totalProducts: number }> {
+    const response = await fetch(`${API_BASE}/stores/${storeId}/products/seo/generate-all`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to auto-fill product SEO');
+    }
+
+    return response.json();
+}
+
+/**
  * Update product SEO
  */
 export async function updateProductSEO(

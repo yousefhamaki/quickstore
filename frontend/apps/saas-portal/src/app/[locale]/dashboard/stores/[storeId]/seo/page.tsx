@@ -10,15 +10,17 @@ import {
     getSEOHealth,
     refreshSEOHealth,
     getProductsSEO,
-    updateProductSEO
+    updateProductSEO,
+    generateAllProductsSEO
 } from '@shared/services/seoService';
 import { getStore } from '@shared/lib/api/stores';
 import { GlobalSEOForm } from '@shared/components/merchant/seo/GlobalSEOForm';
 import { SEOHealthDashboard } from '@shared/components/merchant/seo/SEOHealthDashboard';
 import { ProductSEOList } from '@shared/components/merchant/seo/ProductSEOList';
-import { Settings, TrendingUp, FileText, Lock, Loader2 } from 'lucide-react';
+import { Settings, TrendingUp, FileText, Lock, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function SEOCenterPage({ params }: { params: Promise<{ storeId: string }> }) {
     const { storeId } = use(params);
@@ -44,6 +46,7 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
     const [savingSettings, setSavingSettings] = useState(false);
     const [refreshingHealth, setRefreshingHealth] = useState(false);
     const [updatingProduct, setUpdatingProduct] = useState(false);
+    const [generatingAll, setGeneratingAll] = useState(false);
 
     // Error states
     const [error, setError] = useState<string | null>(null);
@@ -168,6 +171,27 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
             console.error(err);
         } finally {
             setUpdatingProduct(false);
+        }
+    };
+
+    const handleGenerateAllSEO = async () => {
+        if (!confirm('Add default SEO titles and descriptions to every product that doesn\'t have one yet? Products you\'ve already customized are left untouched.')) return;
+        try {
+            setGeneratingAll(true);
+            setError(null);
+            const result = await generateAllProductsSEO(storeId, token!);
+            await fetchProducts();
+            await fetchHealth();
+            toast.success(
+                result.updatedCount > 0
+                    ? `Added SEO to ${result.updatedCount} of ${result.totalProducts} product(s).`
+                    : 'Every product already has custom SEO — nothing to add.'
+            );
+        } catch (err) {
+            setError('Failed to auto-fill product SEO');
+            console.error(err);
+        } finally {
+            setGeneratingAll(false);
         }
     };
 
@@ -331,10 +355,22 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
                 {activeTab === 'products' && (
                     <div>
                         <div className="bg-white rounded-3xl shadow-sm border-2 p-8 mb-6">
-                            <h2 className="text-xl font-black uppercase tracking-tight mb-2">Product SEO</h2>
-                            <p className="text-muted-foreground font-medium">
-                                Customize SEO settings for individual products. Leave blank to use product name and description.
-                            </p>
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h2 className="text-xl font-black uppercase tracking-tight mb-2">Product SEO</h2>
+                                    <p className="text-muted-foreground font-medium">
+                                        Customize SEO settings for individual products. Leave blank to use product name and description.
+                                    </p>
+                                </div>
+                                <Button
+                                    onClick={handleGenerateAllSEO}
+                                    disabled={generatingAll || loadingProducts || products.length === 0}
+                                    className="rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 shrink-0"
+                                >
+                                    {generatingAll ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                                    Auto-fill Missing SEO
+                                </Button>
+                            </div>
                         </div>
                         {loadingProducts ? (
                             <div className="bg-white rounded-3xl shadow-sm border-2 p-8">

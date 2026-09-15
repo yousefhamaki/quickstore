@@ -177,6 +177,62 @@ router.get('/stores/:storeId/products', protect, async (req: AuthRequest, res: R
     }
 });
 
+// POST /api/stores/:storeId/products/seo/generate-all
+//
+// Bulk-fills a default SEO title/description/keywords for every product in
+// the store that doesn't have its own yet — from the product's own
+// name/shortDescription/tags, truncated to search-engine-safe lengths.
+// Products that already have a custom title AND description are left
+// completely untouched; this only fills gaps, it never overwrites
+// something a merchant deliberately wrote (same "leave blank to use
+// product name/description" contract the Product SEO tab already
+// documents — this is just doing it in bulk instead of one product at a
+// time). This is what the SEO Center's "Auto-fill Missing SEO" button
+// calls.
+router.post('/stores/:storeId/products/seo/generate-all', protect, async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await Store.findById(req.params.storeId);
+
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        if (store.ownerId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const products = await Product.find({ storeId: req.params.storeId });
+        let updatedCount = 0;
+
+        for (const product of products) {
+            const needsTitle = !product.seo?.title;
+            const needsDescription = !product.seo?.description;
+            const hasNoKeywords = !product.seo?.keywords || product.seo.keywords.length === 0;
+            const candidateKeywords = product.tags && product.tags.length > 0 ? product.tags : undefined;
+            const willAddKeywords = hasNoKeywords && !!candidateKeywords;
+
+            // Skip entirely if there's nothing to actually add — e.g. a
+            // product with custom title+description but no tags to draw
+            // keywords from would otherwise get a pointless save() and
+            // inflate updatedCount without changing anything.
+            if (!needsTitle && !needsDescription && !willAddKeywords) continue;
+
+            product.seo = {
+                ...product.seo,
+                title: product.seo?.title || product.name.slice(0, 60),
+                description: product.seo?.description || (product.shortDescription || product.description || '').slice(0, 160),
+                keywords: willAddKeywords ? candidateKeywords : product.seo?.keywords
+            };
+            await product.save();
+            updatedCount++;
+        }
+
+        res.json({ updatedCount, totalProducts: products.length });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 // PUT /api/stores/:storeId/products/:productId/seo
 router.put('/stores/:storeId/products/:productId/seo', protect, async (req: AuthRequest, res: Response) => {
     try {
