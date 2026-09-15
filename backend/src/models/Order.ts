@@ -49,6 +49,20 @@ export interface IOrderTimeline {
     note?: string;
 }
 
+/**
+ * One refund event. An order can accumulate several — e.g. a partial
+ * goodwill refund (see issuePartialRefund) followed later by a full
+ * cancellation (see updateOrderStatus) — so these live in an array
+ * (IOrder.refunds) rather than a single slot. `sum(refunds[].amount)`
+ * always equals `IOrder.refundedAmount`.
+ */
+export interface IOrderRefund {
+    amount: number;
+    reason: string;
+    refundedAt: Date;
+    refundedBy: mongoose.Types.ObjectId;
+}
+
 export interface IOrderAddress {
     fullName: string;
     phone: string;
@@ -70,7 +84,7 @@ export interface IOrder extends Document {
     discount: number;
     total: number;
     status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
-    paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+    paymentStatus: 'pending' | 'paid' | 'failed' | 'partially_refunded' | 'refunded';
     paymentMethod: string;
     transactionId?: string;
     shippingProvider?: string;
@@ -90,6 +104,29 @@ export interface IOrder extends Document {
      * in offerController.accept. Max ~10 entries per order in practice.
      */
     offerAttribution?: IOfferAttribution[];
+    /** History of every refund event on this order — see IOrderRefund. */
+    refunds: IOrderRefund[];
+    /** Running total of all refunds[].amount — never exceeds `total`. */
+    refundedAmount: number;
+    /**
+     * Running total of the platform order-fee already reversed back to the
+     * merchant's wallet, across BOTH a partial refund (issuePartialRefund)
+     * and the full cancel/refund transition (updateOrderStatus) — without
+     * this shared counter, an order that got a partial refund and was
+     * later fully cancelled would have its fee reversed twice.
+     */
+    feeReversedAmount: number;
+    /**
+     * Set the first time this order transitions into 'cancelled' OR
+     * 'refunded', whichever comes first — guards the coupon-usage reversal,
+     * inventory release, campaign-analytics reversal, and store.stats
+     * reversal so they only ever fire once per order (e.g. pending ->
+     * cancelled -> refunded must not release inventory twice). Fee and
+     * revenue reversal amounts are separately guarded by feeReversedAmount
+     * and refundedAmount so a prior partial refund is correctly accounted
+     * for even though those are shared with this same transition.
+     */
+    refundSideEffectsApplied?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -122,7 +159,7 @@ const OrderSchema: Schema = new Schema(
         },
         paymentStatus: {
             type: String,
-            enum: ['pending', 'paid', 'failed', 'refunded'],
+            enum: ['pending', 'paid', 'failed', 'partially_refunded', 'refunded'],
             default: 'pending',
         },
         paymentMethod: { type: String, required: true },
@@ -202,6 +239,15 @@ const OrderSchema: Schema = new Schema(
                 orderSource: { type: String, enum: ['storefront_checkout', 'offer_page'] },
             },
         ],
+        refunds: [{
+            amount: { type: Number, required: true },
+            reason: { type: String, required: true },
+            refundedAt: { type: Date, default: Date.now },
+            refundedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        }],
+        refundedAmount: { type: Number, default: 0 },
+        feeReversedAmount: { type: Number, default: 0 },
+        refundSideEffectsApplied: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

@@ -1,14 +1,11 @@
 import { IStore } from '../../models/Store';
 import { IPaymentProvider } from './IPaymentProvider';
 import { PaymobPaymentService } from './PaymobPaymentService';
-import { StripePaymentService } from './StripePaymentService';
-import { PayPalPaymentService } from './PayPalPaymentService';
-import { FawryPaymentService } from './FawryPaymentService';
 import { decrypt } from '../../utils/crypto';
 
 export class PaymentFactory {
     static getProvider(store: IStore): IPaymentProvider {
-        const providerConfig = store.settings?.payment;
+        const providerConfig = store.settings?.payment as { provider?: string; credentials?: any } | undefined;
 
         if (!providerConfig || !providerConfig.provider) {
              throw new Error("No active payment provider configured for this store.");
@@ -28,11 +25,19 @@ export class PaymentFactory {
             case 'paymob':
                 return new PaymobPaymentService(decryptedApiKey, decryptedApiSecret, publicKey, iframeId);
             case 'stripe':
-                return new StripePaymentService(decryptedApiKey, decryptedApiSecret);
             case 'paypal':
-                return new PayPalPaymentService(decryptedApiKey, decryptedApiSecret);
             case 'fawry':
-                return new FawryPaymentService(publicKey, decryptedApiSecret);
+                // These only exist today as unfinished skeletons: fake
+                // checkout URLs and a validateWebhookPayload() that accepts
+                // ANY signature — see services/payment/*PaymentService.ts
+                // and constants/paymentProviders.ts. The Store schema and
+                // storeController already refuse to save these as a store's
+                // provider, but a record could still hold one from before
+                // that restriction (or a direct DB write) — refuse here too
+                // rather than ever construct a service that would silently
+                // "accept" a forged webhook or hand a customer a dead
+                // checkout link.
+                throw new Error(`Payment provider '${providerConfig.provider}' is not yet available (unfinished integration). Use 'paymob' or 'manual'.`);
             case 'manual':
             default:
                 throw new Error(`Payment strategy '${providerConfig.provider}' does not require abstract programmatic initialization.`);

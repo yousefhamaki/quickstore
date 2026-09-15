@@ -52,8 +52,20 @@ export interface IProduct extends Document {
     inventory: IInventory;
     variants: IProductVariant[];
     options: { name: string; values: string[] }[]; // Keep option definitions
+    /**
+     * @deprecated Legacy freeform category name — kept only as a
+     * denormalized display string, auto-synced from `categoryId`'s name
+     * whenever it's set (see productController.ts). Real category
+     * management/filtering must use `categoryId`, not this field.
+     */
     category: string;
+    categoryId?: mongoose.Types.ObjectId;
     tags: string[];
+    /** Denormalized from approved Review documents — see reviewController.ts's
+     * recomputeProductRating(). Recomputed on every moderation change rather
+     * than incrementally updated, so it can't drift out of sync. */
+    ratingAverage: number;
+    ratingCount: number;
     status: 'draft' | 'active' | 'archived';
     seo: ISEO;
     isActive: boolean;
@@ -109,7 +121,10 @@ const ProductSchema: Schema = new Schema(
             },
         ],
         category: { type: String },
+        categoryId: { type: Schema.Types.ObjectId, ref: 'Category', index: true },
         tags: [{ type: String }],
+        ratingAverage: { type: Number, default: 0 },
+        ratingCount: { type: Number, default: 0 },
         status: {
             type: String,
             enum: ['draft', 'active', 'archived'],
@@ -159,7 +174,9 @@ ProductSchema.virtual('totalAvailable').get(function (this: IProduct) {
 
 ProductSchema.index({ storeId: 1, slug: 1 }, { unique: true });
 ProductSchema.index({ storeId: 1, status: 1 });
+ProductSchema.index({ storeId: 1, status: 1, createdAt: -1 });
 ProductSchema.index({ storeId: 1, category: 1 });
+ProductSchema.index({ storeId: 1, categoryId: 1 });
 ProductSchema.index({ storeId: 1, name: 'text', description: 'text', tags: 'text' });
 ProductSchema.index({ "variants.sku": 1 }, { sparse: true });
 

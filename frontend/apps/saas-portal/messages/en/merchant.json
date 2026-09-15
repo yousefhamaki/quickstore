@@ -19,7 +19,23 @@
         "secureWallet": "Secure Wallet Integration",
         "customDomain": "Custom Domain Support",
         "dropshipping": "Dropshipping Ecosystem",
-        "orderFee": "{amount} EGP fee per order"
+        "emailQuotaFree": "No monthly email campaign credits included",
+        "emailQuotaPaid": "Monthly allowance: {count} campaign email credits",
+        "orderFee": "{amount} EGP fee per order",
+        "confirmUpgradeTitle": "Confirm Subscription Upgrade",
+        "confirmUpgradeWarning": "Warning: You are currently on the <highlight>{current}</highlight>. Proceeding will immediately replace your active subscription with the <highlight>{new}</highlight> and deduct <highlight>{price} {currency}</highlight> from your wallet. Do you want to proceed?",
+        "confirmDowngradeTitle": "Confirm Subscription Downgrade",
+        "confirmDowngradeWarning": "Warning: You are currently on the <highlight>{current}</highlight>. Proceeding will immediately replace your active subscription with the <highlight>{new}</highlight> and deduct <highlight>{price} {currency}</highlight> from your wallet. Do you want to proceed?",
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePercent": "Save {percent}%",
+        "yearlyPeriod": "EGP/yr",
+        "monthlyPeriod": "EGP/mo",
+        "downgradeNow": "Downgrade Now",
+        "downgrade": "Downgrade",
+        "upgrade": "Upgrade",
+        "cancel": "Cancel",
+        "confirmAndPay": "Confirm & Pay"
     },
     "dashboard": {
         "welcome": "Welcome back, {name}!",
@@ -102,6 +118,11 @@
                 "payment": "Payment Setup",
                 "shipping": "Shipping Zones",
                 "policies": "Legal Policies"
+            },
+            "banner": {
+                "text": "Store setup {percentage}% complete",
+                "subtext": "Finish the remaining steps so customers can shop your store",
+                "cta": "Finish setup"
             }
         },
         "publishModal": {
@@ -136,6 +157,19 @@
         "activeStatus": "Active Status",
         "storesCapacity": "Stores Capacity",
         "productsActive": "Products Active",
+        "emailCredits": "Email Credits",
+        "emailCreditsSubtitle": "Your campaign email sending balance.",
+        "selectStore": "Select Store",
+        "planAllowance": "Plan Allowance",
+        "addOnBalance": "Add-On Balance",
+        "heldReserved": "Held / Reserved",
+        "totalCredits": "Total Credits",
+        "buyEmailCredits": "Buy Email Credits",
+        "noEmailBalance": "No email account found for this store yet.",
+        "transferCredits": "Transfer Credits",
+        "transferCreditsSubtitle": "Move purchased email credits from {store} to another one of your stores. Only purchased add-on credits can be moved — monthly plan allowances stay with the store they were granted to.",
+        "transferTo": "Transfer To",
+        "transferAmount": "Amount ({available} available)",
         "timeline": "Timeline",
         "milestones": "Subscription milestones",
         "nextRenewal": "Next Renewal",
@@ -162,9 +196,15 @@
         "reasons": {
             "recharge": "Wallet Recharge",
             "subscription_payment": "Subscription Payment",
+            "plan_payment": "Plan Payment",
+            "plan_upgrade": "Plan Upgrade",
+            "plan_renewal": "Plan Renewal",
+            "addon_purchase": "Add-On Purchase",
             "order_fee": "Order Transaction Fee",
             "refund": "Refund",
-            "manual_adjustment": "Manual Adjustment"
+            "gift": "Welcome Gift",
+            "manual_adjustment": "Manual Adjustment",
+            "admin_adjustment": "Manual Adjustment"
         }
     },
     "settings": {
@@ -301,7 +341,8 @@
             "processing": "Processing",
             "shipped": "Shipped",
             "delivered": "Delivered",
-            "cancelled": "Cancelled"
+            "cancelled": "Cancelled",
+            "refunded": "Refunded"
         },
         "noOrdersFound": "No orders found",
         "noOrdersSubtitle": "When a customer places an order, it will appear here.",
@@ -337,7 +378,25 @@
         "shippingAddress": "Shipping Address",
         "payment": "Payment",
         "paymentMethod": "Method",
-        "paymentStatus": "Status"
+        "paymentStatus": "Status",
+        "refundedTerminal": "This order has already been refunded and cannot be changed further.",
+        "refundOrder": "Refund Order",
+        "refundDialogDescription": "This reverses the platform fee charged on this order back to your wallet, releases any coupon usage, and marks the order as refunded. This cannot be undone.",
+        "refundReasonPlaceholder": "Why is this order being refunded?",
+        "refundReasonRequired": "Please enter a reason for the refund",
+        "confirmRefund": "Confirm Refund",
+        "cancel": "Cancel",
+        "refundInfo": "Refund Details",
+        "refundAmount": "Refunded Amount",
+        "refundedOn": "Refunded On",
+        "issueRefund": "Issue Refund",
+        "issueRefundDialogTitle": "Issue a Partial Refund",
+        "issueRefundDialogDescription": "Give a specific amount back to the customer without changing the order's status — the order still stands. This reverses a proportional share of the platform fee back to your wallet.",
+        "refundAmountLabel": "Amount to Refund (EGP)",
+        "remainingRefundable": "Remaining refundable: EGP {amount}",
+        "confirmIssueRefund": "Confirm Refund",
+        "noRemainingBalance": "This order has already been fully refunded.",
+        "refundHistory": "Refund History"
     },
     "customers": {
         "title": "Customers",

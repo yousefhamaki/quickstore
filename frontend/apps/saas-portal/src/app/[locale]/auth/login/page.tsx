@@ -5,6 +5,7 @@ import { useAuth } from '@shared/context/AuthContext';
 import api from '@shared/services/api';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
+import { PasswordInput } from '@shared/components/ui/password-input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@shared/components/ui/card';
 import { Label } from '@shared/components/ui/label';
 import Link from 'next/link';
@@ -12,6 +13,7 @@ import Image from 'next/image';
 import GoogleLoginButton from '@shared/components/auth/GoogleLoginButton';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@shared/components/LanguageSwitcher';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
     const t = useTranslations('auth');
@@ -21,6 +23,12 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
+
+    let redirect = '';
+    try {
+        const searchParams = useSearchParams();
+        redirect = searchParams.get('redirect') || '';
+    } catch (e) { }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,9 +96,8 @@ export default function LoginPage() {
                                     {t('login.forgotPassword')}
                                 </Link>
                             </div>
-                            <Input
+                            <PasswordInput
                                 id="password"
-                                type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
@@ -100,7 +107,7 @@ export default function LoginPage() {
                         {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
                         <Button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 transition-all duration-200"
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 transition duration-200"
                             disabled={loading}
                         >
                             {loading ? t('login.loggingIn') : t('login.submit')}
@@ -120,7 +127,7 @@ export default function LoginPage() {
                 <CardFooter className="flex flex-col space-y-4 text-center border-t py-6 bg-gray-50/50 rounded-b-xl">
                     <p className="text-sm text-gray-600">
                         {t('login.noAccount')}{' '}
-                        <Link href="/auth/register" className="text-blue-600 hover:underline font-semibold">
+                        <Link href={`/auth/register${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`} className="text-blue-600 hover:underline font-semibold">
                             {t('login.signUp')}
                         </Link>
                     </p>

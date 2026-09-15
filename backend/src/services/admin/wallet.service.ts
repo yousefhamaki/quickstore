@@ -4,12 +4,17 @@ import WalletLedger from '../../models/WalletLedger';
 import User from '../../models/User';
 import { logAdminAction } from './audit.service';
 import { publishAdminEvent } from '../../queues/adminQueue';
+import { WALLET_LEDGER_REASONS } from '../../constants/walletLedgerReasons';
 
 export const adjustBalance = async (
     merchantId: string,
     amount: number,
     type: 'credit' | 'debit',
     actorId: string,
+    /** Free-text note the admin typed (e.g. "Refund for order #123"). Stored
+     * on the ledger's `note` field; the ledger's `reason` category is always
+     * fixed to 'admin_adjustment' so the admin/merchant UI can still filter
+     * on a stable value instead of arbitrary free text. */
     reason: string,
     ipAddress?: string
 ) => {
@@ -43,10 +48,11 @@ export const adjustBalance = async (
         await wallet.save({ session });
 
         const ledgerEntry = await WalletLedger.create([{
-            merchantId: new mongoose.Types.ObjectId(merchantId),
+            userId: new mongoose.Types.ObjectId(merchantId),
             type,
             amount,
-            reason,
+            reason: WALLET_LEDGER_REASONS.ADMIN_ADJUSTMENT,
+            note: reason,
             balanceAfter: newBalance
         }], { session });
 
@@ -86,5 +92,5 @@ export const adjustBalance = async (
 };
 
 export const getMerchantLedger = async (merchantId: string) => {
-    return WalletLedger.find({ merchantId }).sort({ createdAt: -1 });
+    return WalletLedger.find({ userId: merchantId }).sort({ createdAt: -1 });
 };

@@ -54,7 +54,7 @@ export const setupStore = async (req: AuthRequest, res: Response) => {
 // @route   POST /api/merchants/subscribe
 // @access  Private (Merchant)
 export const submitSubscription = async (req: AuthRequest, res: Response) => {
-    const { planId, paymentMethod, storeId } = req.body;
+    const { planId, paymentMethod } = req.body;
     const receiptImage = req.file?.path;
 
     if (!receiptImage) {
@@ -67,9 +67,15 @@ export const submitSubscription = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Subscription plan not found' });
         }
 
+        // req.store comes from the requireOwnedStore middleware, which
+        // already verified it belongs to req.user — previously this read
+        // storeId straight from req.body with no check at all, so any
+        // merchant could attach a payment receipt to ANOTHER merchant's
+        // store; if an admin then approved it, that other store's
+        // subscription got activated based on a payment that isn't theirs.
         const receipt = await PaymentReceipt.create({
             merchantId: req.user._id,
-            storeId,
+            storeId: req.store._id,
             planId,
             receiptImage,
             paymentMethod,

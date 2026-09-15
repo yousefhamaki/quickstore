@@ -18,10 +18,12 @@ import {
   X, 
   ShieldAlert, 
   Lock,
-  Loader2 
+  Loader2,
+  ArrowLeftRight
 } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
+import { PasswordInput } from '@shared/components/ui/password-input';
 import { Badge } from '@shared/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@shared/components/ui/card';
 import { toast } from 'sonner';
@@ -39,6 +41,7 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Stores', href: '/stores', icon: Store, roles: ['super_admin', 'finance_admin', 'read_only_admin'] },
   { name: 'Receipts Queue', href: '/receipts', icon: Receipt, roles: ['super_admin', 'finance_admin', 'read_only_admin'] },
   { name: 'Subscription Plans', href: '/plans', icon: CreditCard, roles: ['super_admin', 'finance_admin'] },
+  { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight, roles: ['super_admin', 'finance_admin'] },
   { name: 'Support Tickets', href: '/tickets', icon: LifeBuoy, roles: ['super_admin', 'support_admin', 'read_only_admin'] },
 ];
 
@@ -124,8 +127,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-slate-300">Password</label>
-                <Input 
-                  type="password" 
+                <PasswordInput
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -135,7 +137,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-600 hover:to-indigo-600 text-white font-bold h-11 rounded-xl shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-300 mt-6"
+                className="w-full bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-600 hover:to-indigo-600 text-white font-bold h-11 rounded-xl shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition duration-300 mt-6"
                 disabled={authLoading}
               >
                 {authLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
@@ -199,7 +201,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition duration-300 ${
                     isActive 
                       ? 'bg-gradient-to-r from-cyan-500/20 to-indigo-500/10 text-cyan-400 border-l-4 border-cyan-500 glow-cyan' 
                       : 'text-slate-400 hover:bg-white/5 hover:text-white'
@@ -264,7 +266,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                       key={item.name}
                       href={item.href}
                       onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition ${
                         isActive 
                           ? 'bg-gradient-to-r from-cyan-500/20 to-indigo-500/10 text-cyan-400 border-l-4 border-cyan-500' 
                           : 'text-slate-400 hover:bg-white/5 hover:text-white'

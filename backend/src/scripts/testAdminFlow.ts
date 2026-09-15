@@ -74,7 +74,7 @@ const runVerification = async () => {
         console.log(`New Wallet Balance: ${result.newBalance} EGP`);
 
         // 4. Verify WalletLedger entry
-        const ledgerEntry = await WalletLedger.findOne({ merchantId: merchant._id }).sort({ createdAt: -1 });
+        const ledgerEntry = await WalletLedger.findOne({ userId: merchant._id }).sort({ createdAt: -1 });
         if (ledgerEntry) {
             console.log('\n--- WALLET LEDGER ENTRY GENERATED ---');
             console.log(`Type: ${ledgerEntry.type}`);

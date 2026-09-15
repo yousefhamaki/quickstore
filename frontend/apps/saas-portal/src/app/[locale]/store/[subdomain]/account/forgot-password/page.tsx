@@ -1,0 +1,88 @@
+'use client';
+
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Loader2, Send, ChevronLeft } from "lucide-react";
+import { usePublicStore } from "@shared/lib/hooks/usePublicStore";
+import { requestPasswordReset } from "@shared/services/customerAuthService";
+import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
+import { Card, CardContent } from "@shared/components/ui/card";
+
+export default function ForgotPasswordPage() {
+    const t = useTranslations('store.account.forgotPassword');
+    const params = useParams();
+    const subdomain = params.subdomain as string;
+    const { data: storeData } = usePublicStore(subdomain);
+    const store = storeData as any;
+    const storeId = store?._id || store?.id;
+
+    const [email, setEmail] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [sent, setSent] = useState(false);
+
+    const primaryColor = store?.branding?.primaryColor || "#3B82F6";
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!storeId) return;
+        setIsSubmitting(true);
+        try {
+            await requestPasswordReset(storeId, email);
+            setSent(true);
+        } catch {
+            // The endpoint always returns a generic success-shaped response
+            // (no account enumeration), so a thrown error here means a real
+            // network/server failure — still show the generic message since
+            // there's nothing more specific and safe to tell the shopper.
+            setSent(true);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="container mx-auto px-4 py-20 max-w-md">
+            <Card className="rounded-[40px] border-2 shadow-2xl overflow-hidden">
+                <CardContent className="p-8 md:p-12 space-y-8">
+                    <div className="text-center space-y-2">
+                        <h1 className="text-3xl font-black tracking-tighter">{t('title')}</h1>
+                        <p className="text-gray-500 font-medium text-sm">{t('subtitle')}</p>
+                    </div>
+
+                    {sent ? (
+                        <p className="text-center text-sm text-gray-600 font-medium p-6 rounded-2xl bg-gray-50">{t('success')}</p>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest ml-1">{t('email')}</label>
+                                <Input
+                                    required
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="h-14 rounded-2xl border-2 focus-visible:ring-offset-0 focus-visible:ring-2"
+                                    style={{ borderColor: primaryColor + '20' }}
+                                />
+                            </div>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting || !storeId}
+                                className="w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition hover:scale-[1.02] active:scale-[0.98]"
+                                style={{ backgroundColor: primaryColor }}
+                            >
+                                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4 mr-2" /> {t('submit')}</>}
+                            </Button>
+                        </form>
+                    )}
+
+                    <Link href="/account/login" className="flex items-center justify-center gap-1 text-sm font-bold text-gray-500 hover:text-black transition-colors">
+                        <ChevronLeft className="w-4 h-4" /> {t('backToLogin')}
+                    </Link>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { IMPLEMENTED_PAYMENT_PROVIDERS } from '../constants/paymentProviders';
 
 export interface ICloudinaryImage {
     url: string;
@@ -25,12 +26,20 @@ export interface IDomain {
     type: 'subdomain' | 'custom';
     subdomain: string;
     customDomain?: string;
+    // Ownership proof for `customDomain`, checked as a DNS TXT record at
+    // `_buildora-verify.<customDomain>` — see services/domain/DomainVerificationService.ts.
+    // Only meaningful while isVerified is false; not needed once verified.
+    verificationToken?: string;
     isVerified: boolean;
 }
 
 export interface IPaymentSettings {
     methods: string[];
-    provider?: 'manual' | 'paymob' | 'stripe' | 'paypal' | 'fawry';
+    // 'stripe' | 'paypal' | 'fawry' are intentionally NOT part of this type:
+    // those integrations are unfinished skeletons (see
+    // constants/paymentProviders.ts) and must not be selectable until they
+    // have real checkout + webhook-signature implementations.
+    provider?: 'manual' | 'paymob';
     credentials?: {
         apiKey?: string;
         apiSecret?: string;
@@ -116,6 +125,42 @@ export interface IStoreSettings {
     marketing: IMarketingSettings;
 }
 
+/**
+ * `customizations` is intentionally Mixed/untyped at the schema level (see
+ * below) so new storefront appearance options can be added without a
+ * migration — but the shape actually read by the storefront layout
+ * (frontend/apps/saas-portal/.../store/[subdomain]/layout.tsx) and written
+ * by the merchant theme settings page is:
+ *   {
+ *     buttonRadius?: 'sharp' | 'soft' | 'pill';
+ *     productGrid?: { columns?: 2 | 3 | 4; showRatings?: boolean };
+ *     announcementBar?: { enabled?: boolean; text?: string; backgroundColor?: string; textColor?: string };
+ *     hero?: { headline?: string; subheadline?: string; ctaText?: string };
+ *     footer?: { copyrightText?: string };
+ *     heroSlider?: {
+ *       slides: Array<{
+ *         id: string;                    // client-generated, stable for reordering
+ *         type: 'image' | 'product';
+ *         imageUrl: string;              // Cloudinary URL — custom upload for both
+ *                                        // slide types (product slides don't reuse
+ *                                        // the product's own photo)
+ *         imagePublicId?: string;        // Cloudinary publicId, for cleanup
+ *         link?: string;                 // 'image' slides only — optional URL
+ *         productId?: string;            // 'product' slides only
+ *         productSlug?: string;          // denormalized at save time, so the
+ *                                        // storefront can link without a lookup
+ *         productName?: string;          // denormalized for display if the
+ *                                        // product is later deleted
+ *         caption?: string;
+ *       }>;
+ *     };
+ *   }
+ * heroSlider is gated by SubscriptionPlan.features.allowHeroSlider (see
+ * storeController's updateStore and publicController's storefront read path)
+ * — admin-controlled per plan, defaults to true for every plan at launch.
+ * Keep frontend/packages/shared/src/types/store.ts's StoreThemeCustomizations
+ * in sync with this comment if you add fields.
+ */
 export interface ITheme {
     name: string;
     customizations: Record<string, any>;
@@ -229,6 +274,7 @@ const StoreSchema: Schema = new Schema(
             },
             subdomain: { type: String, required: true },
             customDomain: { type: String },
+            verificationToken: { type: String },
             isVerified: { type: Boolean, default: false }
         },
 
@@ -240,7 +286,10 @@ const StoreSchema: Schema = new Schema(
 
             payment: {
                 methods: [{ type: String }],
-                provider: { type: String, enum: ['manual', 'paymob', 'stripe', 'paypal', 'fawry'], default: 'manual' },
+                // Kept in sync with constants/paymentProviders.ts. 'stripe' |
+                // 'paypal' | 'fawry' are deliberately excluded — see that
+                // file for why.
+                provider: { type: String, enum: [...IMPLEMENTED_PAYMENT_PROVIDERS], default: 'manual' },
                 credentials: {
                     apiKey: { type: String },
                     apiSecret: { type: String },
@@ -342,6 +391,13 @@ const StoreSchema: Schema = new Schema(
 // StoreSchema.index({ slug: 1 }, { unique: true }); // Removed: Already defined in schema path
 StoreSchema.index({ ownerId: 1 });
 StoreSchema.index({ 'domain.subdomain': 1 }, { unique: true, sparse: true });
+// Without this, two different merchants could both set the same
+// domain.customDomain string (updateStore never checked for a collision),
+// and the public storefront lookup (`Store.findOne({$or:[{subdomain},
+// {customDomain}]})`) would nondeterministically serve whichever store
+// matched first — i.e. one merchant's real custom domain could end up
+// showing another merchant's store content.
+StoreSchema.index({ 'domain.customDomain': 1 }, { unique: true, sparse: true });
 StoreSchema.index({ status: 1, isPublished: 1 });
 
 export default mongoose.model<IStore>('Store', StoreSchema);

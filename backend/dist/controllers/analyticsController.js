@@ -16,14 +16,14 @@ exports.getCustomerStats = exports.getRecentOrders = exports.getTopProducts = ex
 const Order_1 = __importDefault(require("../models/Order"));
 const Product_1 = __importDefault(require("../models/Product"));
 const Customer_1 = __importDefault(require("../models/Customer"));
-const Store_1 = __importDefault(require("../models/Store"));
+const authMiddleware_1 = require("../middleware/authMiddleware");
 // @desc    Get dashboard overview analytics
 // @route   GET /api/analytics/overview
 // @access  Private/Merchant
 const getOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -118,7 +118,7 @@ exports.getOverview = getOverview;
 // @access  Private/Merchant
 const getRevenueChart = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -178,7 +178,7 @@ exports.getRevenueChart = getRevenueChart;
 // @access  Private/Merchant
 const getTopProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -210,7 +210,7 @@ exports.getTopProducts = getTopProducts;
 // @access  Private/Merchant
 const getRecentOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -232,7 +232,7 @@ exports.getRecentOrders = getRecentOrders;
 // @access  Private/Merchant
 const getCustomerStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }

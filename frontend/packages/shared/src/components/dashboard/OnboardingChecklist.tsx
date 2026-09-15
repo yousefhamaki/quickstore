@@ -78,7 +78,7 @@ export function OnboardingChecklist({ checklist, storeId }: OnboardingChecklistP
                     <div
                         key={step.key}
                         className={cn(
-                            "flex items-center justify-between p-3 rounded-lg border transition-all",
+                            "flex items-center justify-between p-3 rounded-lg border transition",
                             step.completed
                                 ? "bg-muted/50 border-transparent opacity-70"
                                 : "bg-background border-border hover:border-primary/50"

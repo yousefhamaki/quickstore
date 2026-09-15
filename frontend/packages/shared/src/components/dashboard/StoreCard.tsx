@@ -25,7 +25,7 @@ export function StoreCard({ store }: StoreCardProps) {
     const storeUrl = `https://${store.domain.subdomain}.quickstore.live`;
 
     return (
-        <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg border-2 hover:border-primary/20 group">
+        <Card className="overflow-hidden transition duration-300 hover:shadow-lg border-2 hover:border-primary/20 group">
             <CardHeader className="pb-3 border-b bg-muted/30">
                 <div className="flex items-start justify-between">
                     <div className="space-y-1">

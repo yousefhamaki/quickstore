@@ -3,10 +3,14 @@ import Order from '../models/Order';
 import Store from '../models/Store';
 import Customer from '../models/Customer';
 import Product from '../models/Product';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, resolveStore } from '../middleware/authMiddleware';
 import InventoryLog from '../models/InventoryLog';
 import mongoose from 'mongoose';
 import OfferCampaign from '../models/OfferCampaign';
+import Wallet from '../models/Wallet';
+import WalletLedger from '../models/WalletLedger';
+import Coupon from '../models/Coupon';
+import { WALLET_LEDGER_REASONS } from '../constants/walletLedgerReasons';
 
 // @desc    Get all orders for a store
 // @route   GET /api/orders
@@ -43,13 +47,16 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
             query.orderNumber = { $regex: search, $options: 'i' };
         }
 
-        const count = await Order.countDocuments(query);
-        const orders = await Order.find(query)
-            .populate('customerId', 'firstName lastName email')
-            .populate('storeId', 'name')
-            .sort({ createdAt: -1 })
-            .limit(pageSize)
-            .skip(pageSize * (page - 1));
+        const [count, orders] = await Promise.all([
+            Order.countDocuments(query),
+            Order.find(query)
+                .populate('customerId', 'firstName lastName email')
+                .populate('storeId', 'name')
+                .sort({ createdAt: -1 })
+                .limit(pageSize)
+                .skip(pageSize * (page - 1))
+                .lean()
+        ]);
 
         res.json({ orders, page, pages: Math.ceil(count / pageSize) });
     } catch (error) {
@@ -63,14 +70,15 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getOrderById = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
 
         const order = await Order.findOne({ _id: req.params.id, storeId: store._id })
             .populate('customerId', 'firstName lastName email phone')
-            .populate('items.productId', 'name images');
+            .populate('items.productId', 'name images')
+            .lean();
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
@@ -88,12 +96,12 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
     let session: mongoose.ClientSession | null = null;
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
 
-        const { status } = req.body;
+        const { status, reason } = req.body;
         const oldStatus = req.body.oldStatus; // Frontend should ideally pass this, or we fetch it.
 
         // Start transaction
@@ -103,16 +111,102 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         const order = await Order.findOne({ _id: req.params.id, storeId: store._id }).session(session);
 
         if (!order) {
+            // Was previously a bare early return with the transaction left
+            // open (never aborted/ended) — leaking a session on every
+            // not-found request. abortTransaction() here; the outer
+            // finally block still calls session.endSession() exactly once.
+            await session.abortTransaction();
             return res.status(404).json({ message: 'Order not found' });
         }
 
         const previousStatus = order.status;
+
+        // A refunded order is terminal — un-refunding would require
+        // re-charging the platform fee, re-incrementing coupon usage, and
+        // re-inflating store stats, none of which this endpoint is set up
+        // to do safely, so it's simplest and safest to just disallow it.
+        if (previousStatus === 'refunded' && status !== 'refunded') {
+            await session.abortTransaction();
+            return res.status(400).json({ message: 'This order has already been refunded and cannot change status further.' });
+        }
+
+        if (status === 'refunded' && previousStatus !== 'refunded' && !reason?.trim()) {
+            await session.abortTransaction();
+            return res.status(400).json({ message: 'A reason is required to refund an order.' });
+        }
+
         order.status = status;
         order.timeline.push({
             status,
             timestamp: new Date(),
-            note: `Status updated to ${status} by merchant`
+            note: status === 'refunded' && reason?.trim() ? `Refunded: ${reason.trim()}` : `Status updated to ${status} by merchant`
         });
+
+        // Platform-side money reversal: the per-order fee charged at
+        // checkout (processOrderFee in billingController.ts) and any coupon
+        // usage it consumed were previously NEVER reversed when an order
+        // was cancelled or refunded — the merchant kept paying for (and the
+        // coupon stayed "used up" by) an order that didn't go through.
+        // Fires once per order via refundSideEffectsApplied, on whichever of
+        // 'cancelled'/'refunded' is reached first.
+        if (['cancelled', 'refunded'].includes(status) && !order.refundSideEffectsApplied) {
+            // Only reverse whatever fee HASN'T already been reversed by an
+            // earlier partial refund (see issuePartialRefund) — feeReversedAmount
+            // is the shared counter that prevents double-crediting the wallet.
+            const feeRemaining = order.transactionFee - (order.feeReversedAmount || 0);
+            if (feeRemaining > 0) {
+                const updatedWallet = await Wallet.findOneAndUpdate(
+                    { userId: store.ownerId },
+                    { $inc: { balance: feeRemaining } },
+                    { new: true, session }
+                );
+                if (updatedWallet) {
+                    await WalletLedger.create([{
+                        userId: store.ownerId,
+                        type: 'credit',
+                        amount: feeRemaining,
+                        reason: WALLET_LEDGER_REASONS.ORDER_REFUND,
+                        referenceId: order._id,
+                        balanceAfter: updatedWallet.balance
+                    }], { session });
+                }
+                order.feeReversedAmount = order.transactionFee;
+            }
+
+            if (order.couponCode) {
+                await Coupon.updateOne(
+                    { storeId: store._id, code: order.couponCode, usageCount: { $gt: 0 } },
+                    { $inc: { usageCount: -1 } },
+                    { session }
+                );
+            }
+
+            // Same double-counting concern as the fee above: only reverse
+            // the portion of revenue not already backed out by a prior
+            // partial refund.
+            const revenueRemaining = order.total - (order.refundedAmount || 0);
+            await Store.findByIdAndUpdate(
+                store._id,
+                { $inc: { 'stats.totalOrders': -1, 'stats.totalRevenue': -revenueRemaining } },
+                { session }
+            );
+
+            order.refundSideEffectsApplied = true;
+        }
+
+        if (status === 'refunded' && previousStatus !== 'refunded') {
+            const remainingToRefund = order.total - (order.refundedAmount || 0);
+            order.paymentStatus = 'refunded';
+            if (remainingToRefund > 0) {
+                order.refunds.push({
+                    amount: remainingToRefund,
+                    reason: reason.trim(),
+                    refundedAt: new Date(),
+                    refundedBy: req.user._id
+                } as any);
+                order.refundedAmount = order.total;
+            }
+        }
         // Revert or re-apply campaign analytics based on status
         if (['cancelled', 'refunded'].includes(status)) {
             if (order.offerAttribution && order.offerAttribution.length > 0) {
@@ -287,6 +381,154 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
+/**
+ * A validation failure from applyOrderRefund that should surface as a 4xx
+ * to the HTTP caller, rather than the generic 500 an unexpected exception
+ * would get.
+ */
+export class RefundValidationError extends Error {
+    status: number;
+    constructor(message: string, status = 400) {
+        super(message);
+        this.status = status;
+    }
+}
+
+/**
+ * Core money-and-bookkeeping logic for a partial (or top-up-to-full)
+ * refund — shared by two entry points that must apply IDENTICAL financial
+ * logic: the merchant's direct "Issue Refund" button (issuePartialRefund
+ * below) and approving a customer's refund request
+ * (refundRequestController.approveRefundRequest). Mutates `order` in place
+ * (caller is responsible for `order.save({ session })` and committing the
+ * transaction) and applies the wallet/store-stats side effects directly.
+ *
+ * Does NOT change order.status, release inventory, reverse coupon usage,
+ * or reverse campaign analytics — this is for when the order still stands
+ * (delivered, customer keeps the goods) but money is being given back.
+ */
+export const applyOrderRefund = async (
+    order: InstanceType<typeof Order>,
+    store: InstanceType<typeof Store>,
+    numericAmount: number,
+    reason: string,
+    refundedByUserId: mongoose.Types.ObjectId | string,
+    session: mongoose.ClientSession
+) => {
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+        throw new RefundValidationError('amount must be a positive number');
+    }
+    if (!reason?.trim()) {
+        throw new RefundValidationError('A reason is required to issue a refund.');
+    }
+    if (!['paid', 'partially_refunded'].includes(order.paymentStatus)) {
+        throw new RefundValidationError('Only a paid order can be refunded.');
+    }
+
+    const remaining = order.total - (order.refundedAmount || 0);
+    if (numericAmount > remaining) {
+        throw new RefundValidationError(`Cannot refund more than the remaining balance of EGP ${remaining.toLocaleString()}.`);
+    }
+
+    order.refunds.push({
+        amount: numericAmount,
+        reason: reason.trim(),
+        refundedAt: new Date(),
+        refundedBy: refundedByUserId
+    } as any);
+    order.refundedAmount = (order.refundedAmount || 0) + numericAmount;
+    order.paymentStatus = order.refundedAmount >= order.total ? 'refunded' : 'partially_refunded';
+    order.timeline.push({
+        status: order.paymentStatus,
+        timestamp: new Date(),
+        note: `Refunded EGP ${numericAmount.toLocaleString()}: ${reason.trim()}`
+    });
+
+    // Prorate the platform order-fee reversal to the fraction of the
+    // order actually being refunded, capped at whatever fee hasn't
+    // already been reversed (shared with updateOrderStatus's full
+    // cancel/refund path via the same feeReversedAmount counter).
+    if (order.transactionFee > 0) {
+        const feeRemaining = order.transactionFee - (order.feeReversedAmount || 0);
+        const proratedFee = Math.min(
+            Math.round((order.transactionFee * (numericAmount / order.total)) * 100) / 100,
+            feeRemaining
+        );
+        if (proratedFee > 0) {
+            const updatedWallet = await Wallet.findOneAndUpdate(
+                { userId: store.ownerId },
+                { $inc: { balance: proratedFee } },
+                { new: true, session }
+            );
+            if (updatedWallet) {
+                await WalletLedger.create([{
+                    userId: store.ownerId,
+                    type: 'credit',
+                    amount: proratedFee,
+                    reason: WALLET_LEDGER_REASONS.ORDER_REFUND,
+                    referenceId: order._id,
+                    balanceAfter: updatedWallet.balance
+                }], { session });
+            }
+            order.feeReversedAmount = (order.feeReversedAmount || 0) + proratedFee;
+        }
+    }
+
+    // Revenue is reduced immediately by the refunded amount — a
+    // subsequent full cancel (if it ever happens) only reverses
+    // whatever's left, via the same refundedAmount-aware logic in
+    // updateOrderStatus.
+    await Store.findByIdAndUpdate(
+        store._id,
+        { $inc: { 'stats.totalRevenue': -numericAmount } },
+        { session }
+    );
+};
+
+// @desc    Issue a partial (or top-up-to-full) refund WITHOUT changing the
+//          order's fulfillment status — for when the order still stands
+//          (e.g. delivered, customer keeps the goods) but the merchant is
+//          giving some money back: a damaged item, a goodwill gesture, a
+//          shipping-fee refund, etc. Unlike marking the whole order
+//          'refunded' (updateOrderStatus), this does NOT release inventory,
+//          reverse coupon usage, or reverse campaign analytics — none of
+//          that is appropriate when the sale itself still happened.
+// @route   POST /api/orders/:id/refund
+// @access  Private/Merchant
+export const issuePartialRefund = async (req: AuthRequest, res: Response) => {
+    let session: mongoose.ClientSession | null = null;
+    try {
+        const store = await resolveStore(req);
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        const order = await Order.findOne({ _id: req.params.id, storeId: store._id }).session(session);
+        if (!order) {
+            await session.abortTransaction();
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        await applyOrderRefund(order, store, Number(req.body.amount), req.body.reason, req.user._id, session);
+
+        const updatedOrder = await order.save({ session });
+        await session.commitTransaction();
+        res.json(updatedOrder);
+    } catch (error) {
+        if (session) await session.abortTransaction();
+        if (error instanceof RefundValidationError) {
+            return res.status(error.status).json({ message: error.message });
+        }
+        console.error('Issue Partial Refund Error:', error);
+        res.status(500).json({ message: 'Server Error', error });
+    } finally {
+        if (session) session.endSession();
+    }
+};
+
 // @desc    Create new order (Merchant Manual Creation or Testing)
 // @route   POST /api/orders
 // @access  Private/Merchant
@@ -364,7 +606,7 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const addMerchantNote = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -390,7 +632,7 @@ export const addMerchantNote = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getOrderStats = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }

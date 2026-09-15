@@ -2,31 +2,48 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Card, CardContent } from '@shared/components/ui/card';
-import { Trash2, Plus, Upload, X } from 'lucide-react';
+import { Trash2, Plus, Upload, X, Settings } from 'lucide-react';
+import Link from 'next/link';
 import { uploadImages, createProduct, updateProduct } from '@shared/services/productService';
+import { getCategories, Category } from '@shared/services/categoryService';
 import { toast } from 'react-hot-toast';
+import { imagePreset } from '@shared/lib/cloudinaryImage';
 
 interface ProductFormProps {
     initialData?: any;
     isEdit?: boolean;
+    /**
+     * Required so the product is created/updated against the RIGHT store.
+     * Previously this form sent no storeId at all, so the backend's
+     * resolveStore() fell back to "the merchant's first store" every time —
+     * for any merchant with more than one store, every "new product" here
+     * silently landed on whichever store was created first, not the one
+     * whose page they were actually on, and editing a product that belongs
+     * to a different store would 404.
+     */
+    storeId: string;
 }
 
-export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
+export default function ProductForm({ initialData, isEdit, storeId }: ProductFormProps) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const t = useTranslations("merchant.products.form");
     const tStatus = useTranslations("merchant.products.status");
     const [loading, setLoading] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [form, setForm] = useState({
         name: '',
         description: '',
         price: '',
         compareAtPrice: '',
         category: '',
+        categoryId: '',
         inventory: '0',
         images: [] as any[],
         options: [] as any[],
@@ -35,8 +52,16 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
         barcode: '',
         costPerItem: '',
         trackInventory: true,
-        variants: [] as any[]
+        variants: [] as any[],
+        storeId
     });
+
+    useEffect(() => {
+        getCategories(storeId).then(setCategories).catch(() => {
+            // Non-fatal — the category dropdown just shows "Uncategorized"
+            // only if this fails.
+        });
+    }, [storeId]);
 
     useEffect(() => {
         if (initialData) {
@@ -197,6 +222,16 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                 await createProduct(data);
                 toast.success(t('success'));
             }
+
+            // The store detail page/card shows a live product count
+            // (store.stats.totalProducts) fetched via React Query under
+            // ['store', storeId] / ['stores'] — those queries have nothing
+            // to do with this plain axios call, so without this they keep
+            // serving their cached (possibly pre-creation, e.g. "0 products")
+            // snapshot for up to the client's 5-minute staleTime.
+            queryClient.invalidateQueries({ queryKey: ['store', storeId] });
+            queryClient.invalidateQueries({ queryKey: ['stores'] });
+
             router.back();
         } catch (error) {
             console.error('Save Product Error:', error);
@@ -243,8 +278,8 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                             <h2 className="text-xl font-bold">{t('media')}</h2>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {form.images.map((img, i) => (
-                                    <div key={i} className="group relative aspect-square rounded-xl bg-gray-100 overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all">
-                                        <img src={img.url} className="w-full h-full object-cover" />
+                                    <div key={i} className="group relative aspect-square rounded-xl bg-gray-100 overflow-hidden border-2 border-transparent hover:border-blue-500 transition">
+                                        <img src={imagePreset.thumbnail(img.url)} loading="lazy" decoding="async" width={100} height={100} className="w-full h-full object-cover" />
                                         <button
                                             type="button"
                                             onClick={() => removeImage(i)}
@@ -473,14 +508,31 @@ export default function ProductForm({ initialData, isEdit }: ProductFormProps) {
                         <CardContent className="p-8 space-y-6 pt-8">
                             <h2 className="text-xl font-bold">{t('organization.title')}</h2>
                             <div className="space-y-2">
-                                <Label htmlFor="category">{t('organization.category')}</Label>
-                                <Input
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="category">{t('organization.category')}</Label>
+                                    <Link
+                                        href={`/dashboard/stores/${storeId}/categories`}
+                                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                                    >
+                                        <Settings className="w-3 h-3" /> Manage Categories
+                                    </Link>
+                                </div>
+                                <select
                                     id="category"
-                                    value={form.category}
-                                    onChange={e => setForm({ ...form, category: e.target.value })}
-                                    placeholder={t('organization.categoryPlaceholder')}
-                                    className="rounded-xl"
-                                />
+                                    value={form.categoryId || ''}
+                                    onChange={e => setForm({ ...form, categoryId: e.target.value })}
+                                    className="w-full p-3 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                >
+                                    <option value="">Uncategorized</option>
+                                    {categories.map((c) => (
+                                        <option key={c._id} value={c._id}>{c.name}</option>
+                                    ))}
+                                </select>
+                                {categories.length === 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                        No categories yet — <Link href={`/dashboard/stores/${storeId}/categories`} className="underline font-bold">create one</Link> to organize your catalog.
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="status">{t('organization.status')}</Label>

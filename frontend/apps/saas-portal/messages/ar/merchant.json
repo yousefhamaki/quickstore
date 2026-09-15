@@ -19,7 +19,23 @@
         "secureWallet": "تكامل محفظة آمن",
         "customDomain": "دومين مخصص",
         "dropshipping": "نظام الدروبشيبينغ",
-        "orderFee": "{amount} ج.م رسوم للطلب"
+        "emailQuotaFree": "لا يشمل رصيد شهري لحملات البريد الإلكتروني",
+        "emailQuotaPaid": "الرصيد الشهري: {count} رصيد لحملات البريد الإلكتروني",
+        "orderFee": "{amount} ج.م رسوم للطلب",
+        "confirmUpgradeTitle": "تأكيد ترقية الاشتراك",
+        "confirmUpgradeWarning": "تحذير: أنت حالياً على <highlight>{current}</highlight>. المتابعة ستستبدل فوراً اشتراكك النشط بـ <highlight>{new}</highlight> وستخصم <highlight>{price} {currency}</highlight> من محفظتك. هل تريد المتابعة؟",
+        "confirmDowngradeTitle": "تأكيد تخفيض الاشتراك",
+        "confirmDowngradeWarning": "تحذير: أنت حالياً على <highlight>{current}</highlight>. المتابعة ستستبدل فوراً اشتراكك النشط بـ <highlight>{new}</highlight> وستخصم <highlight>{price} {currency}</highlight> من محفظتك. هل تريد المتابعة؟",
+        "monthly": "شهرياً",
+        "yearly": "سنوياً",
+        "savePercent": "وفر {percent}%",
+        "yearlyPeriod": "ج.م/سنوياً",
+        "monthlyPeriod": "ج.م/شهرياً",
+        "downgradeNow": "تخفيض الاشتراك الآن",
+        "downgrade": "تخفيض",
+        "upgrade": "ترقية",
+        "cancel": "إلغاء",
+        "confirmAndPay": "تأكيد ودفع"
     },
     "dashboard": {
         "welcome": "مرحباً بعودتك، {name}!",
@@ -102,6 +118,11 @@
                 "payment": "إعداد الدفع",
                 "shipping": "مناطق الشحن",
                 "policies": "السياسات القانونية"
+            },
+            "banner": {
+                "text": "اكتمال إعداد المتجر {percentage}%",
+                "subtext": "أكمل الخطوات المتبقية حتى يتمكن العملاء من التسوق من متجرك",
+                "cta": "إكمال الإعداد"
             }
         },
         "publishModal": {
@@ -136,6 +157,19 @@
         "activeStatus": "حالة النشاط",
         "storesCapacity": "سعة المتاجر",
         "productsActive": "المنتجات النشطة",
+        "emailCredits": "رصيد البريد الإلكتروني",
+        "emailCreditsSubtitle": "رصيدك المتاح لإرسال الحملات البريدية.",
+        "selectStore": "اختر المتجر",
+        "planAllowance": "مخصص الباقة",
+        "addOnBalance": "رصيد الإضافات",
+        "heldReserved": "محجوز مؤقتاً",
+        "totalCredits": "إجمالي الرصيد",
+        "buyEmailCredits": "شراء رصيد بريد إلكتروني",
+        "noEmailBalance": "لا يوجد حساب بريد إلكتروني لهذا المتجر بعد.",
+        "transferCredits": "نقل الرصيد",
+        "transferCreditsSubtitle": "انقل رصيد البريد الإلكتروني المشترى من {store} إلى متجر آخر تملكه. الرصيد المشترى فقط هو القابل للنقل — مخصص الباقة الشهري يفضل مرتبط بالمتجر اللي اتمنح له.",
+        "transferTo": "النقل إلى",
+        "transferAmount": "الكمية (المتاح: {available})",
         "timeline": "الجدول الزمني",
         "milestones": "أحداث الاشتراك الهامة",
         "nextRenewal": "التجديد القادم",
@@ -162,9 +196,15 @@
         "reasons": {
             "recharge": "شحن المحفظة",
             "subscription_payment": "دفع الاشتراك",
+            "plan_payment": "دفع الباقة",
+            "plan_upgrade": "ترقية الباقة",
+            "plan_renewal": "تجديد الباقة",
+            "addon_purchase": "شراء إضافة",
             "order_fee": "رسوم معاملة الطلب",
             "refund": "استرداد الأموال",
-            "manual_adjustment": "تعديل يدوي"
+            "gift": "هدية الترحيب",
+            "manual_adjustment": "تعديل يدوي",
+            "admin_adjustment": "تعديل يدوي"
         }
     },
     "settings": {
@@ -301,7 +341,8 @@
             "processing": "جاري المعالجة",
             "shipped": "تم الشحن",
             "delivered": "تم التوصيل",
-            "cancelled": "تم الإلغاء"
+            "cancelled": "تم الإلغاء",
+            "refunded": "تم الاسترداد"
         },
         "noOrdersFound": "لا توجد طلبات",
         "noOrdersSubtitle": "عندما يقوم العميل بتقديم طلب، سيظهر هنا.",
@@ -337,7 +378,25 @@
         "shippingAddress": "عنوان الشحن",
         "payment": "الدفع",
         "paymentMethod": "الطريقة",
-        "paymentStatus": "الحالة"
+        "paymentStatus": "الحالة",
+        "refundedTerminal": "تم استرداد هذا الطلب بالفعل ولا يمكن تغيير حالته أكثر من ذلك.",
+        "refundOrder": "استرداد الطلب",
+        "refundDialogDescription": "هذا الإجراء بيرجع رسوم المنصة المفروضة على الطلب لمحفظتك، ويلغي استخدام أي كوبون خصم، ويعلّم الطلب كمسترد. الإجراء ده مش قابل للتراجع.",
+        "refundReasonPlaceholder": "ليه بيتم استرداد الطلب ده؟",
+        "refundReasonRequired": "من فضلك اكتب سبب الاسترداد",
+        "confirmRefund": "تأكيد الاسترداد",
+        "cancel": "إلغاء",
+        "refundInfo": "تفاصيل الاسترداد",
+        "refundAmount": "المبلغ المسترد",
+        "refundedOn": "تاريخ الاسترداد",
+        "issueRefund": "إصدار استرداد",
+        "issueRefundDialogTitle": "إصدار استرداد جزئي",
+        "issueRefundDialogDescription": "أرجع مبلغاً محدداً للعميل دون تغيير حالة الطلب — يظل الطلب كما هو. هذا يرجع حصة نسبية من رسوم المنصة إلى محفظتك.",
+        "refundAmountLabel": "المبلغ المراد استرداده (ج.م)",
+        "remainingRefundable": "المتبقي القابل للاسترداد: {amount} ج.م",
+        "confirmIssueRefund": "تأكيد الاسترداد",
+        "noRemainingBalance": "تم استرداد هذا الطلب بالكامل بالفعل.",
+        "refundHistory": "سجل الاسترداد"
     },
     "customers": {
         "title": "العملاء",

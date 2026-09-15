@@ -5,6 +5,7 @@ import { useAuth } from '@shared/context/AuthContext';
 import api from '@shared/services/api';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
+import { PasswordInput } from '@shared/components/ui/password-input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@shared/components/ui/card';
 import { Label } from '@shared/components/ui/label';
 import Link from 'next/link';
@@ -18,6 +19,7 @@ function RegisterForm() {
     const t = useTranslations('auth');
     const searchParams = useSearchParams();
     const planId = searchParams.get('planId');
+    const redirect = searchParams.get('redirect');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -88,9 +90,8 @@ function RegisterForm() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">{t('register.password')}</Label>
-                        <Input
+                        <PasswordInput
                             id="password"
-                            type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -101,7 +102,7 @@ function RegisterForm() {
                     {successMessage && <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md font-medium">{successMessage}</div>}
                     <Button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 transition-all duration-200"
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 transition duration-200"
                         disabled={loading}
                     >
                         {loading ? t('register.creatingAccount') : t('register.submit')}
@@ -123,7 +124,7 @@ function RegisterForm() {
             <CardFooter className="flex flex-col space-y-4 text-center border-t py-6 bg-gray-50/50 rounded-b-xl">
                 <p className="text-sm text-gray-600">
                     {t('register.haveAccount')}{' '}
-                    <Link href="/auth/login" className="text-blue-600 hover:underline font-semibold">
+                    <Link href={`/auth/login${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`} className="text-blue-600 hover:underline font-semibold">
                         {t('register.signIn')}
                     </Link>
                 </p>
@@ -146,8 +147,8 @@ export default function RegisterPage() {
                     <Image
                         src="/new-logo.png"
                         alt="Buildora Logo"
-                        width={50}
-                        height={50}
+                        width={120}
+                        height={120}
                         className="object-contain group-hover:scale-110 transition-transform duration-300"
                         priority
                     />

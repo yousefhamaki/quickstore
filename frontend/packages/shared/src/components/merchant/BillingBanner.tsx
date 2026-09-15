@@ -30,7 +30,7 @@ const BannerContent = memo(({ isExpired, balance }: { isExpired: boolean; balanc
             asChild
             variant="secondary"
             size="sm"
-            className="rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all text-foreground h-9"
+            className="rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition text-foreground h-9"
         >
             <Link href="/merchant/billing">
                 {isExpired ? "Renew Plan" : "Recharge Wallet"}

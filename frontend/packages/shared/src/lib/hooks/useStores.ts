@@ -34,6 +34,12 @@ export const useDeleteStore = () => {
             toast.success('Store deleted successfully');
         },
         onError: (error: any) => {
+            // EMAIL_CREDITS_TRANSFER_REQUIRED isn't a failure — it's the
+            // backend asking which store to move purchased email credits to
+            // before it will delete this one. The caller (delete dialog)
+            // handles that response itself and shows a picker instead of a
+            // generic error toast.
+            if (error.response?.data?.code === 'EMAIL_CREDITS_TRANSFER_REQUIRED') return;
             toast.error(error.response?.data?.message || 'Failed to delete store');
         },
     });

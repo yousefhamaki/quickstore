@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { NavLink } from '@shared/components/NavLink';
 
 export function Footer() {
     const t = useTranslations('common');
@@ -34,7 +35,7 @@ export function Footer() {
                         <li><Link href="/features" className="hover:text-white transition-colors">{t('nav.features')}</Link></li>
                         <li><Link href="/pricing" className="hover:text-white transition-colors">{t('nav.pricing')}</Link></li>
                         <li><Link href="/support" className="hover:text-white transition-colors">{t('nav.support')}</Link></li>
-                        <li><Link href="/auth/register" className="hover:text-white transition-colors">{t('nav.getStarted')}</Link></li>
+                        <li><NavLink href="/auth/register" className="hover:text-white transition-colors">{t('nav.getStarted')}</NavLink></li>
                     </ul>
                 </div>
                 <div className="space-y-4">
@@ -49,7 +50,14 @@ export function Footer() {
                 </div>
             </div>
             <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm font-bold">
-                <p>{t('footer.copyright')}</p>
+                <p>
+                    {t('footer.copyright')}
+                    {process.env.NEXT_PUBLIC_APP_VERSION && (
+                        <span className="ml-2 rtl:ml-0 rtl:mr-2 text-gray-600">
+                            · v{process.env.NEXT_PUBLIC_APP_VERSION}
+                        </span>
+                    )}
+                </p>
                 <div className="flex space-x-8 rtl:space-x-reverse mt-4 md:mt-0">
                     <p>Made with ❤️ for merchants in Egypt</p>
                 </div>

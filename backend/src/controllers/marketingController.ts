@@ -11,7 +11,11 @@ const overwriteStoreCache = async (store: any) => {
         const cacheKey = `store_customization:${store.domain.subdomain}`;
         await redisClient.setex(cacheKey, 3600, JSON.stringify(plainStore));
 
-        if (store.domain.customDomain) {
+        // Only warm the customDomain cache key once it's verified — otherwise
+        // a public request for that (unverified) domain would be served from
+        // this cache entry directly, bypassing the isVerified check in
+        // publicController.getStoreBySubdomain.
+        if (store.domain.customDomain && store.domain.isVerified) {
             const customCacheKey = `store_customization:${store.domain.customDomain}`;
             await redisClient.setex(customCacheKey, 3600, JSON.stringify(plainStore));
         }

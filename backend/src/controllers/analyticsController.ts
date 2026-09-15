@@ -3,14 +3,14 @@ import Order from '../models/Order';
 import Product from '../models/Product';
 import Customer from '../models/Customer';
 import Store from '../models/Store';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, resolveStore } from '../middleware/authMiddleware';
 
 // @desc    Get dashboard overview analytics
 // @route   GET /api/analytics/overview
 // @access  Private/Merchant
 export const getOverview = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -114,7 +114,7 @@ export const getOverview = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getRevenueChart = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -176,7 +176,7 @@ export const getRevenueChart = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getTopProducts = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -210,7 +210,7 @@ export const getTopProducts = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getRecentOrders = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -234,7 +234,7 @@ export const getRecentOrders = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getCustomerStats = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }

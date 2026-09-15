@@ -35,6 +35,7 @@ interface Plan {
     dropshipping: boolean;
     customDomain: boolean;
     allowUCD: boolean;
+    allowHeroSlider: boolean;
   };
 }
 
@@ -58,6 +59,10 @@ export default function PlansAdmin() {
   const [dropshipping, setDropshipping] = useState(false);
   const [customDomain, setCustomDomain] = useState(false);
   const [allowUCD, setAllowUCD] = useState(false);
+  // Defaults true for a brand-new plan being created — matches the schema
+  // default (every plan gets the hero slider at launch; admins opt OUT
+  // per plan afterwards, not opt in).
+  const [allowHeroSlider, setAllowHeroSlider] = useState(true);
   const [editReason, setEditReason] = useState('');
 
   // Fetch plans
@@ -115,6 +120,7 @@ export default function PlansAdmin() {
     setDropshipping(false);
     setCustomDomain(false);
     setAllowUCD(false);
+    setAllowHeroSlider(true);
     setEditReason('');
     setIsFormOpen(true);
   };
@@ -135,6 +141,7 @@ export default function PlansAdmin() {
     setDropshipping(plan.features?.dropshipping || false);
     setCustomDomain(plan.features?.customDomain || false);
     setAllowUCD(plan.features?.allowUCD || false);
+    setAllowHeroSlider(plan.features?.allowHeroSlider ?? true);
     setEditReason('');
     setIsFormOpen(true);
   };
@@ -194,7 +201,8 @@ export default function PlansAdmin() {
       features: {
         dropshipping,
         customDomain,
-        allowUCD
+        allowUCD,
+        allowHeroSlider
       },
       reason: editReason
     };
@@ -462,14 +470,24 @@ export default function PlansAdmin() {
                     <Label htmlFor="feat-drop" className="text-xs text-slate-300">Dropshipping</Label>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      id="feat-ucd" 
+                    <input
+                      type="checkbox"
+                      id="feat-ucd"
                       checked={allowUCD}
                       onChange={(e) => setAllowUCD(e.target.checked)}
                       className="accent-cyan-500 w-4 h-4 rounded"
                     />
                     <Label htmlFor="feat-ucd" className="text-xs text-slate-300">Allow Upsell/Cross-sell</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="feat-hero-slider"
+                      checked={allowHeroSlider}
+                      onChange={(e) => setAllowHeroSlider(e.target.checked)}
+                      className="accent-cyan-500 w-4 h-4 rounded"
+                    />
+                    <Label htmlFor="feat-hero-slider" className="text-xs text-slate-300">Homepage Hero Slider</Label>
                   </div>
                 </div>
               </div>

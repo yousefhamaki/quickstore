@@ -28,8 +28,15 @@ export const createOrder = async (orderData: any) => {
     return response.data;
 };
 
-export const updateOrderStatus = async (id: string, status: string) => {
-    const response = await api.put(`/orders/${id}/status`, { status });
+export const updateOrderStatus = async (id: string, status: string, reason?: string) => {
+    const response = await api.put(`/orders/${id}/status`, { status, reason });
+    return response.data;
+};
+
+// Issues a partial (or top-up-to-full) refund without changing the order's
+// fulfillment status — see issuePartialRefund in orderController.ts.
+export const issuePartialRefund = async (id: string, amount: number, reason: string) => {
+    const response = await api.post(`/orders/${id}/refund`, { amount, reason });
     return response.data;
 };
 

@@ -62,7 +62,7 @@ export default function StorePreview({ params }: { params: Promise<{ storeId: st
                             variant="ghost"
                             size="icon"
                             className={cn(
-                                "h-8 w-8 rounded-full transition-all",
+                                "h-8 w-8 rounded-full transition",
                                 viewMode === mode && "bg-background shadow-sm text-primary"
                             )}
                             onClick={() => setViewMode(mode)}
@@ -109,7 +109,7 @@ export default function StorePreview({ params }: { params: Promise<{ storeId: st
             <div className="flex-1 overflow-auto p-4 md:p-8 flex items-center justify-center">
                 <div
                     className={cn(
-                        "bg-background shadow-2xl transition-all duration-500 overflow-y-auto relative border custom-scrollbar",
+                        "bg-background shadow-2xl transition duration-500 overflow-y-auto relative border custom-scrollbar",
                         viewMode === 'desktop' && "w-full max-w-[1400px] h-full rounded-xl",
                         viewMode === 'tablet' && "w-[768px] h-[1024px] max-h-full rounded-[40px] border-[12px] border-slate-900",
                         viewMode === 'mobile' && "w-[375px] h-[812px] max-h-full rounded-[48px] border-[16px] border-slate-900"
@@ -145,7 +145,7 @@ export default function StorePreview({ params }: { params: Promise<{ storeId: st
                             <Button
                                 asChild
                                 size="lg"
-                                className="rounded-full px-12 h-14 text-lg font-bold shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                className="rounded-full px-12 h-14 text-lg font-bold shadow-xl transition hover:scale-105 active:scale-95 cursor-pointer"
                                 style={{ backgroundColor: store.branding.primaryColor }}
                             >
                                 <Link href={`/dashboard/stores/${storeId}/products`}>
@@ -156,7 +156,7 @@ export default function StorePreview({ params }: { params: Promise<{ storeId: st
                             <div className="pt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
                                 {[1, 2, 3, 4, 5, 6].map((i) => (
                                     <div key={i} className="aspect-[3/4] bg-muted rounded-3xl p-4 flex flex-col justify-end text-left border overflow-hidden group/product cursor-help">
-                                        <div className="bg-background/80 backdrop-blur p-4 rounded-2xl transform translate-y-4 group-hover/product:translate-y-0 transition-all duration-300 shadow-sm">
+                                        <div className="bg-background/80 backdrop-blur p-4 rounded-2xl transform translate-y-4 group-hover/product:translate-y-0 transition duration-300 shadow-sm">
                                             <p className="text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-widest">Sample Product {i}</p>
                                             <div className="flex items-center justify-between">
                                                 <p className="font-bold">EGP {(250 * i).toLocaleString()}</p>

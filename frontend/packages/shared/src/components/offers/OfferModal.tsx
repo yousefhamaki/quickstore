@@ -150,14 +150,14 @@ export const OfferModal: React.FC<OfferModalProps> = ({
                             <div className="flex items-center bg-gray-50 rounded-[20px] p-1 border">
                                 <button
                                     onClick={() => setMultiplier(Math.max(1, multiplier - 1))}
-                                    className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-[16px] transition-all text-gray-600 hover:text-black"
+                                    className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-[16px] transition text-gray-600 hover:text-black"
                                 >
                                     <Minus size={18} />
                                 </button>
                                 <span className="w-12 text-center font-black text-lg">{multiplier}</span>
                                 <button
                                     onClick={() => setMultiplier(multiplier + 1)}
-                                    className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-[16px] transition-all text-gray-600 hover:text-black"
+                                    className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-[16px] transition text-gray-600 hover:text-black"
                                 >
                                     <Plus size={18} />
                                 </button>

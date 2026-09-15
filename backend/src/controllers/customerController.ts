@@ -43,12 +43,15 @@ export const getCustomers = async (req: AuthRequest, res: Response) => {
             ];
         }
 
-        const count = await Customer.countDocuments(query);
-        const customers = await Customer.find(query)
-            .populate('storeId', 'name')
-            .sort({ createdAt: -1 })
-            .limit(pageSize)
-            .skip(pageSize * (page - 1));
+        const [count, customers] = await Promise.all([
+            Customer.countDocuments(query),
+            Customer.find(query)
+                .populate('storeId', 'name')
+                .sort({ createdAt: -1 })
+                .limit(pageSize)
+                .skip(pageSize * (page - 1))
+                .lean()
+        ]);
 
         res.json({ customers, page, pages: Math.ceil(count / pageSize), total: count });
     } catch (error) {

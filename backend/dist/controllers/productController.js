@@ -41,6 +41,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -48,24 +59,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.bulkUpdateStatus = exports.getCategories = exports.deleteProductImage = exports.uploadProductImages = exports.getProductById = exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProducts = void 0;
 exports.clearStoreProductCaches = clearStoreProductCaches;
 const Product_1 = __importDefault(require("../models/Product"));
-const Store_1 = __importDefault(require("../models/Store"));
+const authMiddleware_1 = require("../middleware/authMiddleware");
 const redis_1 = require("../config/redis");
 // @desc    Get all products for a store with pagination and filters
 // @route   GET /api/products?page=1&limit=20&status=active&category=Clothing&search=shirt&stockLevel=low
 // @access  Private/Merchant
 const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let store;
-        // If storeId is provided in query, use it (Multi-store support)
-        if (req.query.storeId) {
-            store = yield Store_1.default.findOne({ _id: req.query.storeId, ownerId: req.user._id });
-        }
-        else {
-            // Fallback to legacy behavior (finding first store of user)
-            store = yield Store_1.default.findOne({ ownerId: req.user._id });
-        }
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
-            return res.status(404).json({ message: 'Store not found' });
+            return res.status(404).json({ message: 'Store not found or unauthorized' });
         }
         // Pagination
         const page = parseInt(req.query.page) || 1;
@@ -141,7 +144,7 @@ exports.getProducts = getProducts;
 // @access  Private/Merchant
 const createProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -192,7 +195,7 @@ exports.createProduct = createProduct;
 // @access  Private/Merchant
 const updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -200,9 +203,9 @@ const updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
-        const updatedProduct = yield Product_1.default.findByIdAndUpdate(req.params.id, Object.assign(Object.assign({}, req.body), { slug: undefined }), // Prevent slug update for now to avoid URL breaking, or handle carefully
-        { new: true, lean: true } // Inject lean on return and new payload
-        );
+        // Prevent mass assignment of storeId, slug, and id
+        const _a = req.body, { storeId, slug, _id } = _a, allowedBody = __rest(_a, ["storeId", "slug", "_id"]);
+        const updatedProduct = yield Product_1.default.findByIdAndUpdate(req.params.id, allowedBody, { new: true, lean: true });
         // Invalidate specific product and store-level list caches
         try {
             yield redis_1.redisClient.del(`product:${req.params.id}`);
@@ -223,7 +226,7 @@ exports.updateProduct = updateProduct;
 // @access  Private/Merchant
 const deleteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -307,7 +310,7 @@ exports.uploadProductImages = uploadProductImages;
 // @access  Private/Merchant
 const deleteProductImage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -338,7 +341,7 @@ exports.deleteProductImage = deleteProductImage;
 // @access  Private/Merchant
 const getCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -355,7 +358,7 @@ exports.getCategories = getCategories;
 // @access  Private/Merchant
 const bulkUpdateStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }

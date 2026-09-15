@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Wallet from '../models/Wallet';
-import WalletTransaction from '../models/WalletTransaction';
+import WalletLedger from '../models/WalletLedger';
 import Subscription from '../models/Subscription';
 import Receipt from '../models/Receipt';
 import mongoose from 'mongoose';
@@ -10,6 +10,7 @@ import { ShippingFactory } from '../services/shipping/ShippingFactory';
 import { PaymentFactory } from '../services/payment/PaymentFactory';
 import Transaction from '../models/Transaction';
 import crypto from 'crypto';
+import { WALLET_LEDGER_REASONS } from '../constants/walletLedgerReasons';
 
 /**
  * @desc    Paymob Webhook Handler
@@ -35,42 +36,56 @@ export const handlePaymobWebhook = async (req: Request, res: Response) => {
         const requestedHmac = req.query.hmac as string;
 
         // HMAC validation (Crucial for security)
-        if (hmacSecret && requestedHmac) {
-            const { obj } = req.body;
-            if (obj) {
-                const hmacString = [
-                    obj.amount_cents,
-                    obj.created_at,
-                    obj.currency,
-                    obj.error_occured,
-                    obj.has_parent_transaction,
-                    obj.id,
-                    obj.integration_id,
-                    obj.is_3d_secure,
-                    obj.is_auth,
-                    obj.is_capture,
-                    obj.is_refunded,
-                    obj.is_standalone_payment,
-                    obj.is_voided,
-                    obj.order?.id,
-                    obj.owner,
-                    obj.pending,
-                    obj.source_data?.pan,
-                    obj.source_data?.sub_type,
-                    obj.source_data?.type,
-                    obj.success
-                ].join('');
-
-                const hash = crypto.createHmac('sha512', hmacSecret).update(hmacString).digest('hex');
-                if (hash !== requestedHmac) {
-                    console.error('Invalid HMAC signature for Paymob Webhook');
-                    if (session) await session.abortTransaction();
-                    return res.status(401).send('Invalid signature');
-                }
-            }
+        if (!hmacSecret) {
+            console.error('[Paymob Webhook] PAYMOB_HMAC_SECRET is missing in environment variables. Webhook rejected.');
+            if (session) await session.abortTransaction();
+            return res.status(500).send('Webhook validation configuration missing');
         }
 
-        const { obj, type: reqType } = req.body;
+        if (!requestedHmac) {
+            console.error('[Paymob Webhook] Missing hmac query signature. Webhook rejected.');
+            if (session) await session.abortTransaction();
+            return res.status(401).send('Missing hmac signature');
+        }
+
+        const { obj } = req.body;
+        if (obj) {
+            const hmacString = [
+                obj.amount_cents,
+                obj.created_at,
+                obj.currency,
+                obj.error_occured,
+                obj.has_parent_transaction,
+                obj.id,
+                obj.integration_id,
+                obj.is_3d_secure,
+                obj.is_auth,
+                obj.is_capture,
+                obj.is_refunded,
+                obj.is_standalone_payment,
+                obj.is_voided,
+                obj.order?.id,
+                obj.owner,
+                obj.pending,
+                obj.source_data?.pan,
+                obj.source_data?.sub_type,
+                obj.source_data?.type,
+                obj.success
+            ].join('');
+
+            const hash = crypto.createHmac('sha512', hmacSecret).update(hmacString).digest('hex');
+            if (hash !== requestedHmac) {
+                console.error('Invalid HMAC signature for Paymob Webhook');
+                if (session) await session.abortTransaction();
+                return res.status(401).send('Invalid signature');
+            }
+        } else {
+            console.error('[Paymob Webhook] Missing obj payload');
+            if (session) await session.abortTransaction();
+            return res.status(400).send('Malformed payload');
+        }
+
+        const { type: reqType } = req.body;
         // Event should be TRANSACTION_PROCESSED
         if (reqType === 'TRANSACTION_PROCESSED' || (obj && obj.order && obj.order.id)) {
             const { success, pending, amount_cents, order } = obj;
@@ -95,31 +110,24 @@ export const handlePaymobWebhook = async (req: Request, res: Response) => {
                             { upsert: true, new: true, session: session || undefined }
                         );
 
-                        // Record WalletTransaction
-                        const wTx = await WalletTransaction.create([{
-                            userId,
-                            type: 'credit',
-                            amount,
-                            reason: 'recharge',
-                            referenceId: transaction._id
-                        }], { session: session || undefined });
-
+                        // Log to the wallet ledger (canonical source of truth)
+                        let ledgerTx: any = null;
                         if (wallet) {
-                            const WalletLedgerModel = mongoose.model('WalletLedger');
-                            await WalletLedgerModel.create([{
-                                merchantId: userId,
+                            const created = await WalletLedger.create([{
+                                userId,
                                 type: 'credit',
                                 amount,
-                                reason: 'recharge',
+                                reason: WALLET_LEDGER_REASONS.RECHARGE,
                                 referenceId: transaction._id,
                                 balanceAfter: wallet.balance
                             }], session ? { session } : {});
+                            ledgerTx = created[0];
                         }
 
                         // Issue Receipt
                         await Receipt.create([{
                             userId,
-                            referenceId: wTx[0]._id,
+                            referenceId: ledgerTx ? ledgerTx._id : transaction._id,
                             type: 'wallet_recharge',
                             amount,
                             currency: 'EGP'

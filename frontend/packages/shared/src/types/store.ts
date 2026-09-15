@@ -8,9 +8,10 @@ export interface StoreLogo {
 }
 
 export interface StoreDomain {
+    type?: 'subdomain' | 'custom';
     subdomain: string;
     customDomain?: string;
-    isCustomDomainVerified?: boolean;
+    isVerified?: boolean;
 }
 
 export interface StoreBranding {
@@ -37,6 +38,54 @@ export interface StoreStats {
     totalVisitors: number;
 }
 
+export interface StoreThemeCustomizations {
+    buttonRadius?: 'sharp' | 'soft' | 'pill';
+    productGrid?: {
+        columns?: 2 | 3 | 4;
+        showRatings?: boolean;
+    };
+    announcementBar?: {
+        enabled?: boolean;
+        text?: string;
+        backgroundColor?: string;
+        textColor?: string;
+    };
+    hero?: {
+        headline?: string;
+        subheadline?: string;
+        ctaText?: string;
+    };
+    footer?: {
+        copyrightText?: string;
+    };
+    heroSlider?: {
+        slides: HeroSlide[];
+    };
+}
+
+export interface HeroSlide {
+    /** Client-generated, stable across reorders/saves. */
+    id: string;
+    type: 'image' | 'product';
+    /** Cloudinary URL — always a fresh upload, for both slide types. */
+    imageUrl: string;
+    imagePublicId?: string;
+    /** 'image' slides only — optional, makes the slide clickable. */
+    link?: string;
+    /** 'product' slides only. */
+    productId?: string;
+    /** Denormalized at save time so the storefront can link with no lookup. */
+    productSlug?: string;
+    /** Denormalized for display if the product is later deleted. */
+    productName?: string;
+    caption?: string;
+}
+
+export interface StoreTheme {
+    name: string;
+    customizations: StoreThemeCustomizations;
+}
+
 export interface Store {
     _id: string;
     merchant: string;
@@ -48,6 +97,7 @@ export interface Store {
     favicon?: StoreLogo;
     domain: StoreDomain;
     branding: StoreBranding;
+    theme?: StoreTheme;
     contact: StoreContact;
     settings: {
         currency: string;

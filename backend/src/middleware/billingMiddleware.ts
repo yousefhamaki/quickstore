@@ -5,6 +5,7 @@ import Plan from '../models/SubscriptionPlan';
 import Wallet from '../models/Wallet';
 import Store from '../models/Store';
 import mongoose from 'mongoose';
+import { canAccessFeature, FeatureKey } from '../config/planFeatures';
 
 /**
  * Attaches the user's current subscription and wallet to the request.
@@ -212,4 +213,38 @@ export const checkServiceAvailability = async (req: AuthRequest, res: Response, 
     }
 
     next();
+};
+
+export const requireStorefrontFeature = (feature: FeatureKey) => {
+    return (req: any, res: Response, next: NextFunction) => {
+        const sub = req.subscription;
+
+        if (!sub || !sub.planId) {
+            return res.status(403).json({
+                success: false,
+                message: 'No active plan found for this store.',
+                code: 'NO_PLAN'
+            });
+        }
+
+        if (sub.status !== 'active') {
+            return res.status(403).json({
+                success: false,
+                message: 'Store subscription is not active.',
+                code: 'SUBSCRIPTION_INACTIVE'
+            });
+        }
+
+        const planName = (sub.planId as any).name;
+
+        if (!canAccessFeature(planName, feature)) {
+            return res.status(403).json({
+                success: false,
+                message: `The '${feature}' feature is not supported on this store's plan.`,
+                code: 'FEATURE_LOCKED'
+            });
+        }
+
+        next();
+    };
 };

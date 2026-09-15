@@ -74,7 +74,7 @@ export function PublishModal({
     return (
         <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
             <DialogContent className={cn(
-                "sm:max-w-[480px] transition-all duration-500",
+                "sm:max-w-[480px] transition duration-500",
                 isSuccess && "sm:max-w-[400px]"
             )}>
                 {!isSuccess ? (

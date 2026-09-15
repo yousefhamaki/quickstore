@@ -11,7 +11,6 @@ import { Toaster } from 'sonner';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { WalletProvider } from '@shared/context/WalletContext';
 import { NavigationProvider } from '@shared/providers/NavigationProvider';
-import { GlobalRouteLoader } from '@shared/components/GlobalRouteLoader';
 import { Suspense } from 'react';
 
 // Create QueryClient outside component to prevent re-initialization
@@ -36,7 +35,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <Suspense fallback={null}>
                     <NavigationProvider>
                         <WalletProvider>
-                            <GlobalRouteLoader />
                             {children}
                         </WalletProvider>
                     </NavigationProvider>

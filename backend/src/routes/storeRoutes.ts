@@ -12,7 +12,10 @@ import {
     generatePreviewToken,
     checkSubdomainAvailability,
     getOnboardingChecklist,
-    uploadStoreLogo
+    uploadStoreLogo,
+    setCustomDomain,
+    verifyCustomDomain,
+    removeCustomDomain
 } from '../controllers/storeController';
 import { protect, authorize } from '../middleware/authMiddleware';
 import { checkVerification } from '../middleware/verificationMiddleware';
@@ -40,6 +43,12 @@ router.post('/:id/resume', billingContext, checkServiceAvailability, resumeStore
 
 // Store Preview
 router.post('/:id/preview-token', generatePreviewToken);
+
+// Custom domain (DNS ownership verification required — see
+// services/domain/DomainVerificationService.ts and docs/custom-domains.md)
+router.post('/:id/domain', setCustomDomain);
+router.post('/:id/domain/verify', verifyCustomDomain);
+router.delete('/:id/domain', removeCustomDomain);
 
 // Utilities
 router.get('/check-subdomain/:subdomain', checkSubdomainAvailability);

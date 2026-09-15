@@ -1,6 +1,7 @@
 import React from 'react';
 import { EvaluatedOffer } from '../../lib/api/offers';
 import { Sparkles, ArrowRight } from 'lucide-react';
+import { imagePreset } from '../../lib/cloudinaryImage';
 
 interface UpsellTeaserProps {
     offer: EvaluatedOffer;
@@ -13,12 +14,12 @@ export const UpsellTeaser: React.FC<UpsellTeaserProps> = ({ offer, onClick }) =>
     return (
         <div 
             onClick={onClick}
-            className="group cursor-pointer mt-8 p-1 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent hover:from-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
+            className="group cursor-pointer mt-8 p-1 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent hover:from-primary/30 transition duration-500 animate-in fade-in slide-in-from-bottom-4"
         >
             <div className="flex items-center gap-4 bg-background border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                 {mainProduct?.image ? (
                     <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
-                        <img src={mainProduct.image} alt={mainProduct.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <img src={imagePreset.thumbnail(mainProduct.image)} alt={mainProduct.name} loading="lazy" decoding="async" width={100} height={100} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     </div>
                 ) : (
                     <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">

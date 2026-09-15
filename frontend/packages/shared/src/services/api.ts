@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { authCookieOptions } from '../lib/authCookie';
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
@@ -28,7 +29,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             // Clear auth data
-            Cookies.remove('token');
+            Cookies.remove('token', authCookieOptions());
             localStorage.removeItem('user');
 
             // Prevent infinite redirect loops and don't redirect on storefront paths

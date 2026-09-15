@@ -26,4 +26,6 @@ router.delete('/plans/:id', (0, policyMiddleware_1.can)('plans.delete'), adminCo
 router.get('/tickets', (0, policyMiddleware_1.can)('tickets.view'), adminController_1.getTicketsList);
 router.post('/tickets/:id/reply', (0, policyMiddleware_1.can)('tickets.reply'), adminController_1.addTicketReplyController);
 router.put('/tickets/:id/status', (0, policyMiddleware_1.can)('tickets.status'), adminController_1.updateTicketStatusController);
+router.get('/transactions', (0, policyMiddleware_1.can)('analytics.view'), adminController_1.getTransactionsList);
+router.get('/transactions/stats', (0, policyMiddleware_1.can)('analytics.view'), adminController_1.getTransactionStats);
 exports.default = router;

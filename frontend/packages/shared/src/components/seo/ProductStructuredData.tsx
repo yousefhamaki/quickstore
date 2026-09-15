@@ -34,7 +34,7 @@ interface ProductStructuredDataProps {
         domain: {
             subdomain: string;
             customDomain?: string;
-            isCustomDomainVerified?: boolean;
+            isVerified?: boolean;
         };
         settings: {
             currency: string;
@@ -44,7 +44,7 @@ interface ProductStructuredDataProps {
 
 export function ProductStructuredData({ product, store }: ProductStructuredDataProps) {
     // Determine base URL
-    const baseUrl = store.domain.customDomain && store.domain.isCustomDomainVerified
+    const baseUrl = store.domain.customDomain && store.domain.isVerified
         ? `https://${store.domain.customDomain}`
         : `https://${store.domain.subdomain}.quickstore.live`;
 

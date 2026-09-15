@@ -4,6 +4,12 @@ import EmailLedgerEntry from '../models/EmailLedgerEntry';
 import EmailCreditReservation from '../models/EmailCreditReservation';
 import Store from '../models/Store';
 import Subscription from '../models/Subscription';
+// Side-effect import: getCreditBalance() below does
+// Subscription.find().populate('planId'), which needs 'SubscriptionPlan'
+// registered with Mongoose. Registered implicitly in the main server via
+// other files' imports, but not guaranteed for standalone
+// scripts/tests/workers that import this service directly.
+import '../models/SubscriptionPlan';
 
 export class CampaignQuotaService {
     /**
@@ -59,14 +65,38 @@ export class CampaignQuotaService {
                 }
             }
         } else {
-            // Check if we need to refresh monthly allowance (cycle renewal or plan change detected)
             const subStartedAt = sub ? new Date(sub.startedAt) : new Date(0);
-            if (account.lastRefreshedAt < subStartedAt) {
-                console.log(`[CampaignQuotaService] Cycle reset detected. Refreshing monthly allowance for store ${storeId}.`);
-                
+            const now = new Date();
+            const monthsSinceLastRefresh =
+                (now.getFullYear() - account.lastRefreshedAt.getFullYear()) * 12 +
+                (now.getMonth() - account.lastRefreshedAt.getMonth());
+
+            // Two independent triggers for refreshing the monthly plan
+            // allowance:
+            //  1) monthElapsed — a full calendar month has passed since the
+            //     last grant. This is the actual cadence the plan promises
+            //     ("500 emails/month") and must fire every month regardless
+            //     of the subscription's own billing cycle length.
+            //  2) planChanged — the subscription's plan/cycle changed since
+            //     the last grant (e.g. an upgrade), so the new allowance
+            //     should apply immediately rather than waiting for the next
+            //     calendar month boundary.
+            //
+            // Previously this ONLY checked planChanged (lastRefreshedAt <
+            // sub.startedAt). That's fine for a monthly subscriber — every
+            // renewal advances startedAt once a month — but for a YEARLY
+            // subscriber, startedAt only changes once a year, so the
+            // "monthly" allowance was silently granted exactly once for the
+            // whole 12 months instead of refreshing every month.
+            const monthElapsed = monthsSinceLastRefresh >= 1;
+            const planChanged = account.lastRefreshedAt < subStartedAt;
+
+            if (monthElapsed || planChanged) {
+                console.log(`[CampaignQuotaService] Refreshing monthly allowance for store ${storeId} (monthElapsed=${monthElapsed}, planChanged=${planChanged}).`);
+
                 // Old planBalance expires. Purchased credits are kept intact.
                 account.planBalance = allowance;
-                account.lastRefreshedAt = new Date();
+                account.lastRefreshedAt = now;
                 account.balance = account.planBalance + account.purchasedBalance;
                 await account.save();
 
@@ -74,11 +104,91 @@ export class CampaignQuotaService {
                     storeId,
                     type: 'monthly_grant',
                     amount: allowance,
-                    description: `Monthly renewal email quota grant for plan: ${planName}`
+                    description: `Monthly email quota grant for plan: ${planName}`
                 });
             }
         }
         return account;
+    }
+
+    /**
+     * Moves PURCHASED add-on email credits from one store to another owned
+     * by the same merchant. Only `purchasedBalance` is transferable — the
+     * monthly `planBalance` stays tied to the store it was granted to (it's
+     * a per-store entitlement re-derived from the subscription's plan every
+     * cycle in getCreditBalance(), not something the merchant "owns" and
+     * moves around; purchased credits, on the other hand, were bought with
+     * real money and the merchant reasonably expects to reallocate them
+     * across their own stores).
+     *
+     * Caller is responsible for verifying both storeIds actually belong to
+     * the requesting merchant BEFORE calling this — this method only
+     * touches the two EmailAccount documents it's given.
+     */
+    static async transferPurchasedCredits(
+        fromStoreId: string | mongoose.Types.ObjectId,
+        toStoreId: string | mongoose.Types.ObjectId,
+        amount: number
+    ): Promise<{ from: any; to: any }> {
+        if (String(fromStoreId) === String(toStoreId)) {
+            throw new Error('Cannot transfer credits to the same store');
+        }
+        if (!Number.isInteger(amount) || amount <= 0) {
+            throw new Error('Transfer amount must be a positive whole number');
+        }
+
+        // Ensure both accounts exist (and are refreshed to the current
+        // plan's monthly allowance) before moving anything between them.
+        await this.getCreditBalance(fromStoreId);
+        await this.getCreditBalance(toStoreId);
+
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            const fromAccount = await EmailAccount.findOneAndUpdate(
+                { storeId: fromStoreId, purchasedBalance: { $gte: amount } },
+                { $inc: { purchasedBalance: -amount, balance: -amount } },
+                { new: true, session }
+            );
+
+            if (!fromAccount) {
+                throw new Error('Insufficient purchased email credit balance on the source store');
+            }
+
+            const toAccount = await EmailAccount.findOneAndUpdate(
+                { storeId: toStoreId },
+                { $inc: { purchasedBalance: amount, balance: amount } },
+                { new: true, session }
+            );
+
+            if (!toAccount) {
+                throw new Error('Destination store email account not found');
+            }
+
+            await EmailLedgerEntry.create([{
+                storeId: fromStoreId,
+                type: 'transfer_out',
+                amount: -amount,
+                referenceId: String(toStoreId),
+                description: `Transferred ${amount} email credits to another store`
+            }], { session });
+
+            await EmailLedgerEntry.create([{
+                storeId: toStoreId,
+                type: 'transfer_in',
+                amount,
+                referenceId: String(fromStoreId),
+                description: `Received ${amount} email credits from another store`
+            }], { session });
+
+            await session.commitTransaction();
+            return { from: fromAccount, to: toAccount };
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        } finally {
+            session.endSession();
+        }
     }
 
     /**

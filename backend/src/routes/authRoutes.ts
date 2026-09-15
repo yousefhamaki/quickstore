@@ -1,18 +1,28 @@
 import express from 'express';
 import { registerUser, loginUser, getUserProfile, verifyEmail, googleLogin, resendVerificationEmail } from '../controllers/authController';
 import { protect } from '../middleware/authMiddleware';
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
+// Rate limiter for sensitive authentication endpoints (max 5 requests per minute)
+const authLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 5,
+    message: { message: 'Too many authentication attempts, please try again after a minute.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // @ts-ignore
-router.post('/register', registerUser);
-router.post('/login', loginUser);
+router.post('/register', authLimiter, registerUser);
+router.post('/login', authLimiter, loginUser);
 // @ts-ignore
-router.post('/verify-email', verifyEmail);
+router.post('/verify-email', authLimiter, verifyEmail);
 // @ts-ignore
-router.post('/google', googleLogin);
+router.post('/google', authLimiter, googleLogin);
 router.get('/profile', protect, getUserProfile);
 // @ts-ignore
-router.post('/resend-verification', resendVerificationEmail);
+router.post('/resend-verification', authLimiter, resendVerificationEmail);
 
 export default router;

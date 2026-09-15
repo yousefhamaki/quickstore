@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Subscription from '../models/Subscription';
 import Wallet from '../models/Wallet';
-import WalletTransaction from '../models/WalletTransaction';
+import WalletLedger from '../models/WalletLedger';
 import Plan from '../models/SubscriptionPlan';
 import Receipt from '../models/Receipt';
 import BillingProfile from '../models/BillingProfile';
@@ -14,6 +14,9 @@ import Store from '../models/Store';
 import EmailLedgerEntry from '../models/EmailLedgerEntry';
 import EmailAccount from '../models/EmailAccount';
 import { CampaignQuotaService } from '../services/CampaignQuotaService';
+import { ProrationService } from '../services/billing/ProrationService';
+import { WALLET_LEDGER_REASONS } from '../constants/walletLedgerReasons';
+import { addBillingCycle } from '../utils/billingCycle';
 
 /**
  * Idempotent Wallet Creation Helper
@@ -28,13 +31,16 @@ export const ensureWallet = async (userId: string) => {
             currency: 'EGP'
         });
 
-        // Record welcome gift transaction in ledger
-        await WalletTransaction.create({
+        // Record welcome gift in the wallet ledger (previously this only wrote
+        // to the now-deprecated WalletTransaction, so gifted balances never
+        // showed up in the canonical ledger/audit trail).
+        await WalletLedger.create({
             userId,
             type: 'credit',
             amount: 500,
-            reason: 'gift',
-            referenceId: wallet._id
+            reason: WALLET_LEDGER_REASONS.SIGNUP_GIFT,
+            referenceId: wallet._id,
+            balanceAfter: wallet.balance
         });
 
         console.log(`Initialized missing wallet for user ${userId} with 500 EGP gift`);
@@ -124,22 +130,12 @@ export const paySubscriptionWithWallet = async (req: AuthRequest, res: Response)
             wallet.balance -= price;
             await wallet.save({ session });
 
-            // 2. Create transaction record
-            await WalletTransaction.create([{
+            // 2. Log to the wallet ledger (canonical source of truth)
+            await WalletLedger.create([{
                 userId,
                 type: 'debit',
                 amount: price,
-                reason: 'plan_payment',
-                referenceId: sub._id
-            }], { session });
-
-            // 3. Log to WalletLedger
-            const WalletLedgerModel = mongoose.model('WalletLedger');
-            await WalletLedgerModel.create([{
-                merchantId: userId,
-                type: 'debit',
-                amount: price,
-                reason: 'plan_payment',
+                reason: WALLET_LEDGER_REASONS.PLAN_PAYMENT,
                 referenceId: sub._id,
                 balanceAfter: wallet.balance
             }], { session });
@@ -323,12 +319,12 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
         const limit = parseInt(req.query.limit as string) || 10;
         const skip = (page - 1) * limit;
 
-        const transactions = await WalletTransaction.find({ userId: req.user._id })
+        const transactions = await WalletLedger.find({ userId: req.user._id })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
 
-        const total = await WalletTransaction.countDocuments({ userId: req.user._id });
+        const total = await WalletLedger.countDocuments({ userId: req.user._id });
 
         res.json({
             transactions,
@@ -362,57 +358,360 @@ export const getReceipts = async (req: AuthRequest, res: Response) => {
  * @desc    Subscribe to a plan (Restricted Logic)
  * @route   POST /api/billing/subscribe
  */
-export const subscribe = async (req: AuthRequest, res: Response) => {
+export const subscribePreview = async (req: AuthRequest, res: Response) => {
     try {
         const { planId, billingCycle } = req.body;
         const userId = req.user._id;
+
         const plan = await Plan.findById(planId);
         if (!plan) return res.status(404).json({ message: 'Plan not found' });
 
-        const wallet = await ensureWallet(userId.toString());
-        let price = plan.monthlyPrice || plan.price;
+        const currentSub = await Subscription.findOne({ userId }).populate('planId');
+
+        let targetPrice = plan.monthlyPrice || plan.price;
         if (billingCycle === 'yearly') {
-            price = price * 12 * 0.8;
+            targetPrice = targetPrice * 12 * 0.8;
         }
 
-        if (plan.type === 'paid' && wallet.balance < price) {
-            return res.status(400).json({
-                message: `Insufficient wallet balance. Price is ${price.toFixed(0)} EGP, but your balance is ${wallet.balance.toFixed(0)} EGP.`
+        // Case 1: No active paid subscription
+        if (!currentSub || currentSub.status !== 'active' || (currentSub.planId as any).type === 'free') {
+            const currentExpiryDate = new Date();
+            if (billingCycle === 'yearly') {
+                currentExpiryDate.setFullYear(currentExpiryDate.getFullYear() + 1);
+            } else {
+                currentExpiryDate.setMonth(currentExpiryDate.getMonth() + 1);
+            }
+
+            return res.json({
+                isUpgrade: true,
+                isDowngrade: false,
+                proration: {
+                    currentPlanPrice: 0,
+                    newPlanPrice: targetPrice,
+                    usedDays: 0,
+                    remainingDays: billingCycle === 'yearly' ? 365 : 30,
+                    currentPlanUsage: 0,
+                    unusedCredit: 0,
+                    remainingNewPlanCost: targetPrice,
+                    amountToPay: targetPrice,
+                    currentExpiryDate,
+                    nextRenewalPrice: targetPrice
+                }
             });
         }
 
-        // Auto-activate subscription if paid and wallet has sufficient balance
+        // Case 2: Active paid subscription
+        const currentPlan = currentSub.planId as any;
+        let currentPrice = currentPlan.monthlyPrice || currentPlan.price;
+        if (currentSub.billingCycle === 'yearly') {
+            currentPrice = currentPrice * 12 * 0.8;
+        }
+
+        // Switching cadence (monthly<->yearly) resets expiresAt to a fresh
+        // cycle from today regardless of tier change — see the identical
+        // isCycleChange logic (and the "why" comment) in subscribe() below.
+        // The preview must show the SAME date the actual subscribe call will
+        // end up setting, or the confirmation UI lies to the merchant.
+        const isCycleChange = currentSub.billingCycle !== billingCycle;
+        const projectedExpiryDate = isCycleChange ? addBillingCycle(new Date(), billingCycle) : currentSub.expiresAt;
+
+        if (targetPrice > currentPrice) {
+            // Upgrade
+            const proration = ProrationService.calculatePlanChange({
+                currentPlanPrice: currentPrice,
+                newPlanPrice: targetPrice,
+                startedAt: currentSub.startedAt,
+                expiresAt: currentSub.expiresAt
+            });
+            proration.currentExpiryDate = projectedExpiryDate;
+
+            return res.json({
+                isUpgrade: true,
+                isDowngrade: false,
+                isCycleChange,
+                proration
+            });
+        } else if (targetPrice < currentPrice) {
+            // Downgrade
+            return res.json({
+                isUpgrade: false,
+                isDowngrade: true,
+                isCycleChange,
+                message: isCycleChange
+                    ? "You are about to downgrade your subscription.\nYour current subscription benefits will be removed immediately.\nAny unused value remaining in your current subscription will be forfeited.\nSince you're also changing your billing cycle, your renewal date will be reset to a new cycle starting today.\nThis action cannot be undone."
+                    : "You are about to downgrade your subscription.\nYour current subscription benefits will be removed immediately.\nAny unused value remaining in your current subscription will be forfeited.\nYour subscription renewal date will remain unchanged.\nThis action cannot be undone.",
+                nextRenewalPrice: targetPrice,
+                currentExpiryDate: projectedExpiryDate
+            });
+        } else {
+            // Same tier/price migration
+            return res.json({
+                isUpgrade: false,
+                isDowngrade: false,
+                isCycleChange,
+                proration: {
+                    currentPlanPrice: currentPrice,
+                    newPlanPrice: targetPrice,
+                    usedDays: 0,
+                    remainingDays: 0,
+                    currentPlanUsage: 0,
+                    unusedCredit: 0,
+                    remainingNewPlanCost: 0,
+                    amountToPay: 0,
+                    currentExpiryDate: projectedExpiryDate,
+                    nextRenewalPrice: targetPrice
+                }
+            });
+        }
+    } catch (error: any) {
+        res.status(500).json({ message: 'Failed to calculate proration preview', error: error.message });
+    }
+};
+
+export const subscribe = async (req: AuthRequest, res: Response) => {
+    const userId = req.user._id;
+    const lockKey = `lock:subscription:${userId}`;
+
+    try {
+        const { planId, billingCycle, confirmDowngrade } = req.body;
+        
+        // Concurrency Lock: Prevent duplicate requests & double upgrades.
+        // Uses acquireLock (fails closed if Redis can't confirm the lock)
+        // rather than the general-purpose cached redisClient.set, which
+        // fails OPEN (reports success) under Redis degradation — fine for
+        // a cache write, not for a lock guarding against a double-charge.
+        const { redisClient, acquireLock } = await import('../config/redis');
+        const acquired = await acquireLock(lockKey, 10);
+        if (!acquired) {
+            return res.status(409).json({ message: 'A plan change transaction is already in progress. Please wait.' });
+        }
+
+        const plan = await Plan.findById(planId);
+        if (!plan) {
+            await redisClient.del(lockKey);
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
+        const wallet = await ensureWallet(userId.toString());
+        let targetPrice = plan.monthlyPrice || plan.price;
+        if (billingCycle === 'yearly') {
+            targetPrice = targetPrice * 12 * 0.8;
+        }
+
+        const currentSub = await Subscription.findOne({ userId }).populate('planId');
+
+        // Check if there is an active paid subscription to prorate
+        if (currentSub && currentSub.status === 'active' && (currentSub.planId as any).type === 'paid') {
+            const currentPlan = currentSub.planId as any;
+            let currentPrice = currentPlan.monthlyPrice || currentPlan.price;
+            if (currentSub.billingCycle === 'yearly') {
+                currentPrice = currentPrice * 12 * 0.8;
+            }
+
+            // Was captured BEFORE we ever assign currentSub.billingCycle =
+            // billingCycle below, in any of the three branches — used to
+            // detect an actual cadence change (monthly<->yearly), not just a
+            // tier change.
+            const previousBillingCycle = currentSub.billingCycle;
+            const isCycleChange = previousBillingCycle !== billingCycle;
+
+            if (targetPrice > currentPrice) {
+                // 1. Upgrade Flow
+                const proration = ProrationService.calculatePlanChange({
+                    currentPlanPrice: currentPrice,
+                    newPlanPrice: targetPrice,
+                    startedAt: currentSub.startedAt,
+                    expiresAt: currentSub.expiresAt
+                });
+
+                if (wallet.balance < proration.amountToPay) {
+                    await redisClient.del(lockKey);
+                    return res.status(400).json({
+                        message: `Insufficient wallet balance. Price is ${proration.amountToPay.toFixed(2)} EGP, but your balance is ${wallet.balance.toFixed(2)} EGP.`,
+                        proration
+                    });
+                }
+
+                const session = await mongoose.startSession();
+                session.startTransaction();
+                try {
+                    // Deduct from wallet
+                    wallet.balance -= proration.amountToPay;
+                    await wallet.save({ session });
+
+                    // Log to the wallet ledger (canonical source of truth)
+                    await WalletLedger.create([{
+                        userId,
+                        type: 'debit',
+                        amount: proration.amountToPay,
+                        reason: WALLET_LEDGER_REASONS.PLAN_UPGRADE,
+                        referenceId: currentSub._id,
+                        balanceAfter: wallet.balance
+                    }], { session });
+
+                    // Update subscription plan (keep expiry unchanged UNLESS
+                    // the billing cadence itself is changing — e.g. monthly
+                    // -> yearly. ProrationService only charges for the
+                    // remaining days of the CURRENT cycle at the new price,
+                    // so leaving expiresAt as-is is correct when the cadence
+                    // stays the same. But if it changes, the old expiresAt no
+                    // longer means anything (it was computed assuming a
+                    // monthly-length cycle, say) — this is exactly the bug
+                    // reported as "my plan is yearly but the renewal date
+                    // looks like a month away": switching cadence updated
+                    // billingCycle but never touched expiresAt.
+                    currentSub.planId = plan._id;
+                    currentSub.billingCycle = billingCycle;
+                    if (isCycleChange) {
+                        currentSub.expiresAt = addBillingCycle(new Date(), billingCycle);
+                    }
+                    await currentSub.save({ session });
+
+                    // Create receipt
+                    await Receipt.create([{
+                        userId,
+                        referenceId: currentSub._id,
+                        type: 'wallet_recharge',
+                        amount: proration.amountToPay,
+                        currency: 'EGP'
+                    }], { session });
+
+                    await session.commitTransaction();
+                    session.endSession();
+
+                    // Trigger invoice email notification asynchronously
+                    if (req.user && req.user.email) {
+                        const invoiceDetails = {
+                            invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
+                            buyerName: req.user.name || 'Merchant',
+                            amount: proration.amountToPay,
+                            currency: 'EGP',
+                            date: new Date().toISOString(),
+                            paymentMethod: 'Buildora Wallet',
+                            items: [
+                                {
+                                    name: `${plan.name} Upgrade - Remaining Cycle`,
+                                    quantity: 1,
+                                    price: proration.amountToPay
+                                }
+                            ]
+                        };
+                        sendInvoiceEmail(req.user.email, 'Buildora SaaS', invoiceDetails).catch(err => {
+                            console.error('[BillingController] Failed to send upgrade invoice email:', err);
+                        });
+                    }
+
+                    await redisClient.del(lockKey);
+                    return res.json({
+                        message: 'Subscription upgraded successfully',
+                        proration,
+                        subscription: currentSub
+                    });
+                } catch (err) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    await redisClient.del(lockKey);
+                    throw err;
+                }
+            } else if (targetPrice < currentPrice) {
+                // 2. Downgrade Flow
+                if (confirmDowngrade !== true) {
+                    await redisClient.del(lockKey);
+                    return res.status(400).json({
+                        actionRequired: 'confirm_downgrade',
+                        message: isCycleChange
+                            ? "You are about to downgrade your subscription.\nYour current subscription benefits will be removed immediately.\nAny unused value remaining in your current subscription will be forfeited.\nSince you're also changing your billing cycle, your renewal date will be reset to a new cycle starting today.\nThis action cannot be undone."
+                            : "You are about to downgrade your subscription.\nYour current subscription benefits will be removed immediately.\nAny unused value remaining in your current subscription will be forfeited.\nYour subscription renewal date will remain unchanged.\nThis action cannot be undone."
+                    });
+                }
+
+                const session = await mongoose.startSession();
+                session.startTransaction();
+                try {
+                    // Update subscription plan (keep expiry/started dates
+                    // UNLESS the billing cadence itself changed — see the
+                    // identical comment on the upgrade branch above.
+                    currentSub.planId = plan._id;
+                    currentSub.billingCycle = billingCycle;
+                    if (isCycleChange) {
+                        currentSub.expiresAt = addBillingCycle(new Date(), billingCycle);
+                    }
+                    await currentSub.save({ session });
+
+                    // No wallet ledger entry here on purpose: a downgrade moves
+                    // zero money, and WalletLedger requires amount > 0 (it's a
+                    // ledger of balance movements, not a general activity log).
+                    // The plan change itself is captured on the Subscription
+                    // document's updatedAt/planId.
+
+                    await session.commitTransaction();
+                    session.endSession();
+
+                    await redisClient.del(lockKey);
+                    return res.json({
+                        message: 'Subscription downgraded successfully',
+                        subscription: currentSub
+                    });
+                } catch (err) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    await redisClient.del(lockKey);
+                    throw err;
+                }
+            } else {
+                // 3. Same-tier Migration (only relevant when isCycleChange is
+                // true — same plan, different billing cadence)
+                const session = await mongoose.startSession();
+                session.startTransaction();
+                try {
+                    currentSub.billingCycle = billingCycle;
+                    if (isCycleChange) {
+                        currentSub.expiresAt = addBillingCycle(new Date(), billingCycle);
+                    }
+                    await currentSub.save({ session });
+                    await session.commitTransaction();
+                    session.endSession();
+
+                    await redisClient.del(lockKey);
+                    return res.json({
+                        message: 'Subscription updated successfully',
+                        subscription: currentSub
+                    });
+                } catch (err) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    await redisClient.del(lockKey);
+                    throw err;
+                }
+            }
+        }
+
+        // Legacy / Inactive subscription full activation flow
+        if (plan.type === 'paid' && wallet.balance < targetPrice) {
+            await redisClient.del(lockKey);
+            return res.status(400).json({
+                message: `Insufficient wallet balance. Price is ${targetPrice.toFixed(0)} EGP, but your balance is ${wallet.balance.toFixed(0)} EGP.`
+            });
+        }
+
         if (plan.type === 'paid') {
             const subscription = await autoSubscribeRecord(userId.toString(), planId, billingCycle);
 
             const session = await mongoose.startSession();
             session.startTransaction();
             try {
-                // 1. Deduct from wallet
-                wallet.balance -= price;
+                wallet.balance -= targetPrice;
                 await wallet.save({ session });
 
-                // 2. Create transaction record
-                await WalletTransaction.create([{
+                await WalletLedger.create([{
                     userId,
                     type: 'debit',
-                    amount: price,
-                    reason: 'plan_payment',
-                    referenceId: subscription._id
-                }], { session });
-
-                // Log to WalletLedger
-                const WalletLedgerModel = mongoose.model('WalletLedger');
-                await WalletLedgerModel.create([{
-                    merchantId: userId,
-                    type: 'debit',
-                    amount: price,
-                    reason: 'plan_payment',
+                    amount: targetPrice,
+                    reason: WALLET_LEDGER_REASONS.PLAN_PAYMENT,
                     referenceId: subscription._id,
                     balanceAfter: wallet.balance
                 }], { session });
 
-                // 3. Activate subscription
                 subscription.status = 'active';
                 subscription.startedAt = new Date();
                 const expires = new Date();
@@ -424,24 +723,22 @@ export const subscribe = async (req: AuthRequest, res: Response) => {
                 subscription.expiresAt = expires;
                 await subscription.save({ session });
 
-                // 4. Create receipt
                 await Receipt.create([{
                     userId,
                     referenceId: subscription._id,
                     type: 'wallet_recharge',
-                    amount: price,
+                    amount: targetPrice,
                     currency: 'EGP'
                 }], { session });
 
                 await session.commitTransaction();
                 session.endSession();
 
-                // Trigger invoice email notification asynchronously
                 if (req.user && req.user.email) {
                     const invoiceDetails = {
                         invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
                         buyerName: req.user.name || 'Merchant',
-                        amount: price,
+                        amount: targetPrice,
                         currency: 'EGP',
                         date: new Date().toISOString(),
                         paymentMethod: 'Buildora Wallet',
@@ -449,7 +746,7 @@ export const subscribe = async (req: AuthRequest, res: Response) => {
                             {
                                 name: `${plan.name} Subscription - ${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}`,
                                 quantity: 1,
-                                price: price
+                                price: targetPrice
                             }
                         ]
                     };
@@ -458,28 +755,33 @@ export const subscribe = async (req: AuthRequest, res: Response) => {
                     });
                 }
 
+                await redisClient.del(lockKey);
                 return res.json({
                     message: 'Subscription updated and paid successfully from wallet',
                     subscription,
                     canPayWithWallet: true,
-                    price
+                    price: targetPrice
                 });
             } catch (error) {
                 await session.abortTransaction();
                 session.endSession();
+                await redisClient.del(lockKey);
                 throw error;
             }
         }
 
-        // Free plan auto-activation
+        // Free plan activation fallback
         const subscription = await autoSubscribeRecord(userId.toString(), planId, billingCycle);
+        await redisClient.del(lockKey);
         res.json({
             message: 'Plan updated successfully',
             subscription,
             canPayWithWallet: false
         });
-    } catch (error) {
-        res.status(500).json({ message: 'Subscription failed', error: (error as any).message });
+
+    } catch (error: any) {
+        await redisClient.del(lockKey);
+        res.status(500).json({ message: 'Subscription failed', error: error.message });
     }
 };
 
@@ -566,21 +868,12 @@ export const rechargeWallet = async (req: AuthRequest, res: Response) => {
                 { new: true, upsert: true }
             );
 
-            await WalletTransaction.create({
-                userId: req.user._id,
-                type: 'credit',
-                amount,
-                reason: 'recharge',
-                referenceId: new mongoose.Types.ObjectId()
-            });
-
             if (wallet) {
-                const WalletLedgerModel = mongoose.model('WalletLedger');
-                await WalletLedgerModel.create([{
-                    merchantId: req.user._id,
+                await WalletLedger.create([{
+                    userId: req.user._id,
                     type: 'credit',
                     amount,
-                    reason: 'recharge',
+                    reason: WALLET_LEDGER_REASONS.RECHARGE,
                     referenceId: wallet._id,
                     balanceAfter: wallet.balance
                 }]);
@@ -700,7 +993,6 @@ export const rechargeWallet = async (req: AuthRequest, res: Response) => {
  */
 export const processOrderFee = async (userId: string, orderId: any, session?: mongoose.ClientSession) => {
     const WalletModel = mongoose.model('Wallet');
-    const WalletTransactionModel = mongoose.model('WalletTransaction');
     const ReceiptModel = mongoose.model('Receipt');
     const SubscriptionModel = mongoose.model('Subscription');
 
@@ -726,10 +1018,17 @@ export const processOrderFee = async (userId: string, orderId: any, session?: mo
         // We continue with fee = 5 as fallback
     }
 
-    const wallet = await WalletModel.findOne({ userId });
+    // Ensure a wallet exists (same idempotent helper used everywhere else in
+    // this file) instead of a bare findOne. Previously, if a merchant somehow
+    // reached order-fee time with no Wallet document at all, findOneAndUpdate
+    // below (no upsert) would silently return null: no balance was deducted,
+    // no ledger entry was written, yet a Receipt was still created and this
+    // function still returned `success: true` — charging a "fee" that never
+    // actually left any wallet.
+    const wallet = await ensureWallet(userId);
 
     // SAFEGUARD: Free plan must have prepaid balance
-    if (planType === 'free' && (!wallet || wallet.balance < fee)) {
+    if (planType === 'free' && wallet.balance < fee) {
         throw new Error('Insufficient wallet balance (Free plan requires prepaid fees)');
     }
 
@@ -740,30 +1039,25 @@ export const processOrderFee = async (userId: string, orderId: any, session?: mo
         { new: true, session }
     );
 
-    const orderIdObj = typeof orderId === 'string' ? new mongoose.Types.ObjectId(orderId) : orderId;
-
-    // LEDGER: Create Transaction Entry
-    await WalletTransactionModel.create([{
-        userId,
-        type: 'debit',
-        amount: fee,
-        reason: 'order_fee',
-        referenceId: orderIdObj
-    }], { session });
-
-    if (updatedWallet) {
-        const WalletLedgerModel = mongoose.model('WalletLedger');
-        await WalletLedgerModel.create([{
-            merchantId: new mongoose.Types.ObjectId(userId),
-            type: 'debit',
-            amount: fee,
-            reason: 'order_fee',
-            referenceId: orderIdObj,
-            balanceAfter: updatedWallet.balance
-        }], session ? { session } : {});
+    if (!updatedWallet) {
+        // Should be unreachable now that ensureWallet() ran above, but fail
+        // loudly rather than silently charging a Receipt for an undeducted fee.
+        throw new Error(`Wallet not found for user ${userId} during order-fee deduction`);
     }
 
-    // LEDGER: Create Receipt
+    const orderIdObj = typeof orderId === 'string' ? new mongoose.Types.ObjectId(orderId) : orderId;
+
+    // LEDGER: Create the canonical wallet ledger entry
+    await WalletLedger.create([{
+        userId: new mongoose.Types.ObjectId(userId),
+        type: 'debit',
+        amount: fee,
+        reason: WALLET_LEDGER_REASONS.ORDER_FEE,
+        referenceId: orderIdObj,
+        balanceAfter: updatedWallet.balance
+    }], session ? { session } : {});
+
+    // LEDGER: Create Receipt (only reached once the deduction is confirmed)
     await ReceiptModel.create([{
         userId,
         referenceId: orderIdObj,
@@ -772,7 +1066,7 @@ export const processOrderFee = async (userId: string, orderId: any, session?: mo
         currency: 'EGP'
     }], { session });
 
-    return { success: true, newBalance: updatedWallet?.balance };
+    return { success: true, newBalance: updatedWallet.balance };
 };
 
 /**
@@ -869,22 +1163,17 @@ export const buyEmailAddOn = async (req: AuthRequest, res: Response) => {
         wallet.balance -= pkg.price;
         await wallet.save({ session });
 
-        // Record transaction
-        const walletTx = await WalletTransaction.create([{
+        // Log to the wallet ledger (canonical source of truth). Note: this
+        // used to also write a WalletTransaction with reason 'addon_purchase',
+        // which is NOT in that model's rigid enum — every add-on purchase was
+        // silently failing with a ValidationError that aborted this whole
+        // transaction. WalletLedger's reason is free-text, so this is fixed
+        // by consolidating onto it.
+        const ledgerTx = await WalletLedger.create([{
             userId,
             type: 'debit',
             amount: pkg.price,
-            reason: 'addon_purchase',
-            referenceId: store._id
-        }], { session });
-
-        // Log to WalletLedger
-        const WalletLedgerModel = mongoose.model('WalletLedger');
-        await WalletLedgerModel.create([{
-            merchantId: userId,
-            type: 'debit',
-            amount: pkg.price,
-            reason: 'addon_purchase',
+            reason: WALLET_LEDGER_REASONS.ADDON_PURCHASE,
             referenceId: store._id,
             balanceAfter: wallet.balance
         }], { session });
@@ -892,7 +1181,7 @@ export const buyEmailAddOn = async (req: AuthRequest, res: Response) => {
         // Record receipt
         await Receipt.create([{
             userId,
-            referenceId: walletTx[0]._id,
+            referenceId: ledgerTx[0]._id,
             type: 'wallet_recharge',
             amount: pkg.price,
             currency: 'EGP'
@@ -919,7 +1208,7 @@ export const buyEmailAddOn = async (req: AuthRequest, res: Response) => {
             storeId: storeIdStr,
             type: 'purchase',
             amount: count,
-            referenceId: walletTx[0]._id.toString(),
+            referenceId: ledgerTx[0]._id.toString(),
             description: `Purchased email credit add-on: ${count} emails (${pkg.price} EGP)`
         }], { session });
 
@@ -960,6 +1249,55 @@ export const buyEmailAddOn = async (req: AuthRequest, res: Response) => {
         session.endSession();
         console.error('Buy Email Add-on Error:', error);
         res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+/**
+ * @desc    Move purchased email credits from one of the merchant's stores to
+ *          another. Only the purchased add-on balance is transferable (not
+ *          the monthly plan allowance) — see
+ *          CampaignQuotaService.transferPurchasedCredits for why.
+ * @route   POST /api/billing/:storeId/email-account/transfer
+ * @access  Private/Merchant
+ */
+export const transferEmailCredits = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user._id;
+        const { storeId: fromStoreId } = req.params;
+        const { toStoreId, amount } = req.body;
+
+        if (!toStoreId) {
+            return res.status(400).json({ message: 'toStoreId is required' });
+        }
+        const parsedAmount = Number(amount);
+        if (!Number.isInteger(parsedAmount) || parsedAmount <= 0) {
+            return res.status(400).json({ message: 'amount must be a positive whole number' });
+        }
+
+        // Verify BOTH stores belong to the requesting merchant — moving
+        // credits into a store you don't own (or out of one you don't own)
+        // must never be possible.
+        const [fromStore, toStore] = await Promise.all([
+            Store.findOne({ _id: fromStoreId, ownerId: userId }),
+            Store.findOne({ _id: toStoreId, ownerId: userId })
+        ]);
+        if (!fromStore) {
+            return res.status(404).json({ message: 'Source store not found or unauthorized' });
+        }
+        if (!toStore) {
+            return res.status(404).json({ message: 'Destination store not found or unauthorized' });
+        }
+
+        const { from, to } = await CampaignQuotaService.transferPurchasedCredits(fromStoreId as string, toStoreId, parsedAmount);
+
+        res.json({
+            message: `Transferred ${parsedAmount} email credits to ${toStore.name}`,
+            from: { storeId: fromStoreId, balance: from.balance, purchasedBalance: from.purchasedBalance },
+            to: { storeId: toStoreId, balance: to.balance, purchasedBalance: to.purchasedBalance }
+        });
+    } catch (error: any) {
+        console.error('Transfer Email Credits Error:', error);
+        res.status(400).json({ message: error.message || 'Server Error' });
     }
 };
 

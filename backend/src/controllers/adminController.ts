@@ -4,6 +4,7 @@ import PaymentReceipt from '../models/PaymentReceipt';
 import SubscriptionPlan from '../models/SubscriptionPlan';
 import Store from '../models/Store';
 import User from '../models/User';
+import WalletLedger from '../models/WalletLedger';
 import { getLatestSnapshot } from '../services/admin/analytics.service';
 import { getAllMerchants, toggleMerchantStatus } from '../services/admin/merchant.service';
 import { adjustBalance } from '../services/admin/wallet.service';
@@ -250,6 +251,83 @@ export const updateTicketStatusController = async (req: AuthRequest, res: Respon
         }
         const ticket = await updateTicketStatus(req.params.id as string, status, req.user._id, reason, getIp(req));
         res.json(ticket);
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+};
+
+// ─── Transactions ────────────────────────────────────────────────────────────
+
+export const getTransactionsList = async (req: AuthRequest, res: Response) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit as string) || 25);
+        const skip = (page - 1) * limit;
+
+        const filter: any = {};
+        if (req.query.type) filter.type = req.query.type;
+        if (req.query.reason) filter.reason = req.query.reason;
+        if (req.query.from || req.query.to) {
+            filter.createdAt = {};
+            if (req.query.from) filter.createdAt.$gte = new Date(req.query.from as string);
+            if (req.query.to) filter.createdAt.$lte = new Date(req.query.to as string);
+        }
+
+        const [transactions, total] = await Promise.all([
+            WalletLedger.find(filter)
+                .populate('userId', 'name email')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            WalletLedger.countDocuments(filter)
+        ]);
+
+        res.json({
+            transactions,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+};
+
+export const getTransactionStats = async (req: AuthRequest, res: Response) => {
+    try {
+        const filter: any = {};
+        if (req.query.from || req.query.to) {
+            filter.createdAt = {};
+            if (req.query.from) filter.createdAt.$gte = new Date(req.query.from as string);
+            if (req.query.to) filter.createdAt.$lte = new Date(req.query.to as string);
+        }
+
+        const [typeAgg, reasonAgg] = await Promise.all([
+            WalletLedger.aggregate([
+                { $match: filter },
+                { $group: { _id: '$type', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+            ]),
+            WalletLedger.aggregate([
+                { $match: filter },
+                { $group: { _id: '$reason', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+                { $sort: { total: -1 } }
+            ])
+        ]);
+
+        const byType: Record<string, { total: number; count: number }> = {};
+        for (const row of typeAgg) byType[row._id] = { total: row.total, count: row.count };
+
+        res.json({
+            totalDebited: byType['debit']?.total ?? 0,
+            totalCredited: byType['credit']?.total ?? 0,
+            debitCount: byType['debit']?.count ?? 0,
+            creditCount: byType['credit']?.count ?? 0,
+            byReason: reasonAgg.map(r => ({ reason: r._id, total: r.total, count: r.count }))
+        });
     } catch (error: any) {
         res.status(500).json({ message: error.message || 'Server error' });
     }

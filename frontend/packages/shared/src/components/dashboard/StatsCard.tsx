@@ -41,7 +41,7 @@ export function StatsCard({
     }
 
     return (
-        <Card className={cn("overflow-hidden group transition-all duration-300 hover:shadow-md", className)}>
+        <Card className={cn("overflow-hidden group transition duration-300 hover:shadow-md", className)}>
             <CardContent className="p-6">
                 <div className="flex items-center justify-between space-y-0 pb-2">
                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{title}</p>

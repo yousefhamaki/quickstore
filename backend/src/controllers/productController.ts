@@ -2,26 +2,20 @@ import { Request, Response } from 'express';
 import Product from '../models/Product';
 import Store from '../models/Store';
 import User from '../models/User';
-import { AuthRequest } from '../middleware/authMiddleware';
+import Category from '../models/Category';
+import { AuthRequest, resolveStore } from '../middleware/authMiddleware';
 import { redisClient } from '../config/redis';
+import { withStockVirtuals, withStockVirtualsMany } from '../utils/productStock';
 
 // @desc    Get all products for a store with pagination and filters
 // @route   GET /api/products?page=1&limit=20&status=active&category=Clothing&search=shirt&stockLevel=low
 // @access  Private/Merchant
 export const getProducts = async (req: AuthRequest, res: Response) => {
     try {
-        let store;
-
-        // If storeId is provided in query, use it (Multi-store support)
-        if (req.query.storeId) {
-            store = await Store.findOne({ _id: req.query.storeId, ownerId: req.user._id });
-        } else {
-            // Fallback to legacy behavior (finding first store of user)
-            store = await Store.findOne({ ownerId: req.user._id });
-        }
+        const store = await resolveStore(req);
 
         if (!store) {
-            return res.status(404).json({ message: 'Store not found' });
+            return res.status(404).json({ message: 'Store not found or unauthorized' });
         }
 
         // Pagination
@@ -37,8 +31,11 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
             filter.status = req.query.status;
         }
 
-        // Category filter
-        if (req.query.category) {
+        // Category filter — prefer the real taxonomy reference; the
+        // freeform string filter is kept for old callers/links.
+        if (req.query.categoryId) {
+            filter.categoryId = req.query.categoryId;
+        } else if (req.query.category) {
             filter.category = req.query.category;
         }
 
@@ -70,14 +67,18 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
             return res.json(JSON.parse(cachedData));
         }
 
-        const products = await Product.find(filter)
+        const rawProducts = await Product.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();
+        // lean() drops the totalStock/totalReserved/totalAvailable virtuals
+        // (see Product.ts's toJSON/toObject config) — recomputed manually
+        // since mongoose-lean-virtuals isn't installed.
+        const products = withStockVirtualsMany(rawProducts);
 
         const total = await Product.countDocuments(filter);
-        
+
         const responseData = {
             products,
             pagination: {
@@ -106,7 +107,7 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const createProduct = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -126,6 +127,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
             options,
             variants,
             category,
+            categoryId,
             tags,
             status,
             seo,
@@ -141,6 +143,19 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
         while (await Product.findOne({ storeId: store._id, slug: uniqueSlug })) {
             uniqueSlug = `${slug}-${counter}`;
             counter++;
+        }
+
+        // categoryId is the real taxonomy reference; `category` is kept only
+        // as a denormalized display string synced from it, so the many
+        // existing readers of the plain string (storefront cards, offer
+        // condition matching, etc.) keep working without needing a populate.
+        let resolvedCategoryName = category;
+        if (categoryId) {
+            const categoryDoc = await Category.findOne({ _id: categoryId, storeId: store._id });
+            if (!categoryDoc) {
+                return res.status(400).json({ message: 'Category not found or does not belong to this store' });
+            }
+            resolvedCategoryName = categoryDoc.name;
         }
 
         const product = await Product.create({
@@ -159,7 +174,8 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
             images,
             options,
             variants,
-            category,
+            category: resolvedCategoryName,
+            categoryId: categoryId || undefined,
             tags,
             status: status || 'active',
             seo,
@@ -181,7 +197,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const updateProduct = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -191,10 +207,27 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        // Prevent mass assignment of storeId, slug, and id
+        const { storeId, slug, _id, ...allowedBody } = req.body;
+
+        // Same categoryId -> denormalized category-name sync as createProduct.
+        if (allowedBody.categoryId !== undefined) {
+            if (allowedBody.categoryId === null || allowedBody.categoryId === '') {
+                allowedBody.categoryId = null;
+                allowedBody.category = undefined;
+            } else {
+                const categoryDoc = await Category.findOne({ _id: allowedBody.categoryId, storeId: store._id });
+                if (!categoryDoc) {
+                    return res.status(400).json({ message: 'Category not found or does not belong to this store' });
+                }
+                allowedBody.category = categoryDoc.name;
+            }
+        }
+
         const updatedProduct = await Product.findByIdAndUpdate(
             req.params.id,
-            { ...req.body, slug: undefined }, // Prevent slug update for now to avoid URL breaking, or handle carefully
-            { new: true, lean: true } // Inject lean on return and new payload
+            allowedBody,
+            { new: true, lean: true, runValidators: true }
         );
 
         // Invalidate specific product and store-level list caches
@@ -216,7 +249,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const deleteProduct = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -259,11 +292,12 @@ export const getProductById = async (req: Request, res: Response) => {
             return res.json(JSON.parse(cachedProduct));
         }
 
-        const product = await Product.findById(req.params.id).lean(); // Bypass hydration
-        
-        if (!product) {
+        const rawProduct = await Product.findById(req.params.id).lean(); // Bypass hydration
+
+        if (!rawProduct) {
             return res.status(404).json({ message: 'Product not found' });
         }
+        const product = withStockVirtuals(rawProduct); // lean() drops the stock virtuals — recompute them manually
 
         // Cache product individually for 1 hour
         try {
@@ -305,7 +339,7 @@ export const uploadProductImages = async (req: Request, res: Response) => {
 // @access  Private/Merchant
 export const deleteProductImage = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -341,7 +375,7 @@ export const deleteProductImage = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const getCategories = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -358,7 +392,7 @@ export const getCategories = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const bulkUpdateStatus = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({ ownerId: req.user._id });
+        const store = await resolveStore(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }

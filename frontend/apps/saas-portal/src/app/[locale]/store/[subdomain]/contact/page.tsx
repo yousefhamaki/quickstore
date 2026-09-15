@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
 export default function ContactPage() {
-    const t = useTranslations('store.contact');
+    const t = useTranslations('store.storeContact');
     const params = useParams();
     const subdomain = params.subdomain as string;
     const { data: storeData, isLoading } = usePublicStore(subdomain);
@@ -56,7 +56,7 @@ export default function ContactPage() {
                 <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {contact.email && (
-                            <Card className="rounded-[32px] border-2 border-transparent bg-gray-50 hover:bg-white hover:border-blue-50 transition-all duration-300 shadow-sm hover:shadow-xl group">
+                            <Card className="rounded-[32px] border-2 border-transparent bg-gray-50 hover:bg-white hover:border-blue-50 transition duration-300 shadow-sm hover:shadow-xl group">
                                 <CardContent className="p-8 space-y-4">
                                     <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                                         <Mail className="w-6 h-6" />
@@ -69,7 +69,7 @@ export default function ContactPage() {
                             </Card>
                         )}
                         {contact.phone && (
-                            <Card className="rounded-[32px] border-2 border-transparent bg-gray-50 hover:bg-white hover:border-blue-50 transition-all duration-300 shadow-sm hover:shadow-xl group">
+                            <Card className="rounded-[32px] border-2 border-transparent bg-gray-50 hover:bg-white hover:border-blue-50 transition duration-300 shadow-sm hover:shadow-xl group">
                                 <CardContent className="p-8 space-y-4">
                                     <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                                         <Phone className="w-6 h-6" />
@@ -82,7 +82,7 @@ export default function ContactPage() {
                             </Card>
                         )}
                         {contact.whatsapp && (
-                            <Card className="rounded-[32px] border-2 border-transparent bg-gray-50 hover:bg-white hover:border-green-50 transition-all duration-300 shadow-sm hover:shadow-xl group">
+                            <Card className="rounded-[32px] border-2 border-transparent bg-gray-50 hover:bg-white hover:border-green-50 transition duration-300 shadow-sm hover:shadow-xl group">
                                 <CardContent className="p-8 space-y-4">
                                     <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
                                         <MessageSquare className="w-6 h-6" />
@@ -95,7 +95,7 @@ export default function ContactPage() {
                             </Card>
                         )}
                         {contact.instagram && (
-                            <Card className="rounded-[32px] border-2 border-transparent bg-gray-50 hover:bg-white hover:border-pink-50 transition-all duration-300 shadow-sm hover:shadow-xl group">
+                            <Card className="rounded-[32px] border-2 border-transparent bg-gray-50 hover:bg-white hover:border-pink-50 transition duration-300 shadow-sm hover:shadow-xl group">
                                 <CardContent className="p-8 space-y-4">
                                     <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-pink-500 group-hover:bg-pink-500 group-hover:text-white transition-colors">
                                         <Instagram className="w-6 h-6" />
@@ -168,7 +168,7 @@ export default function ContactPage() {
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full h-16 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                className="w-full h-16 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition hover:scale-[1.02] active:scale-[0.98]"
                                 style={{ backgroundColor: primaryColor }}
                             >
                                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4 mr-2" /> {t('send')}</>}

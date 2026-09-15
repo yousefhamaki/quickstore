@@ -1,24 +1,43 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
+import path from 'path';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
+// Resolved relative to this file instead of a hardcoded local path — the
+// old 'C:/Users/.../frontend' literal only existed on one dev machine and
+// would silently fail to find the workspace root on Vercel's Linux build
+// machines (or anyone else's checkout).
+const workspaceRoot = path.join(__dirname, '..', '..');
+
+// Frontend monorepo's own version (frontend/package.json) — bump that file
+// to release a new version; it shows up in the footer via
+// NEXT_PUBLIC_APP_VERSION, baked in at build time (next.config's `env` is
+// static, read once when the build starts, not re-read per request).
+const appVersion = require(path.join(workspaceRoot, 'package.json')).version as string;
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_VERSION: appVersion,
+  },
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.simplycodes.com',
+      },
     ],
   },
   turbopack: {
-    root: 'C:/Users/Home/Documents/GitHub/QuickStore/frontend',
+    root: workspaceRoot,
   },
 
-
   experimental: {
-    optimizePackageImports: ['lucide-react', '@quickstore/shared'],
+    optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons', '@quickstore/shared', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
   },
 
   transpilePackages: ['@quickstore/shared'],
@@ -39,11 +58,13 @@ const nextConfig: NextConfig = {
 
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://images.simplycodes.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' blob: data: https://images.simplycodes.com https://res.cloudinary.com",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://accounts.google.com https://vercel.live https://images.simplycodes.com",
+      "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com",
+      "img-src 'self' blob: data: https://lh3.googleusercontent.com https://images.simplycodes.com https://res.cloudinary.com",
       "font-src 'self' https://fonts.gstatic.com https://images.simplycodes.com",
-      "connect-src 'self' http://localhost:5000 https://images.simplycodes.com https://*.onrender.com https://*.buildora.live https://*.buildora.com",
+      "connect-src 'self' http://localhost:5000 https://vercel.live https://*.vercel.live https://images.simplycodes.com https://*.onrender.com https://*.buildora.live https://*.buildora.com",
+      "frame-src 'self' https://accounts.google.com https://vercel.live",
+      "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -86,56 +107,6 @@ const nextConfig: NextConfig = {
         headers: headersList,
       },
     ];
-  },
-  async rewrites() {
-    let merchantDashboardUrl = process.env.MERCHANT_DASHBOARD_URL || 'http://localhost:3001';
-    
-    // Auto-sanitize formatting errors:
-    // 1. Ensure it starts with http:// or https://
-    if (!merchantDashboardUrl.startsWith('http://') && !merchantDashboardUrl.startsWith('https://')) {
-      merchantDashboardUrl = `https://${merchantDashboardUrl}`;
-    }
-    // 2. Remove any trailing slashes
-    merchantDashboardUrl = merchantDashboardUrl.replace(/\/+$/, '');
-
-    const routes = ['merchant', 'dashboard', 'admin', 'auth', 'verify-email'];
-    const rules = [];
-
-    // Rewrite Merchant Dashboard static assets
-    rules.push({
-      source: '/merchant-assets/_next/:path*',
-      destination: `${merchantDashboardUrl}/_next/:path*`,
-    });
-
-    // 1. Locale-prefixed rules
-    for (const route of routes) {
-      // Exact path rule (no trailing slash)
-      rules.push({
-        source: `/:locale(en|ar)/${route}`,
-        destination: `${merchantDashboardUrl}/:locale/${route}`,
-      });
-      // Subpath rule (using :path* to ensure wildcard matching and RSC data requests work)
-      rules.push({
-        source: `/:locale(en|ar)/${route}/:path*`,
-        destination: `${merchantDashboardUrl}/:locale/${route}/:path*`,
-      });
-    }
-
-    // 2. Non-locale prefixed rules
-    for (const route of routes) {
-      // Exact path rule
-      rules.push({
-        source: `/${route}`,
-        destination: `${merchantDashboardUrl}/${route}`,
-      });
-      // Subpath rule
-      rules.push({
-        source: `/${route}/:path*`,
-        destination: `${merchantDashboardUrl}/${route}/:path*`,
-      });
-    }
-
-    return rules;
   },
 };
 

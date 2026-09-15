@@ -32,7 +32,7 @@ export default async function sitemap(
         }
 
         // Determine base URL
-        const baseUrl = store.domain.customDomain && (store.domain as any).isCustomDomainVerified
+        const baseUrl = store.domain.customDomain && (store.domain as any).isVerified
             ? `https://${store.domain.customDomain}`
             : `https://${store.domain.subdomain}.quickstore.live`;
 

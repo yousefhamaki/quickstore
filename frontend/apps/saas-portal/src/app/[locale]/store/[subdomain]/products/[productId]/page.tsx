@@ -1,12 +1,19 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { getProductDetails, getPublicStore, getStoreProducts } from "@shared/services/publicStoreService";
+import { getProductReviews } from "@shared/services/reviewService";
 import { ShoppingCart, ShieldCheck, Truck, RotateCcw, Plus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ProductActions } from "@shared/components/storefront/ProductActions";
 import { ProductViewTracker } from "@shared/components/storefront/ProductViewTracker";
+import { StarRating } from "@shared/components/storefront/StarRating";
+import { ReviewsSection } from "@shared/components/storefront/ReviewsSection";
 import { getTranslations } from "next-intl/server";
 import { SocialShareButtons } from "@shared/components/storefront/SocialShareButtons";
+import { imagePreset } from "@shared/lib/cloudinaryImage";
+
+// See store/[subdomain]/layout.tsx for the full rationale.
+export const revalidate = 60;
 
 interface ProductPageProps {
     params: Promise<{
@@ -45,13 +52,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
     let product: any;
     let store: any;
     let relatedProducts: any[] = [];
+    let reviewsData: { reviews: any[]; pagination: { total: number } } = { reviews: [], pagination: { total: 0 } };
 
     try {
         store = await getPublicStore(subdomain);
         product = await getProductDetails(productId);
 
         // Fetch related products (from same store, same category if possible, excluding current)
-        const allProducts = await getStoreProducts(store._id) as any[];
+        const [allProducts, reviews] = await Promise.all([
+            getStoreProducts(store._id) as Promise<any[]>,
+            getProductReviews(productId).catch(() => ({ reviews: [], pagination: { total: 0 } }))
+        ]);
+        reviewsData = reviews as any;
         relatedProducts = allProducts
             .filter((p: any) => p._id !== productId)
             .sort((a, b) => {
@@ -82,8 +94,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <div className="aspect-square bg-gray-100 rounded-[40px] overflow-hidden border shadow-sm group">
                         {product.images?.[0]?.url ? (
                             <img
-                                src={product.images[0].url}
+                                src={imagePreset.detail(product.images[0].url)}
                                 alt={product.name}
+                                fetchPriority="high"
+                                decoding="async"
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                             />
                         ) : (
@@ -95,8 +109,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     {/* Thumbnail placeholder */}
                     <div className="flex gap-4 scrollbar-hide overflow-x-auto pb-2">
                         {product.images?.map((img: any, i: number) => (
-                            <div key={i} className="w-24 h-24 bg-gray-100 rounded-2xl border overflow-hidden cursor-pointer hover:border-black transition-all shrink-0">
-                                <img src={img.url} alt={product.name} className="w-full h-full object-cover" />
+                            <div key={i} className="w-24 h-24 bg-gray-100 rounded-2xl border overflow-hidden cursor-pointer hover:border-black transition shrink-0">
+                                <img src={imagePreset.thumbnail(img.url)} alt={product.name} loading="lazy" decoding="async" width={100} height={100} className="w-full h-full object-cover" />
                             </div>
                         ))}
                     </div>
@@ -118,6 +132,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-tight text-foreground">
                             {product.name}
                         </h1>
+                        {product.ratingCount > 0 && (
+                            <div className="flex items-center gap-2">
+                                <StarRating rating={product.ratingAverage} size={16} />
+                                <span className="text-sm font-bold">{product.ratingAverage.toFixed(1)}</span>
+                                <span className="text-xs text-gray-400 font-medium">({product.ratingCount} review{product.ratingCount === 1 ? '' : 's'})</span>
+                            </div>
+                        )}
                         <p className="text-3xl font-black">
                             EGP {product.price.toLocaleString()}
                         </p>
@@ -164,6 +185,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             </div>
 
+            {/* Reviews Section */}
+            <ReviewsSection
+                productId={productId}
+                storeId={store._id || store.id}
+                initialReviews={reviewsData.reviews}
+                total={reviewsData.pagination.total}
+                ratingAverage={product.ratingAverage || 0}
+                ratingCount={product.ratingCount || 0}
+            />
+
             {/* Related Products Section */}
             {relatedProducts.length > 0 && (
                 <div className="pt-20 border-t">
@@ -178,11 +209,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
                                     href={`/products/${p._id}`}
                                     className="group cursor-pointer space-y-4"
                                 >
-                                    <div className="aspect-[4/5] bg-gray-100 rounded-3xl overflow-hidden relative border shadow-sm group-hover:shadow-xl transition-all duration-500">
+                                    <div className="aspect-[4/5] bg-gray-100 rounded-3xl overflow-hidden relative border shadow-sm group-hover:shadow-xl transition duration-500">
                                         {p.images?.[0]?.url ? (
                                             <img
-                                                src={p.images[0].url}
+                                                src={imagePreset.card(p.images[0].url)}
                                                 alt={p.name}
+                                                loading="lazy"
+                                                decoding="async"
+                                                width={500}
+                                                height={500}
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                             />
                                         ) : (
@@ -191,7 +226,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                                        <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition duration-300">
                                             <div className="w-full bg-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl">
                                                 <Plus size={14} /> {t('viewDetails')}
                                             </div>

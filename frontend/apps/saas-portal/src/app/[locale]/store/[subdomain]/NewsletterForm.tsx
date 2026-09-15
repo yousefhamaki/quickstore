@@ -92,7 +92,7 @@ export default function NewsletterForm({ storeId, primaryColor }: NewsletterForm
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder={t('emailPlaceholder')}
-                                        className="w-full bg-white/10 border border-white/20 rounded-full pl-14 pr-6 h-14 outline-none focus:ring-2 focus:ring-white/30 focus:border-white transition-all font-medium text-white placeholder-gray-500"
+                                        className="w-full bg-white/10 border border-white/20 rounded-full pl-14 pr-6 h-14 outline-none focus:ring-2 focus:ring-white/30 focus:border-white transition font-medium text-white placeholder-gray-500"
                                         disabled={loading}
                                     />
                                 </div>

@@ -33,7 +33,7 @@ export function StoreGrid({ stores, isLoading }: StoreGridProps) {
                 <p className="text-muted-foreground max-w-sm mb-8 leading-relaxed">
                     Start your multi-store journey by creating your first online storefront in just a few clicks.
                 </p>
-                <Button asChild size="lg" className="rounded-full px-8 shadow-xl hover:shadow-primary/20 transition-all">
+                <Button asChild size="lg" className="rounded-full px-8 shadow-xl hover:shadow-primary/20 transition">
                     <Link href="/dashboard/stores/new">
                         <Plus className="w-5 h-5 mr-2" />
                         Create Your First Store
@@ -50,7 +50,7 @@ export function StoreGrid({ stores, isLoading }: StoreGridProps) {
             ))}
             <Link
                 href="/dashboard/stores/new"
-                className="flex flex-col items-center justify-center h-full min-h-[280px] border-2 border-dashed rounded-xl transition-all duration-300 hover:bg-muted/50 hover:border-primary/50 group"
+                className="flex flex-col items-center justify-center h-full min-h-[280px] border-2 border-dashed rounded-xl transition duration-300 hover:bg-muted/50 hover:border-primary/50 group"
             >
                 <div className="bg-muted p-4 rounded-full mb-3 group-hover:bg-primary/10 transition-colors">
                     <Plus className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />

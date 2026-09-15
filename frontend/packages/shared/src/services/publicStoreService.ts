@@ -11,6 +11,11 @@ export const getStoreProducts = async (storeId: string) => {
     return response.data;
 };
 
+export const getStoreCategories = async (storeId: string) => {
+    const response = await api.get(`/public/stores/${storeId}/categories?_cb=${Date.now()}`);
+    return response.data as { _id: string; name: string; slug: string }[];
+};
+
 export const getProductDetails = async (productId: string) => {
     const response = await api.get(`/public/products/${productId}`);
     return response.data;

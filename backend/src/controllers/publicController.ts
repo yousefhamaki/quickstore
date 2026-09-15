@@ -1,9 +1,31 @@
 import { Request, Response } from 'express';
 import Store from '../models/Store';
 import Product from '../models/Product';
+import Category from '../models/Category';
 import Coupon from '../models/Coupon';
 import Customer from '../models/Customer';
+import Subscription from '../models/Subscription';
 import { redisClient } from '../config/redis';
+import { withStockVirtuals, withStockVirtualsMany } from '../utils/productStock';
+
+/**
+ * Hero slider is admin-controlled per subscription plan (see
+ * storeController.updateStore, which enforces this on save). Applied at
+ * RESPONSE time — not baked into what gets cached — so that toggling a
+ * plan's access in the admin dashboard takes effect on the very next
+ * request instead of waiting up to the cache's 1-hour TTL either way
+ * (revoking hides slides immediately; re-granting un-hides them
+ * immediately too, with nothing to re-save or invalidate).
+ */
+async function gateHeroSlider(store: any) {
+    if (!store?.theme?.customizations?.heroSlider) return store;
+    const subscription = await Subscription.findOne({ userId: store.ownerId }).populate('planId').lean();
+    const plan = (subscription as any)?.planId;
+    if (!plan?.features?.allowHeroSlider) {
+        delete store.theme.customizations.heroSlider;
+    }
+    return store;
+}
 
 // @desc    Get store by subdomain
 // @route   GET /api/public/stores/:subdomain
@@ -12,7 +34,7 @@ export const getStoreBySubdomain = async (req: Request, res: Response) => {
     try {
         const { subdomain } = req.params;
         const cacheKey = `store_customization:${subdomain}`;
-        
+
         let cachedStore = null;
         try {
             cachedStore = await redisClient.get(cacheKey);
@@ -21,29 +43,36 @@ export const getStoreBySubdomain = async (req: Request, res: Response) => {
         }
 
         if (cachedStore) {
-            return res.json(JSON.parse(cachedStore));
+            return res.json(await gateHeroSlider(JSON.parse(cachedStore)));
         }
 
+        // Custom-domain matches additionally require domain.isVerified —
+        // otherwise a merchant could type in ANY domain string (including
+        // one they don't control, or one another merchant already legitimately
+        // uses) and have it served here before ever proving ownership via the
+        // DNS TXT challenge (see DomainVerificationService). Subdomains don't
+        // need this: we control that DNS zone ourselves.
         const store = await Store.findOne({
+            status: 'live',
             $or: [
                 { 'domain.subdomain': subdomain },
-                { 'domain.customDomain': subdomain }
-            ],
-            status: 'live'
+                { 'domain.customDomain': subdomain, 'domain.isVerified': true }
+            ]
         }).lean(); // Huge performance hydration bypass
 
         if (!store) {
             return res.status(404).json({ message: 'Store not found or not published' });
         }
 
-        // Cache settings in redis for 1 hour to prevent DB spikes from viral stores
+        // Cache the RAW store (heroSlider included) — gating is applied
+        // fresh on every response, cached or not, see gateHeroSlider above.
         try {
             await redisClient.setex(cacheKey, 3600, JSON.stringify(store));
         } catch (redisErr) {
             console.warn(`[Redis Fallback] SET failed for ${cacheKey}`, redisErr);
         }
 
-        res.json(store);
+        res.json(await gateHeroSlider(store));
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
     }
@@ -69,8 +98,15 @@ export const trackStoreVisit = async (req: Request, res: Response) => {
 export const getStoreProducts = async (req: Request, res: Response) => {
     try {
         const { storeId } = req.params;
-        const cacheKey = `products:store:${storeId}:public:list`;
-        
+        const { categoryId } = req.query;
+
+        // Category-filtered requests get their own cache key and skip the
+        // unfiltered full-catalog cache entirely (kept exactly as before
+        // for the common no-filter case the storefront uses today).
+        const cacheKey = categoryId
+            ? `products:store:${storeId}:public:list:category:${categoryId}`
+            : `products:store:${storeId}:public:list`;
+
         let cachedData = null;
         try {
             cachedData = await redisClient.get(cacheKey);
@@ -82,7 +118,18 @@ export const getStoreProducts = async (req: Request, res: Response) => {
             return res.json(JSON.parse(cachedData));
         }
 
-        const products = await Product.find({ storeId, status: 'active' }).sort({ createdAt: -1 });
+        const filter: any = { storeId, status: 'active' };
+        if (categoryId) filter.categoryId = categoryId;
+
+        // .lean() skips Mongoose document hydration (no getters/setters/
+        // change-tracking machinery for a response we're about to
+        // JSON.stringify and discard) — but that also means it drops the
+        // totalStock/totalReserved/totalAvailable virtuals (lean bypasses
+        // the virtual system entirely; `{virtuals:true}` here is a no-op
+        // without the mongoose-lean-virtuals plugin), so those are
+        // recomputed manually via withStockVirtualsMany instead.
+        const rawProducts = await Product.find(filter).sort({ createdAt: -1 }).lean();
+        const products = withStockVirtualsMany(rawProducts);
 
         try {
             await redisClient.setex(cacheKey, 1800, JSON.stringify(products)); // 30 min cache
@@ -91,6 +138,22 @@ export const getStoreProducts = async (req: Request, res: Response) => {
         }
 
         res.json(products);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+// @desc    Get active categories for a store's storefront nav/filters
+// @route   GET /api/public/stores/:storeId/categories
+// @access  Public
+export const getStoreCategories = async (req: Request, res: Response) => {
+    try {
+        const { storeId } = req.params;
+        const categories = await Category.find({ storeId, isActive: true })
+            .sort({ sortOrder: 1, name: 1 })
+            .select('name slug image')
+            .lean();
+        res.json(categories);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
     }
@@ -115,11 +178,12 @@ export const getProductDetails = async (req: Request, res: Response) => {
             return res.json(JSON.parse(cachedProduct));
         }
 
-        const product = await Product.findOne({ _id: productId, status: 'active' });
+        const rawProduct = await Product.findOne({ _id: productId, status: 'active' }).lean();
 
-        if (!product) {
+        if (!rawProduct) {
             return res.status(404).json({ message: 'Product not found' });
         }
+        const product = withStockVirtuals(rawProduct);
 
         try {
             await redisClient.setex(cacheKey, 3600, JSON.stringify(product)); // 1 hour cache

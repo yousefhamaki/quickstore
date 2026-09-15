@@ -2,6 +2,14 @@ import { IPaymentProvider } from './IPaymentProvider';
 import { IOrder } from '../../models/Order';
 import { IStore } from '../../models/Store';
 
+/**
+ * UNFINISHED — not reachable in production. See StripePaymentService.ts for
+ * why: fake checkout URL, and validateWebhookPayload() accepts any
+ * signature. Blocked at PaymentFactory + Store schema/storeController level
+ * (constants/paymentProviders.ts) until this has a real implementation.
+ * (Unrelated to the Paymob-mediated 'fawry' wallet-recharge method in
+ * billingController.ts/rechargeWallet — that path is real and unaffected.)
+ */
 export class FawryPaymentService implements IPaymentProvider {
     private merchantCode: string;
     private secureKey: string;

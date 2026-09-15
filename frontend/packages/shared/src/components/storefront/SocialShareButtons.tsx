@@ -149,7 +149,7 @@ export function SocialShareButtons({ store, product }: SocialShareButtonsProps) 
                     {showCopyLink && (
                         <button
                             onClick={handleCopyLink}
-                            className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm ${
+                            className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center hover:scale-105 active:scale-95 transition duration-300 shadow-sm ${
                                 copied
                                     ? 'border-green-500 bg-green-50 text-green-600'
                                     : 'border-gray-100 bg-white text-gray-600 hover:border-gray-200'

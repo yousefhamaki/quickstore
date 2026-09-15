@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import api from '../services/api';
 
 import Cookies from 'js-cookie';
+import { authCookieOptions } from '../lib/authCookie';
 
 interface User {
     _id: string;
@@ -91,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = (newToken: string, newUser: User) => {
         setToken(newToken);
         setUser(newUser);
-        Cookies.set('token', newToken, { expires: 7 }); // 7 days
+        Cookies.set('token', newToken, { expires: 7, ...authCookieOptions() }); // 7 days
         localStorage.setItem('user', JSON.stringify(newUser));
 
         // Intent Preservation: check if there is a 'redirect' query parameter
@@ -114,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = () => {
         setToken(null);
         setUser(null);
-        Cookies.remove('token');
+        Cookies.remove('token', authCookieOptions());
         localStorage.removeItem('user');
         router.push('/auth/login');
     };

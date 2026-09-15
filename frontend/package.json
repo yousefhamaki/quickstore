@@ -1,15 +1,13 @@
 {
   "name": "frontend",
-  "version": "0.1.0",
+  "version": "4.0.1",
   "private": true,
   "scripts": {
     "dev": "node dev.js",
     "dev:admin": "npm run dev --workspace=admin-dashboard",
-    "dev:merchant": "npm run dev --workspace=merchant-dashboard",
     "dev:saas": "npm run dev --workspace=saas-portal",
     "build": "npm run build --workspaces",
     "start": "npm run start --workspaces --if-present",
-    "start:merchant": "npm run start --workspace=merchant-dashboard",
     "start:saas": "npm run start --workspace=saas-portal",
     "lint": "npm run lint --workspaces"
   },

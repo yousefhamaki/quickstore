@@ -2,6 +2,7 @@ import React from 'react';
 import { EvaluatedOffer, OfferProduct } from '../../lib/api/offers';
 import { Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { imagePreset } from '../../lib/cloudinaryImage';
 
 interface UpsellBlockProps {
     offerProducts: OfferProduct[];
@@ -24,7 +25,7 @@ export const UpsellBlock: React.FC<UpsellBlockProps> = ({
                 <div key={`${product.productId}-${product.variantId || 'base'}`} className="flex items-center gap-4 p-4 border rounded-lg bg-card">
                     {product.image && (
                         <div className="flex-shrink-0 w-20 h-20 rounded overflow-hidden border bg-muted">
-                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            <img src={imagePreset.thumbnail(product.image)} alt={product.name} loading="lazy" decoding="async" width={100} height={100} className="w-full h-full object-cover" />
                         </div>
                     )}
                     

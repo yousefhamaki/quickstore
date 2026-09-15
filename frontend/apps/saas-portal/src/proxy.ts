@@ -4,6 +4,24 @@ import { routing } from './i18n/routing';
 
 const handleI18nRouting = createMiddleware(routing);
 
+// This middleware runs on every single request in production, not just
+// dev — logging on each one is pure overhead once real traffic hits it
+// (and clutters production logs). Gate all the debug traces below to dev.
+const isDev = process.env.NODE_ENV === 'development';
+
+/** Decode a JWT payload without crypto (edge-runtime safe). Returns null on any error. */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+    try {
+        const payloadBase64 = token.split('.')[1];
+        if (!payloadBase64) return null;
+        // atob is available in the Next.js edge runtime
+        const json = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+        return JSON.parse(json) as Record<string, unknown>;
+    } catch {
+        return null;
+    }
+}
+
 export default function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
@@ -50,58 +68,61 @@ export default function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // ================================================================
-    // 2. MERCHANT DASHBOARD ROUTING (Multi-Zone Rewrite)
-    //    Route dashboard/merchant/admin/auth/verify-email paths to the Merchant App.
-    // ================================================================
     const segments = pathname.split('/');
     const isLocaleInPath = ['en', 'ar'].includes(segments[1]);
     const pathAfterLocale = isLocaleInPath
         ? '/' + segments.slice(2).join('/')
         : pathname;
 
-    const routes = ['/merchant', '/dashboard', '/admin', '/auth', '/verify-email'];
-    const isMerchantRoute = routes.some(
-        (p) => pathAfterLocale.startsWith(p)
-    );
+    // ================================================================
+    // 2. AUTH GUARDS — merchant/dashboard/admin/auth/verify-email used to
+    //    live in a separate merchant-dashboard app (a multi-zone setup)
+    //    that had its OWN middleware enforcing these redirects. That app
+    //    has been merged into this one; its auth-guard logic moves here
+    //    verbatim so unauthenticated/unverified users are still redirected
+    //    correctly now that these are just regular routes in this app's
+    //    own src/app/[locale] tree.
+    // ================================================================
+    const token = request.cookies.get('token')?.value;
+    const locale = isLocaleInPath ? segments[1] : 'en';
 
-    if (isMerchantRoute) {
-        // Strip trailing slash to prevent Next.js trailing slash redirect loops
-        let cleanPath = pathname;
-        if (cleanPath.endsWith('/') && cleanPath !== '/') {
-            cleanPath = cleanPath.slice(0, -1);
-        }
+    const isMerchantPath = pathAfterLocale.startsWith('/merchant');
+    const isDashboardPath = pathAfterLocale.startsWith('/dashboard');
+    const isAdminPath = pathAfterLocale.startsWith('/admin');
+    const isAuthPath = pathAfterLocale.startsWith('/auth');
+    const isStorePath = pathAfterLocale.startsWith('/store');
 
-        // Always ensure locale prefix is present for the target to avoid next-intl redirects on the Merchant App
-        const locale = isLocaleInPath ? segments[1] : 'en';
-        const targetPath = isLocaleInPath ? cleanPath : `/en${cleanPath}`;
+    // Paths that verified AND unverified users can access freely
+    const isVerificationPath =
+        pathAfterLocale.startsWith('/auth/verification-required') ||
+        pathAfterLocale.startsWith('/verify-email');
 
-        let merchantDashboardUrl = process.env.MERCHANT_DASHBOARD_URL || 'http://localhost:3001';
-        if (!merchantDashboardUrl.startsWith('http://') && !merchantDashboardUrl.startsWith('https://')) {
-            merchantDashboardUrl = `https://${merchantDashboardUrl}`;
-        }
-        merchantDashboardUrl = merchantDashboardUrl.replace(/\/+$/, '');
-
-        const rewriteUrl = new URL(targetPath, merchantDashboardUrl);
-        rewriteUrl.search = request.nextUrl.search;
-
-        console.log(`[Merchant Multi-Zone Rewrite] "${pathname}" -> "${rewriteUrl.toString()}"`);
-
-        const requestHeaders = new Headers(request.headers);
-        requestHeaders.set('x-locale', locale);
-        requestHeaders.set('x-next-intl-locale', locale);
-
-        return NextResponse.rewrite(rewriteUrl, {
-            request: {
-                headers: requestHeaders,
-            }
-        });
+    // Redirect unauthenticated users to login.
+    // CRITICAL: store paths must NEVER trigger this — a storefront visitor
+    // isn't a merchant and has no token, and never should be redirected.
+    if ((isMerchantPath || isDashboardPath || isAdminPath) && !isStorePath && !token) {
+        return NextResponse.redirect(new URL(`/${locale}/auth/login`, request.url));
     }
 
-    // Domain classification variables (host, hostname, isMainDomain) moved to top
+    // Redirect authenticated users away from auth pages (but allow verification pages)
+    if (token && isAuthPath && !isVerificationPath) {
+        return NextResponse.redirect(new URL(`/${locale}/merchant`, request.url));
+    }
+
+    // Block unverified merchants from protected routes until they verify their email.
+    if (token && (isMerchantPath || isDashboardPath) && !isStorePath && !isVerificationPath) {
+        const payload = decodeJwtPayload(token);
+        const isVerified = payload?.isVerified === true;
+
+        if (!isVerified) {
+            return NextResponse.redirect(
+                new URL(`/${locale}/auth/verification-required`, request.url)
+            );
+        }
+    }
 
     // ================================================================
-    // 4. SUBDOMAIN ROUTING — Rewrite store requests
+    // 3. SUBDOMAIN ROUTING — Rewrite store requests
     //    e.g. hamaki.quickstore.test:3000/products/abc
     //      -> /en/store/hamaki/products/abc
     // ================================================================
@@ -115,15 +136,18 @@ export default function proxy(request: NextRequest) {
             hostname.endsWith('.buildora.live')
         ) {
             subdomain = hostname.split('.')[0];
+        } else if (hostname.endsWith('.localhost')) {
+            // Local dev fallback (e.g. hamaki.localhost:3000) — must be
+            // checked BEFORE the generic custom-domain branch below, since
+            // "hamaki.localhost" also satisfies `hostname.includes('.')`
+            // and would otherwise be misread as an unverified custom
+            // domain (and 404 as "Store Not Found"), silently breaking
+            // local subdomain testing for every subdomain-dependent page.
+            const parts = hostname.split('.');
+            subdomain = parts[0];
         } else if (hostname.includes('.') && !mainDomains.includes(hostname)) {
             // Custom domain mapped to the storefront
             subdomain = hostname;
-        } else {
-            // Local dev fallback (e.g. hamaki.localhost:3000)
-            const parts = hostname.split('.');
-            if (parts.length > 1) {
-                subdomain = parts[0];
-            }
         }
 
         if (subdomain && subdomain !== 'www') {
@@ -137,8 +161,6 @@ export default function proxy(request: NextRequest) {
 
             // Only rewrite if NOT already a store path and NOT a system path
             if (!isAlreadyStorePath && !isSystemPath) {
-                const locale = isLocaleInPath ? segments[1] : 'en';
-
                 // Build the clean sub-path (everything after the locale, or the full path if no locale)
                 const cleanPathname = isLocaleInPath
                     ? (segments.length > 2 ? '/' + segments.slice(2).join('/') : '')
@@ -148,7 +170,7 @@ export default function proxy(request: NextRequest) {
                 const rewriteUrl = request.nextUrl.clone();
                 rewriteUrl.pathname = `/${locale}/store/${subdomain}${cleanPathname}`;
 
-                console.log(
+                if (isDev) console.log(
                     `[Storefront Rewrite] "${pathname}" -> "${rewriteUrl.pathname}"`
                 );
 
@@ -166,15 +188,17 @@ export default function proxy(request: NextRequest) {
     }
 
     // ================================================================
-    // 5. FALLBACK — i18n routing for main domain pages
+    // 4. FALLBACK — i18n routing for main domain pages
     // ================================================================
     return handleI18nRouting(request);
 }
 
 export const config = {
-    // Pre-filter at the framework level: exclude static resources.
+    // Pre-filter at the framework level: exclude static resources so this
+    // middleware only runs where it can actually do something (storefront
+    // subdomain rewriting or locale routing).
     matcher: [
-        '/((?!_next|static|public|favicon\\.ico|api|.*\\.(?:css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|map)).*)',
+        '/((?!static|public|favicon\\.ico|api|.*\\.(?:css|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|map)).*)',
         '/manifest.json',
         '/manifest.webmanifest',
     ],

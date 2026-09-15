@@ -11,6 +11,8 @@ import merchantRoutes from './routes/merchantRoutes';
 import adminRoutes from './routes/adminRoutes';
 import planRoutes from './routes/planRoutes';
 import productRoutes from './routes/productRoutes';
+import categoryRoutes from './routes/categoryRoutes';
+import reviewRoutes from './routes/reviewRoutes';
 import orderRoutes from './routes/orderRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import storeRoutes from './routes/storeRoutes';
@@ -18,6 +20,8 @@ import billingRoutes from './routes/billingRoutes';
 import publicRoutes from './routes/publicRoutes';
 import supportRoutes from './routes/supportRoutes';
 import customerRoutes from './routes/customerRoutes';
+import customerAuthRoutes from './routes/customerAuthRoutes';
+import refundRequestRoutes from './routes/refundRequestRoutes';
 import couponRoutes from './routes/couponRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import abandonedCartRoutes from './routes/abandonedCartRoutes';
@@ -29,12 +33,17 @@ import campaignRoutes from './routes/campaignRoutes';
 import { publicOfferRouter, merchantOfferRouter } from './routes/offerRoutes';
 import { CampaignQuotaService } from './services/CampaignQuotaService';
 import './workers/adminWorker';
+import './workers/billingWorker';
 import { startAnalyticsCron } from './jobs/analyticsCron';
+import { scheduleSubscriptionRenewalSweep } from './queues/billingQueue';
+
+import helmet from 'helmet';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
 
 
+app.use(helmet());
 app.use(compression({ level: 6 }));
 app.use(cors());
 app.use(express.json());
@@ -44,6 +53,8 @@ app.use('/api/merchants', merchantRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/stores', storeRoutes);
@@ -51,6 +62,12 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/customers', customerRoutes);
+// Storefront-facing customer account auth (register/login/me/addresses/
+// orders) — distinct from /api/customers above, which is the merchant CRM
+// view (protect + authorize('merchant')). Public + protectCustomer-gated,
+// scoped per-store via :storeId in every path.
+app.use('/api/account', customerAuthRoutes);
+app.use('/api/refund-requests', refundRequestRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/marketing', marketingRoutes);
 app.use('/api/campaigns', campaignRoutes);
@@ -88,6 +105,10 @@ if (process.env.NODE_ENV !== 'test') {
             CampaignQuotaService.startReconciliationInterval();
             // Start analytics cache snapshot calculation (runs hourly)
             startAnalyticsCron();
+            // Schedule the recurring subscription renewal/expiry sweep (BullMQ)
+            scheduleSubscriptionRenewalSweep().catch(err =>
+                console.error('[Server] Failed to schedule subscription renewal sweep:', err)
+            );
         });
     });
 }

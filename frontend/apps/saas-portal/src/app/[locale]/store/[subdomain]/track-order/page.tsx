@@ -11,6 +11,7 @@ import { Input } from "@shared/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/components/ui/card";
 import { Badge } from "@shared/components/ui/badge";
 import { useTranslations, useLocale } from "next-intl";
+import { imagePreset } from "@shared/lib/cloudinaryImage";
 
 export default function TrackOrderPage() {
     const t = useTranslations('store.trackOrder');
@@ -81,7 +82,7 @@ export default function TrackOrderPage() {
                         <Button
                             type="submit"
                             disabled={isLoading || !orderNumber}
-                            className="h-14 px-10 rounded-2xl font-black text-sm uppercase tracking-widest transition-all"
+                            className="h-14 px-10 rounded-2xl font-black text-sm uppercase tracking-widest transition"
                             style={{ backgroundColor: primaryColor }}
                         >
                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('trackNow')}
@@ -164,7 +165,7 @@ export default function TrackOrderPage() {
                                         {order.items.map((item: any, idx: number) => (
                                             <div key={idx} className="p-4 flex gap-4 items-center">
                                                 <div className="w-16 h-16 bg-gray-50 rounded-2xl border overflow-hidden flex-shrink-0">
-                                                    {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                                                    {item.image && <img src={imagePreset.thumbnail(item.image)} alt={item.name} loading="lazy" decoding="async" width={100} height={100} className="w-full h-full object-cover" />}
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="font-bold text-sm">{item.name}</p>

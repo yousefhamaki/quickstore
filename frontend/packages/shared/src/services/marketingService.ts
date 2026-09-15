@@ -185,15 +185,28 @@ export const getEmailAccountBalance = async (storeId: string): Promise<EmailAcco
 };
 
 export const buyEmailAddOn = async (
-    storeId: string, 
+    storeId: string,
     emailCount: number
-): Promise<{ 
-    message: string; 
-    balance: number; 
-    planBalance: number; 
-    purchasedBalance: number; 
-    walletBalance: number; 
+): Promise<{
+    message: string;
+    balance: number;
+    planBalance: number;
+    purchasedBalance: number;
+    walletBalance: number;
 }> => {
     const response = await api.post(`/billing/${storeId}/email-account/buy-add-on`, { emailCount });
+    return response.data as any;
+};
+
+export const transferEmailCredits = async (
+    fromStoreId: string,
+    toStoreId: string,
+    amount: number
+): Promise<{
+    message: string;
+    from: { storeId: string; balance: number; purchasedBalance: number };
+    to: { storeId: string; balance: number; purchasedBalance: number };
+}> => {
+    const response = await api.post(`/billing/${fromStoreId}/email-account/transfer`, { toStoreId, amount });
     return response.data as any;
 };

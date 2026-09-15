@@ -24,7 +24,8 @@ export function NavLink({
     ...props
 }: NavLinkProps) {
     const { isNavigating, startNavigation } = useNavigation();
-    const router = useRouter();
+
+    const hrefString = typeof href === 'string' ? href : href.pathname || '';
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         // Prevent multi-navigation or if disabled
@@ -40,7 +41,6 @@ export function NavLink({
 
         // Only trigger startNavigation for internal routes starting with /
         // or if it's not a hash/same-page link
-        const hrefString = typeof href === 'string' ? href : href.pathname || '';
         const isInternal = hrefString.startsWith('/') && !hrefString.startsWith('/#');
 
         if (isInternal) {

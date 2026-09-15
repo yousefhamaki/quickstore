@@ -38,6 +38,28 @@
             "answer": "On the Starter plan, you'll need to upgrade to the Professional plan to add more than 10 products."
         }
     },
+    "search": {
+        "placeholder": "Search for anything — payments, shipping, domains...",
+        "loading": "Loading...",
+        "noResults": "No articles match your search. Try a different term or category.",
+        "empty": "No articles yet.",
+        "notFound": "That article couldn't be found."
+    },
+    "categories": {
+        "all": "All Topics",
+        "getting-started": "Getting Started",
+        "products": "Products",
+        "orders": "Orders",
+        "payments": "Payments",
+        "shipping": "Shipping",
+        "domains-theme": "Domains & Theme",
+        "marketing": "Marketing",
+        "analytics": "Analytics",
+        "account-support": "Account & Support"
+    },
+    "pagination": {
+        "pageOf": "Page {page} of {pages}"
+    },
     "contact": {
         "title": "Still Need Help?",
         "subtitle": "If you couldn't find what you were looking for, don't hesitate to reach out.",

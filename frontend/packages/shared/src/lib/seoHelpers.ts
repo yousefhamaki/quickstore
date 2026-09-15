@@ -128,11 +128,11 @@ export function generateCanonicalUrl(
         domain: {
             subdomain: string;
             customDomain?: string;
-            isCustomDomainVerified?: boolean;
+            isVerified?: boolean;
         };
     }
 ): string {
-    const baseUrl = store.domain.customDomain && store.domain.isCustomDomainVerified
+    const baseUrl = store.domain.customDomain && store.domain.isVerified
         ? `https://${store.domain.customDomain}`
         : `https://${store.domain.subdomain}.quickstore.live`;
 

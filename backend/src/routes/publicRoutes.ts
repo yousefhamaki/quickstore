@@ -1,7 +1,9 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import {
     getStoreBySubdomain,
     getStoreProducts,
+    getStoreCategories,
     getProductDetails,
     trackStoreVisit,
     validateCoupon,
@@ -12,14 +14,29 @@ import {
     getPublicOrderDetails,
     trackOrder
 } from '../controllers/publicOrderController';
+import { getProductReviews, createReview } from '../controllers/reviewController';
 import { storefrontBillingContext, checkServiceAvailability } from '../middleware/billingMiddleware';
 
 const router = express.Router();
 
+// Matches the convention used for chat/support (rateLimit declared inline
+// per route file) — a review submission is a write from an unauthenticated
+// shopper, so it needs the same abuse guard.
+const reviewLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 5,
+    message: { message: 'Too many review submissions, please try again in a minute.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 router.get('/stores/:subdomain', getStoreBySubdomain);
 router.get('/stores/:storeId/products', getStoreProducts);
+router.get('/stores/:storeId/categories', getStoreCategories);
 router.post('/stores/:storeId/visit', trackStoreVisit);
 router.get('/products/:productId', getProductDetails);
+router.get('/products/:productId/reviews', getProductReviews);
+router.post('/products/:productId/reviews', reviewLimiter, createReview);
 router.get('/stores/:storeId/coupons/validate', validateCoupon);
 router.post('/stores/:storeId/newsletter/subscribe', subscribeNewsletter);
 

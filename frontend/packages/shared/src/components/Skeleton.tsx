@@ -97,6 +97,31 @@ export function TableSkeleton() {
     );
 }
 
+/** Generic content-page fallback (marketing/informational pages, admin
+ * pages without a more specific skeleton) — a hero block plus a few
+ * content blocks, nothing domain-specific. */
+export function PageSkeleton() {
+    return (
+        <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-3 text-center">
+                <Skeleton className="h-6 w-40 mx-auto rounded-full" />
+                <Skeleton className="h-10 w-2/3 mx-auto" />
+                <Skeleton className="h-4 w-1/2 mx-auto" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-6 rounded-2xl border border-border/50 bg-card space-y-4">
+                        <Skeleton className="h-10 w-10 rounded-xl" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-3 w-2/3" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export function FormSkeleton() {
     return (
         <div className="max-w-4xl mx-auto p-8 space-y-8">

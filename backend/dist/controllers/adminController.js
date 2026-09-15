@@ -23,11 +23,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateTicketStatusController = exports.addTicketReplyController = exports.getTicketsList = exports.deletePlanController = exports.updatePlanController = exports.createPlanController = exports.getPlansList = exports.reviewReceipt = exports.getPendingReceipts = exports.updateStoreStatus = exports.overrideStoreSubscription = exports.getStoresList = exports.adjustMerchantWallet = exports.updateMerchantStatus = exports.getMerchantsList = exports.getAnalytics = void 0;
+exports.getTransactionStats = exports.getTransactionsList = exports.updateTicketStatusController = exports.addTicketReplyController = exports.getTicketsList = exports.deletePlanController = exports.updatePlanController = exports.createPlanController = exports.getPlansList = exports.reviewReceipt = exports.getPendingReceipts = exports.updateStoreStatus = exports.overrideStoreSubscription = exports.getStoresList = exports.adjustMerchantWallet = exports.updateMerchantStatus = exports.getMerchantsList = exports.getAnalytics = void 0;
 const PaymentReceipt_1 = __importDefault(require("../models/PaymentReceipt"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
 const Store_1 = __importDefault(require("../models/Store"));
 const User_1 = __importDefault(require("../models/User"));
+const WalletTransaction_1 = __importDefault(require("../models/WalletTransaction"));
 const analytics_service_1 = require("../services/admin/analytics.service");
 const merchant_service_1 = require("../services/admin/merchant.service");
 const wallet_service_1 = require("../services/admin/wallet.service");
@@ -270,3 +271,83 @@ const updateTicketStatusController = (req, res) => __awaiter(void 0, void 0, voi
     }
 });
 exports.updateTicketStatusController = updateTicketStatusController;
+// ─── Transactions ────────────────────────────────────────────────────────────
+const getTransactionsList = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 25);
+        const skip = (page - 1) * limit;
+        const filter = {};
+        if (req.query.type)
+            filter.type = req.query.type;
+        if (req.query.reason)
+            filter.reason = req.query.reason;
+        if (req.query.from || req.query.to) {
+            filter.createdAt = {};
+            if (req.query.from)
+                filter.createdAt.$gte = new Date(req.query.from);
+            if (req.query.to)
+                filter.createdAt.$lte = new Date(req.query.to);
+        }
+        const [transactions, total] = yield Promise.all([
+            WalletTransaction_1.default.find(filter)
+                .populate('userId', 'name email')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            WalletTransaction_1.default.countDocuments(filter)
+        ]);
+        res.json({
+            transactions,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+});
+exports.getTransactionsList = getTransactionsList;
+const getTransactionStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    try {
+        const filter = {};
+        if (req.query.from || req.query.to) {
+            filter.createdAt = {};
+            if (req.query.from)
+                filter.createdAt.$gte = new Date(req.query.from);
+            if (req.query.to)
+                filter.createdAt.$lte = new Date(req.query.to);
+        }
+        const [typeAgg, reasonAgg] = yield Promise.all([
+            WalletTransaction_1.default.aggregate([
+                { $match: filter },
+                { $group: { _id: '$type', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+            ]),
+            WalletTransaction_1.default.aggregate([
+                { $match: filter },
+                { $group: { _id: '$reason', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+                { $sort: { total: -1 } }
+            ])
+        ]);
+        const byType = {};
+        for (const row of typeAgg)
+            byType[row._id] = { total: row.total, count: row.count };
+        res.json({
+            totalDebited: (_b = (_a = byType['debit']) === null || _a === void 0 ? void 0 : _a.total) !== null && _b !== void 0 ? _b : 0,
+            totalCredited: (_d = (_c = byType['credit']) === null || _c === void 0 ? void 0 : _c.total) !== null && _d !== void 0 ? _d : 0,
+            debitCount: (_f = (_e = byType['debit']) === null || _e === void 0 ? void 0 : _e.count) !== null && _f !== void 0 ? _f : 0,
+            creditCount: (_h = (_g = byType['credit']) === null || _g === void 0 ? void 0 : _g.count) !== null && _h !== void 0 ? _h : 0,
+            byReason: reasonAgg.map(r => ({ reason: r._id, total: r.total, count: r.count }))
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+});
+exports.getTransactionStats = getTransactionStats;

@@ -9,6 +9,14 @@ export const redisClient = new Redis({
   port: redisPort,
   password: redisPassword ? redisPassword : undefined,
   maxRetriesPerRequest: 3,
+  // Without this, ioredis's default command timeout (effectively
+  // unbounded — it waits on maxRetriesPerRequest/reconnect logic instead)
+  // means a Redis instance that's merely SLOW (not down) can stall a
+  // request far longer than the cache is worth, defeating the whole point
+  // of the circuit breaker below — a page load should never wait longer
+  // for a cache lookup than the DB query it's trying to avoid.
+  commandTimeout: 300,
+  connectTimeout: 3000,
   retryStrategy(times) {
     if (times > 3) {
       console.warn('[Redis Cache] Max connection retries reached. Operating in MongoDB fallback mode.');
@@ -110,6 +118,36 @@ redisClient.set = async function(key: string, value: string, ...args: any[]) {
     return 'OK';
   }
 } as any;
+
+/**
+ * Distributed-lock acquisition (SET key value EX ttl NX), deliberately NOT
+ * going through the wrapped redisClient.set above.
+ *
+ * That wrapper's "fail open" behavior — return the string 'OK' whenever
+ * Redis errors or the circuit breaker is open — is correct for a cache
+ * write (worst case: no cache, one extra DB read) but was being reused for
+ * real mutual-exclusion locks (subscription plan-change vs. the hourly
+ * renewal sweep in SubscriptionRenewalService — see billingController.ts's
+ * `subscribe`). Under exactly the Redis degradation this app is built to
+ * tolerate, that meant EVERY caller believed it had acquired the lock
+ * simultaneously, defeating the guard against a user upgrading their plan
+ * at the same moment the renewal sweep touches the same subscription —
+ * a real double-charge/double-processing risk, not just a cache miss.
+ *
+ * This fails CLOSED instead: if Redis can't confirm the lock, treat it as
+ * NOT acquired so the caller backs off, rather than silently proceeding
+ * unprotected. A lock that appears to fail is safe; a lock that appears to
+ * succeed when it didn't is not.
+ */
+export async function acquireLock(key: string, ttlSeconds: number): Promise<boolean> {
+  try {
+    const result = await originalSet(key, 'locked', 'EX', ttlSeconds, 'NX');
+    return result === 'OK';
+  } catch (err: any) {
+    console.warn(`[Redis Lock] Acquisition failed for "${key}" — treating as NOT acquired:`, err?.message || err);
+    return false;
+  }
+}
 
 const originalDel = redisClient.del.bind(redisClient);
 redisClient.del = async function(...args: any[]) {

@@ -13,9 +13,13 @@ import * as z from 'zod';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useOfferEngine } from '@shared/hooks/useOfferEngine';
+import { imagePreset } from '@shared/lib/cloudinaryImage';
 import { OfferModal } from '@shared/components/offers/OfferModal';
 import { DownSellOverlay } from '@shared/components/offers/DownSellOverlay';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useCustomerAuth } from '@shared/context/CustomerAuthContext';
+import { MapPin } from 'lucide-react';
+import type { CustomerAddress } from '@shared/services/customerAuthService';
 
 const createCheckoutSchema = (t: any) => z.object({
     firstName: z.string().min(2, t('errors.required')),
@@ -182,9 +186,37 @@ export default function CheckoutPage() {
         return 0;
     };
 
-    const { register, handleSubmit, formState: { errors } } = useForm<CheckoutFormData>({
+    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CheckoutFormData>({
         resolver: zodResolver(createCheckoutSchema(useTranslations())),
     });
+
+    // Logged-in customer prefill: check out faster by not retyping contact
+    // info and a saved address every time. Guarded by a ref so it only
+    // fires once — a bare `reset()` on every `customer` change would wipe
+    // out whatever the shopper is actively typing.
+    const { customer } = useCustomerAuth();
+    const hasPrefilled = useRef(false);
+    useEffect(() => {
+        if (!customer || hasPrefilled.current) return;
+        hasPrefilled.current = true;
+        const defaultAddress = customer.addresses?.find((a) => a.isDefault) || customer.addresses?.[0];
+        reset({
+            firstName: customer.firstName || '',
+            lastName: customer.lastName || '',
+            email: customer.email || '',
+            phone: customer.phone || defaultAddress?.phone || '',
+            address: defaultAddress?.address || '',
+            city: defaultAddress?.city || '',
+            zipCode: defaultAddress?.postalCode !== '00000' ? defaultAddress?.postalCode : '',
+        });
+    }, [customer, reset]);
+
+    const applySavedAddress = (addr: CustomerAddress) => {
+        setValue('address', addr.address, { shouldValidate: true });
+        setValue('city', addr.city, { shouldValidate: true });
+        setValue('phone', addr.phone, { shouldValidate: true });
+        if (addr.postalCode && addr.postalCode !== '00000') setValue('zipCode', addr.postalCode);
+    };
 
     const onSubmit = async (data: CheckoutFormData) => {
         if (step < 3) {
@@ -264,7 +296,7 @@ export default function CheckoutPage() {
                     ].map((s, i) => (
                         <div key={s.n} className="flex items-center">
                             <div className={`flex flex-col items-center gap-2 ${step >= s.n ? 'text-black' : 'text-gray-300'}`}>
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${step >= s.n ? 'border-black bg-black text-white' : 'border-gray-200'}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition ${step >= s.n ? 'border-black bg-black text-white' : 'border-gray-200'}`}>
                                     {step > s.n ? <CheckCircle2 size={16} /> : s.i}
                                 </div>
                                 <span className="text-[10px] font-black uppercase tracking-widest">{s.l}</span>
@@ -288,7 +320,7 @@ export default function CheckoutPage() {
                                         <div key={item.cartItemId} className="flex flex-col md:flex-row md:items-center gap-6 p-6 bg-gray-50 rounded-[32px] border relative group">
                                             <div className="w-24 h-24 bg-white rounded-2xl overflow-hidden border shrink-0">
                                                 {item.image ? (
-                                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                                    <img src={imagePreset.thumbnail(item.image)} alt={item.name} loading="lazy" decoding="async" width={100} height={100} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-gray-200"><Package size={32} /></div>
                                                 )}
@@ -319,14 +351,14 @@ export default function CheckoutPage() {
                                                 <div className="flex items-center bg-white rounded-full p-1 border">
                                                     <button
                                                         onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
-                                                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all"
+                                                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition"
                                                     >
                                                         <Minus size={14} />
                                                     </button>
                                                     <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
                                                     <button
                                                         onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
-                                                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all"
+                                                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition"
                                                     >
                                                         <Plus size={14} />
                                                     </button>
@@ -347,6 +379,23 @@ export default function CheckoutPage() {
                         {step === 2 && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                                 <h2 className="text-3xl font-black tracking-tighter">{t('shippingTitle')}</h2>
+
+                                {customer && customer.addresses.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {customer.addresses.map((addr) => (
+                                            <button
+                                                key={addr._id}
+                                                type="button"
+                                                onClick={() => applySavedAddress(addr)}
+                                                className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 border rounded-full text-xs font-bold text-gray-600 transition-colors"
+                                            >
+                                                <MapPin size={14} className="text-gray-400" />
+                                                {addr.city} — {addr.address.slice(0, 24)}{addr.address.length > 24 ? '…' : ''}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <form id="checkout-form" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.firstName')}</label>
@@ -390,7 +439,7 @@ export default function CheckoutPage() {
                             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                                 <h2 className="text-3xl font-black tracking-tighter">{t('paymentTitle')}</h2>
                                 <div className="space-y-4">
-                                    <div className="p-6 bg-black text-white rounded-[32px] border flex items-center justify-between group cursor-pointer hover:scale-[1.02] transition-all">
+                                    <div className="p-6 bg-black text-white rounded-[32px] border flex items-center justify-between group cursor-pointer hover:scale-[1.02] transition">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
                                                 <CreditCard size={24} />
@@ -448,7 +497,7 @@ export default function CheckoutPage() {
                                         <button
                                             onClick={handleApplyCoupon}
                                             disabled={!couponInput || !!appliedCoupon || verifyingCoupon}
-                                            className="h-12 px-6 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all disabled:opacity-50"
+                                            className="h-12 px-6 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 transition disabled:opacity-50"
                                         >
                                             {verifyingCoupon ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('applyCoupon')}
                                         </button>
@@ -485,7 +534,7 @@ export default function CheckoutPage() {
                                 onClick={step === 1 ? () => setStep(2) : () => {
                                     handleSubmit(onSubmit)();
                                 }}
-                                className="w-full h-16 bg-black text-white rounded-full font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-900 transition-all disabled:opacity-50"
+                                className="w-full h-16 bg-black text-white rounded-full font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-900 transition disabled:opacity-50"
                             >
                                 {loading ? t('processing') : step === 3 ? t('placeOrder') : t('continue')} <ChevronRight size={18} />
                             </button>

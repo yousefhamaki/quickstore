@@ -2,6 +2,12 @@ import { IPaymentProvider } from './IPaymentProvider';
 import { IOrder } from '../../models/Order';
 import { IStore } from '../../models/Store';
 
+/**
+ * UNFINISHED — not reachable in production. See StripePaymentService.ts for
+ * why: fake checkout URL, and validateWebhookPayload() accepts any
+ * signature. Blocked at PaymentFactory + Store schema/storeController level
+ * (constants/paymentProviders.ts) until this has a real implementation.
+ */
 export class PayPalPaymentService implements IPaymentProvider {
     private clientId: string;
     private clientSecret: string;

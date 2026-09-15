@@ -24,6 +24,10 @@ export interface ICustomer extends Document {
     storeId: mongoose.Types.ObjectId;
     email: string;
     password?: string;
+    // Set by POST /api/account/:storeId/forgot-password, cleared on
+    // successful reset (or naturally expires) — see customerAuthController.
+    passwordResetTokenHash?: string;
+    passwordResetExpiresAt?: Date;
     firstName?: string; // Optional for newsletter-only subscribers
     lastName?: string;  // Optional for newsletter-only subscribers
     phone?: string;
@@ -48,6 +52,8 @@ const CustomerSchema: Schema = new Schema(
         lastName: { type: String },  // Optional for newsletter-only subscribers
         email: { type: String, required: true, trim: true, lowercase: true },
         password: { type: String },
+        passwordResetTokenHash: { type: String },
+        passwordResetExpiresAt: { type: Date },
         phone: { type: String },
         addresses: [
             {

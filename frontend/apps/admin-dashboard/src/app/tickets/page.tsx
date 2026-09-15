@@ -165,7 +165,7 @@ export default function TicketsAdmin() {
                     <div 
                       key={ticket._id}
                       onClick={() => setSelectedTicket(ticket)}
-                      className={`p-3.5 rounded-xl border transition-all duration-300 cursor-pointer ${
+                      className={`p-3.5 rounded-xl border transition duration-300 cursor-pointer ${
                         isSelected 
                           ? 'bg-gradient-to-r from-cyan-500/20 to-indigo-500/10 border-cyan-500/30 text-white shadow-lg' 
                           : 'bg-slate-950/40 border-white/5 hover:border-white/10 hover:bg-slate-950/60 text-slate-300'

@@ -96,7 +96,7 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
 
                     <Button 
                         asChild 
-                        className="w-full rounded-xl h-12 font-bold bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-lg"
+                        className="w-full rounded-xl h-12 font-bold bg-primary text-primary-foreground hover:bg-primary/95 transition shadow-lg"
                     >
                         <a href="tel:+201094938462">
                             {isAr ? "اتصل الآن" : "Call Support"}
@@ -204,7 +204,7 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
 //                                 <button
 //                                     onClick={() => setMethod('card')}
 //                                     className={cn(
-//                                         "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left",
+//                                         "flex items-center gap-4 p-4 rounded-2xl border-2 transition text-left",
 //                                         method === 'card' ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-muted hover:border-primary/50"
 //                                     )}
 //                                 >
@@ -222,7 +222,7 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
 //                                 <button
 //                                     onClick={() => setMethod('wallet')}
 //                                     className={cn(
-//                                         "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left",
+//                                         "flex items-center gap-4 p-4 rounded-2xl border-2 transition text-left",
 //                                         method === 'wallet' ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-muted hover:border-primary/50"
 //                                     )}
 //                                 >
@@ -250,7 +250,7 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
 //                                 <button
 //                                     onClick={() => setMethod('fawry')}
 //                                     className={cn(
-//                                         "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left",
+//                                         "flex items-center gap-4 p-4 rounded-2xl border-2 transition text-left",
 //                                         method === 'fawry' ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-muted hover:border-primary/50"
 //                                     )}
 //                                 >

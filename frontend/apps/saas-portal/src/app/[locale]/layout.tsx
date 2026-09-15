@@ -7,7 +7,7 @@ import { Providers } from "./providers";
 import { routing } from '@shared/i18n/routing';
 import { IntlProvider } from "@shared/components/IntlProvider";
 import { getMessages } from 'next-intl/server';
-import { ChatbotWidget } from "@shared/components/chat/ChatbotWidget";
+import { ChatbotWidget } from "@shared/components/chat/ChatbotWidgetLazy";
 
 const montserrat = Montserrat({ subsets: ["latin"], variable: '--font-montserrat', display: 'swap' });
 const cairo = Cairo({ subsets: ["arabic", "latin"], variable: '--font-cairo', display: 'swap' });

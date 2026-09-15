@@ -1,5 +1,6 @@
 import User from '../../models/User';
 import Wallet from '../../models/Wallet';
+import Subscription from '../../models/Subscription';
 import { logAdminAction } from './audit.service';
 import { publishAdminEvent } from '../../queues/adminQueue';
 
@@ -8,24 +9,34 @@ export const getAllMerchants = async (filters: { isVerified?: boolean; subscript
     if (filters.isVerified !== undefined) {
         query.isVerified = filters.isVerified;
     }
-    if (filters.subscriptionStatus) {
-        query.subscriptionStatus = filters.subscriptionStatus;
-    }
 
     const merchants = await User.find(query)
-        .populate('subscriptionPlan')
         .populate('stores', 'name slug domain status')
         .sort({ createdAt: -1 });
 
-    const merchantListWithWallets = await Promise.all(merchants.map(async (m) => {
-        const wallet = await Wallet.findOne({ userId: m._id });
+    const results = await Promise.all(merchants.map(async (m) => {
+        const [wallet, sub] = await Promise.all([
+            Wallet.findOne({ userId: m._id }).lean(),
+            Subscription.findOne({ userId: m._id }).populate('planId').lean()
+        ]);
+
         return {
             ...m.toObject(),
-            walletBalance: wallet ? wallet.balance : 0
+            walletBalance: wallet ? wallet.balance : 0,
+            // Live subscription data from the Subscription collection (updated by billing engine)
+            subscriptionPlan: sub?.planId ?? null,
+            subscriptionStatus: sub?.status ?? 'inactive',
+            subscriptionExpiry: sub?.expiresAt ?? null,
+            billingCycle: sub?.billingCycle ?? null,
         };
     }));
 
-    return merchantListWithWallets;
+    // Apply subscriptionStatus filter after join (since it lives on Subscription, not User)
+    if (filters.subscriptionStatus) {
+        return results.filter(m => m.subscriptionStatus === filters.subscriptionStatus);
+    }
+
+    return results;
 };
 
 export const toggleMerchantStatus = async (

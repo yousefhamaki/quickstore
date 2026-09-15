@@ -83,7 +83,7 @@ export function WelcomeGiftModal() {
 
                     <Button 
                         onClick={handleDismiss}
-                        className="w-full h-14 rounded-2xl text-base font-black bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-95 shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 group"
+                        className="w-full h-14 rounded-2xl text-base font-black bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-95 shadow-xl transition duration-300 hover:scale-[1.02] active:scale-95 group"
                     >
                         <span>{isAr ? "لنبدأ العمل!" : "Let's Build!"}</span>
                         <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />

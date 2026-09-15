@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authorize = exports.protect = void 0;
+exports.resolveStore = exports.authorize = exports.protect = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const protect = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -21,7 +21,7 @@ const protect = (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
         try {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-            req.user = yield User_1.default.findById(decoded.id).select('-password');
+            req.user = yield User_1.default.findById(decoded.id).select('-passwordHash');
             if (!req.user) {
                 return res.status(401).json({ message: 'Not authorized, user not found' });
             }
@@ -54,3 +54,24 @@ const authorize = (...roles) => {
     };
 };
 exports.authorize = authorize;
+const Store_1 = __importDefault(require("../models/Store"));
+const mongoose_1 = __importDefault(require("mongoose"));
+/**
+ * Resolves the active store context from headers, queries, bodies, or parameters.
+ * Asserts ownership by matching against the logged-in merchant.
+ */
+const resolveStore = (req) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.user)
+        return null;
+    const storeId = req.headers['x-store-id'] || req.query.storeId || req.body.storeId || req.params.storeId;
+    let store = null;
+    if (storeId && mongoose_1.default.Types.ObjectId.isValid(storeId)) {
+        store = yield Store_1.default.findOne({ _id: storeId, ownerId: req.user._id });
+    }
+    // Backward-compatible fallback for single-store accounts
+    if (!store) {
+        store = yield Store_1.default.findOne({ ownerId: req.user._id });
+    }
+    return store;
+});
+exports.resolveStore = resolveStore;

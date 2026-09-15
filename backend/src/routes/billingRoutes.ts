@@ -5,6 +5,7 @@ import {
     getPlans,
     getCurrentSubscription,
     subscribe,
+    subscribePreview,
     paySubscriptionWithWallet,
     getBillingOverview,
     updateBillingProfile,
@@ -12,7 +13,8 @@ import {
     getTransactions,
     getReceipts,
     getEmailAccountBalance,
-    buyEmailAddOn
+    buyEmailAddOn,
+    transferEmailCredits
 } from '../controllers/billingController';
 
 const router = express.Router();
@@ -25,6 +27,7 @@ router.get('/plans', getPlans); // Public? Or protected? Let's keep public for m
 
 router.use(protect);
 router.get('/subscription', getCurrentSubscription);
+router.post('/subscribe/preview', subscribePreview);
 router.post('/subscribe', subscribe);
 router.post('/pay-with-wallet', paySubscriptionWithWallet);
 router.get('/overview', getBillingOverview);
@@ -34,5 +37,6 @@ router.get('/transactions', getTransactions);
 router.get('/receipts', getReceipts);
 router.get('/:storeId/email-account', getEmailAccountBalance);
 router.post('/:storeId/email-account/buy-add-on', buyEmailAddOn);
+router.post('/:storeId/email-account/transfer', transferEmailCredits);
 
 export default router;

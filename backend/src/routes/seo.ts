@@ -323,6 +323,11 @@ router.put('/stores/:storeId/products/:productId/seo', protect, async (req: Auth
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        // Verify product belongs to the store
+        if (product.storeId.toString() !== store._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
         // Update product SEO
         product.seo = {
             ...product.seo,

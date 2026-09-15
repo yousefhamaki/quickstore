@@ -77,7 +77,7 @@ export function SEOHealthDashboard({ health, loading, onRefresh, refreshing }: S
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3">
                             <div
-                                className={`h-3 rounded-full transition-all ${getScoreBgColor(health.score)}`}
+                                className={`h-3 rounded-full transition ${getScoreBgColor(health.score)}`}
                                 style={{ width: `${health.score}%` }}
                             />
                         </div>

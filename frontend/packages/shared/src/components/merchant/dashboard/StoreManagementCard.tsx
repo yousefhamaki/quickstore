@@ -49,7 +49,7 @@ const StoreManagementCard = memo(({ storeCount }: { storeCount: number }) => {
                             </div>
                         </div>
                         <NavLink href="/dashboard" className="block w-full">
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black h-14 rounded-2xl shadow-xl shadow-blue-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black h-14 rounded-2xl shadow-xl shadow-blue-200 transition hover:scale-[1.02] active:scale-[0.98]">
                                 Go to My Stores
                             </Button>
                         </NavLink>

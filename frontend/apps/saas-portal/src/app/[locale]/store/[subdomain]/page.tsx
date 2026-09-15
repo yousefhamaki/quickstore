@@ -1,9 +1,14 @@
-import { getPublicStore, getStoreProducts } from "@shared/services/publicStoreService";
+import { getPublicStore, getStoreProducts, getStoreCategories } from "@shared/services/publicStoreService";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import ProductCatalog from "./ProductCatalog";
 import NewsletterForm from "./NewsletterForm";
+import HeroSlider from "./HeroSlider";
+
+// See layout.tsx for the full rationale — same 60s ISR window for the
+// product-grid homepage itself.
+export const revalidate = 60;
 
 // 1. The Instant UI Skeleton
 function StoreSkeleton() {
@@ -47,12 +52,17 @@ async function StoreContent({ subdomain, locale }: { subdomain: string; locale: 
     const t = await getTranslations({ locale, namespace: 'store.home' });
     let store: any = null;
     let products: any[] = [];
+    let categories: { _id: string; name: string; slug: string }[] = [];
     let fetchError: string | null = null;
 
     try {
         store = await getPublicStore(subdomain);
         console.log(`[Store Page] getPublicStore returned:`, store ? `Found "${store.name}"` : 'null');
-        products = await getStoreProducts(store?._id || store?.id) as any[];
+        const storeId = store?._id || store?.id;
+        [products, categories] = await Promise.all([
+            getStoreProducts(storeId) as Promise<any[]>,
+            getStoreCategories(storeId).catch(() => []) // non-fatal — falls back to deriving pills from product.category
+        ]);
         console.log(`[Store Page] getStoreProducts fetched:`, products ? `${products.length} products` : 'null/undefined');
     } catch (error: any) {
         console.error(`[Store Page] Fetch error:`, error?.message || error);
@@ -77,35 +87,52 @@ async function StoreContent({ subdomain, locale }: { subdomain: string; locale: 
     }
 
     const primaryColor = store.branding?.primaryColor || "#3B82F6";
+    const hero = store.theme?.customizations?.hero || {};
+    const heroSlides = store.theme?.customizations?.heroSlider?.slides || [];
 
     return (
         <div className="space-y-20">
-            {/* Hero Section */}
-            <section className="relative h-[80vh] flex items-center justify-center overflow-hidden bg-gray-50">
-                <div className="container mx-auto px-4 z-10 text-center space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-                    <div className="space-y-4">
-                        <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-tight">
-                            {t('welcome')} <br />
-                            <span style={{ color: primaryColor }}>{store.name}</span>
-                        </h1>
-                        <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto font-medium">
-                            {store.description || t('newsletterSubtitle')}
-                        </p>
+            {/* Hero Section — a merchant-configured slider takes over the
+                first section entirely when at least one slide exists;
+                otherwise fall back to the plain text/color hero below. */}
+            {heroSlides.length > 0 ? (
+                <HeroSlider slides={heroSlides} primaryColor={primaryColor} />
+            ) : (
+                <section className="relative h-[80vh] flex items-center justify-center overflow-hidden bg-gray-50">
+                    <div className="container mx-auto px-4 z-10 text-center space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                        <div className="space-y-4">
+                            <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-tight">
+                                {hero.headline ? hero.headline : (
+                                    <>
+                                        {t('welcome')} <br />
+                                        <span style={{ color: primaryColor }}>{store.name}</span>
+                                    </>
+                                )}
+                            </h1>
+                            <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto font-medium">
+                                {hero.subheadline || store.description || t('newsletterSubtitle')}
+                            </p>
+                        </div>
+                        <div>
+                            <a href="#catalog" className="store-button inline-block text-lg px-12 h-16 leading-[calc(4rem-24px)] shadow-2xl shadow-blue-500/20">
+                                {hero.ctaText || t('startShopping')}
+                            </a>
+                        </div>
                     </div>
-                    <div>
-                        <button className="store-button text-lg px-12 h-16 shadow-2xl shadow-blue-500/20">
-                            {t('startShopping')}
-                        </button>
-                    </div>
-                </div>
-                <div
-                    className="absolute -top-[20%] -right-[10%] w-[60%] aspect-square rounded-full opacity-10 blur-[120px]"
-                    style={{ backgroundColor: primaryColor }}
-                />
-            </section>
+                    <div
+                        className="absolute -top-[20%] -right-[10%] w-[60%] aspect-square rounded-full opacity-10 blur-[120px]"
+                        style={{ backgroundColor: primaryColor }}
+                    />
+                </section>
+            )}
 
             {/* Product Grid */}
-            <ProductCatalog products={products} />
+            <ProductCatalog
+                products={products}
+                categories={categories}
+                columns={store.theme?.customizations?.productGrid?.columns}
+                showRatings={store.theme?.customizations?.productGrid?.showRatings}
+            />
 
             {/* Newsletter Section */}
             <NewsletterForm storeId={store._id || store.id} primaryColor={primaryColor} />

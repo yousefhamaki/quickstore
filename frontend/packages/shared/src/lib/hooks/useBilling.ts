@@ -42,11 +42,11 @@ export const useRechargeWallet = () => {
 export const useSubscribe = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (variables: string | { planId: string; billingCycle?: 'monthly' | 'yearly' }) => {
+        mutationFn: (variables: string | { planId: string; billingCycle?: 'monthly' | 'yearly'; confirmDowngrade?: boolean }) => {
             if (typeof variables === 'string') {
                 return billingApi.subscribeToPlan(variables);
             }
-            return billingApi.subscribeToPlan(variables.planId, variables.billingCycle);
+            return billingApi.subscribeToPlan(variables.planId, variables.billingCycle, variables.confirmDowngrade);
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['billingOverview'] });

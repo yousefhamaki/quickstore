@@ -7,6 +7,7 @@ import { getPublicCampaign } from '@shared/lib/api/offers';
 import { createOrder } from '@shared/services/publicOrderService';
 import { ShoppingBag, Truck, Check, Loader2, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { imagePreset } from '@shared/lib/cloudinaryImage';
 
 // Bilingual UI Fallback Dictionary
 const translations = {
@@ -325,7 +326,7 @@ export default function OfferPageCheckout() {
             <header className="bg-white border-b sticky top-0 z-40 backdrop-blur-md bg-white/80 h-16 flex items-center px-4 md:px-8 justify-between shadow-sm">
                 <div className="flex items-center gap-3">
                     {store.logo?.url ? (
-                        <img src={store.logo.url} alt={store.name} className="h-8 max-w-[120px] object-contain" />
+                        <img src={imagePreset.logo(store.logo.url)} alt={store.name} fetchPriority="high" decoding="async" className="h-8 max-w-[120px] object-contain" />
                     ) : (
                         <span className="font-black text-xl tracking-tight uppercase">{store.name}</span>
                     )}
@@ -361,10 +362,12 @@ export default function OfferPageCheckout() {
                                 <div className="md:col-span-6 space-y-4">
                                     <div className="w-full aspect-square bg-gray-50 rounded-3xl border overflow-hidden shadow-sm relative group">
                                         {product.images?.[activeImageIndex]?.url ? (
-                                            <img 
-                                                src={product.images[activeImageIndex].url} 
-                                                alt={product.name} 
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                            <img
+                                                src={imagePreset.detail(product.images[activeImageIndex].url)}
+                                                alt={product.name}
+                                                fetchPriority="high"
+                                                decoding="async"
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -384,13 +387,13 @@ export default function OfferPageCheckout() {
                                                     key={idx}
                                                     type="button"
                                                     onClick={() => setActiveImageIndex(idx)}
-                                                    className={`w-16 h-16 rounded-xl border-2 overflow-hidden shrink-0 transition-all ${
+                                                    className={`w-16 h-16 rounded-xl border-2 overflow-hidden shrink-0 transition ${
                                                         activeImageIndex === idx 
                                                             ? 'border-black scale-105 shadow-sm' 
                                                             : 'border-gray-200 hover:border-gray-400'
                                                     }`}
                                                 >
-                                                    <img src={img.url} alt={`${product.name} thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                                                    <img src={imagePreset.thumbnail(img.url)} alt={`${product.name} thumbnail ${idx + 1}`} loading="lazy" decoding="async" width={64} height={64} className="w-full h-full object-cover" />
                                                 </button>
                                             ))}
                                         </div>
@@ -470,7 +473,7 @@ export default function OfferPageCheckout() {
                                             <div
                                                 key={tier.quantity}
                                                 onClick={() => handleQuantityChange(tier.quantity)}
-                                                className={`border-2 rounded-2xl p-5 cursor-pointer relative transition-all duration-300 flex flex-col justify-between min-h-[140px] hover:scale-[1.02] shadow-xs ${
+                                                className={`border-2 rounded-2xl p-5 cursor-pointer relative transition duration-300 flex flex-col justify-between min-h-[140px] hover:scale-[1.02] shadow-xs ${
                                                     isSelected 
                                                         ? 'bg-black text-white border-black scale-[1.01] shadow-md' 
                                                         : 'bg-gray-50 hover:bg-gray-100/50 border-gray-200 text-black'
@@ -605,7 +608,7 @@ export default function OfferPageCheckout() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || isCurrentVariantOutOfStock}
-                                    className="w-full h-14 bg-black text-white hover:bg-gray-900 transition-all font-black text-sm uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full h-14 bg-black text-white hover:bg-gray-900 transition font-black text-sm uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isSubmitting ? (
                                         <>

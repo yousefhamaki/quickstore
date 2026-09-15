@@ -18,7 +18,9 @@ import {
     deletePlanController,
     getTicketsList,
     addTicketReplyController,
-    updateTicketStatusController
+    updateTicketStatusController,
+    getTransactionsList,
+    getTransactionStats
 } from '../controllers/adminController';
 
 const router = express.Router();
@@ -46,5 +48,8 @@ router.delete('/plans/:id', can('plans.delete'), deletePlanController);
 router.get('/tickets', can('tickets.view'), getTicketsList);
 router.post('/tickets/:id/reply', can('tickets.reply'), addTicketReplyController);
 router.put('/tickets/:id/status', can('tickets.status'), updateTicketStatusController);
+
+router.get('/transactions', can('analytics.view'), getTransactionsList);
+router.get('/transactions/stats', can('analytics.view'), getTransactionStats);
 
 export default router;

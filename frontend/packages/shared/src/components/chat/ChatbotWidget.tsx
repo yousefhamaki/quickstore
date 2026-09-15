@@ -17,6 +17,10 @@ type Message = {
     isFeedbackPrompt?: boolean;
     isTicketForm?: boolean;
     articleLink?: string;
+    /** Several comparably-relevant articles — shown instead of a single
+     * (possibly wrong) guess when the backend isn't confident enough to
+     * pick just one. See chatController.askQuestion's CONFIDENCE_RATIO. */
+    suggestions?: { _id: string; title: string }[];
     logId?: string;
 };
 
@@ -107,6 +111,15 @@ export function ChatbotWidget() {
         };
     }, []);
 
+    // Lets any page open this widget without prop-drilling or a Context
+    // (e.g. the /support page's "Start Chat" channel card) —
+    // window.dispatchEvent(new Event('buildora:open-chat')).
+    useEffect(() => {
+        const openChat = () => setIsOpen(true);
+        window.addEventListener('buildora:open-chat', openChat);
+        return () => window.removeEventListener('buildora:open-chat', openChat);
+    }, []);
+
     const trackEvent = (eventName: string, data?: any) => {
         console.log(`[Analytics] [${sessionId}] Event: ${eventName}`, data || {});
     };
@@ -160,7 +173,22 @@ export function ChatbotWidget() {
             const { data } = await api.post<any>('/chat/ask', { message: queryText, locale, sessionId });
             setActiveLogId(data.logId);
 
-            if (data.answered && data.article) {
+            if (data.answered && data.isSuggestionList && data.suggestions?.length) {
+                // Several comparably-relevant articles — the backend wasn't
+                // confident enough to pick just one, so let the user choose
+                // instead of risking a wrong guess.
+                trackEvent('chatbot_suggested', { logId: data.logId, count: data.suggestions.length });
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        role: 'bot',
+                        text: locale === 'ar' ? 'وجدت أكثر من مقال قد يساعدك — أيها الأقرب لسؤالك؟' : "I found a few articles that might help — which is closest to your question?",
+                        suggestions: data.suggestions,
+                        logId: data.logId
+                    }
+                ]);
+                triggerFeedbackPrompt(data.logId);
+            } else if (data.answered && data.article) {
                 trackEvent('chatbot_answered', { logId: data.logId, isConversational: data.isConversational });
 
                 if (data.isConversational) {
@@ -309,6 +337,21 @@ export function ChatbotWidget() {
                                         </a>
                                     )}
 
+                                    {msg.suggestions && msg.suggestions.length > 0 && (
+                                        <div className="mt-3 space-y-2">
+                                            {msg.suggestions.map((s) => (
+                                                <a
+                                                    key={s._id}
+                                                    href={`/support?id=${s._id}`}
+                                                    className={`flex items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 transition-colors ${locale === 'ar' ? 'flex-row-reverse text-right' : ''}`}
+                                                >
+                                                    {s.title}
+                                                    <ChevronRight className={`w-4 h-4 shrink-0 text-gray-400 ${locale === 'ar' ? 'rotate-180' : ''}`} />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     {msg.isTicketForm && isAwaitingTicketInfo && (
                                         <form onSubmit={handleSubmitTicket} className="mt-4 space-y-3">
                                             <div className="flex gap-2">
@@ -381,7 +424,7 @@ export function ChatbotWidget() {
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all"
+                    className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition"
                 >
                     <MessageCircle className="w-8 h-8" />
                 </button>

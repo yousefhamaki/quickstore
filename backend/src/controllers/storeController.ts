@@ -7,6 +7,12 @@ import Customer from '../models/Customer';
 import { AuthRequest } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import { IMPLEMENTED_PAYMENT_PROVIDERS } from '../constants/paymentProviders';
+import Subscription from '../models/Subscription';
+import { DomainVerificationService } from '../services/domain/DomainVerificationService';
+import EmailAccount from '../models/EmailAccount';
+import EmailLedgerEntry from '../models/EmailLedgerEntry';
+import { CampaignQuotaService } from '../services/CampaignQuotaService';
 
 // @desc    Get all stores for logged-in merchant
 // @route   GET /api/stores
@@ -328,13 +334,60 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Store not found' });
         }
 
-        // Don't allow changing slug or ownerId
-        const { slug, ownerId, ...updateData } = req.body;
+        // Whitelist updates to prevent mass assignment of status, plans, isVerified, or subdomains
+        const updateData: any = {};
+        if (req.body.name !== undefined) updateData.name = req.body.name;
+        if (req.body.description !== undefined) updateData.description = req.body.description;
+        if (req.body.category !== undefined) updateData.category = req.body.category;
+        if (req.body.logo !== undefined) updateData.logo = req.body.logo;
+        if (req.body.favicon !== undefined) updateData.favicon = req.body.favicon;
+        if (req.body.branding !== undefined) updateData.branding = req.body.branding;
+        if (req.body.contact !== undefined) updateData.contact = req.body.contact;
+        if (req.body.settings !== undefined) {
+            const requestedProvider = req.body.settings?.payment?.provider;
+            if (requestedProvider && !IMPLEMENTED_PAYMENT_PROVIDERS.includes(requestedProvider)) {
+                return res.status(400).json({
+                    message: `Payment provider '${requestedProvider}' is not yet available. Currently supported: ${IMPLEMENTED_PAYMENT_PROVIDERS.join(', ')}.`
+                });
+            }
+            updateData.settings = req.body.settings;
+        }
+        if (req.body.theme !== undefined) {
+            // Plan gating: SubscriptionPlan.features.allowHeroSlider must be
+            // true to SAVE any slides. Checked here (not just hidden in the
+            // dashboard UI) so a direct API call can't bypass it. Clearing
+            // the slider (empty/absent slides array) is always allowed, so a
+            // merchant whose plan lost access can still remove what's there.
+            const requestedSlides = req.body.theme?.customizations?.heroSlider?.slides;
+            if (Array.isArray(requestedSlides) && requestedSlides.length > 0) {
+                const subscription = await Subscription.findOne({ userId: req.user._id }).populate('planId');
+                const plan = subscription?.planId as any;
+                if (!plan || !plan.features?.allowHeroSlider) {
+                    return res.status(403).json({
+                        message: 'The homepage hero slider is not included in your current plan.',
+                        code: 'FEATURE_LOCKED'
+                    });
+                }
+            }
+            updateData.theme = req.body.theme;
+        }
+        if (req.body.seo !== undefined) updateData.seo = req.body.seo;
+
+        // Custom domain changes intentionally do NOT go through this generic
+        // endpoint — they go through setCustomDomain/verifyCustomDomain/
+        // removeCustomDomain below, which enforce plan-gating and reset
+        // domain verification. Letting a plain PUT here set customDomain
+        // directly would bypass both.
+        if (req.body.domain?.customDomain !== undefined) {
+            return res.status(400).json({
+                message: 'Use POST /stores/:id/domain to set a custom domain (it requires DNS ownership verification).'
+            });
+        }
 
         const updatedStore = await Store.findByIdAndUpdate(
             req.params.id,
-            updateData,
-            { new: true }
+            { $set: updateData },
+            { new: true, runValidators: true, context: 'query' }
         );
 
         if (updatedStore) {
@@ -342,7 +395,11 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
             if (updatedStore.status === 'live') {
                 const cachePayload = JSON.stringify(updatedStore.toObject());
                 await redisClient.setex(`store_customization:${updatedStore.domain.subdomain}`, 3600, cachePayload);
-                if (updatedStore.domain.customDomain) {
+                // Only warm the customDomain cache key once it's verified —
+                // otherwise a public request for that (unverified) domain
+                // would get served from this cache entry directly, bypassing
+                // the isVerified check in publicController.getStoreBySubdomain.
+                if (updatedStore.domain.customDomain && updatedStore.domain.isVerified) {
                     await redisClient.setex(`store_customization:${updatedStore.domain.customDomain}`, 3600, cachePayload);
                 }
             } else {
@@ -359,12 +416,148 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// @desc    Connect a custom domain to a store — starts DNS ownership
+//          verification, does not serve traffic on it yet.
+// @route   POST /api/stores/:id/domain
+// @access  Private/Merchant
+export const setCustomDomain = async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await Store.findOne({ _id: req.params.id, ownerId: req.user._id });
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        const rawDomain = req.body.customDomain;
+        if (typeof rawDomain !== 'string' || !rawDomain.trim()) {
+            return res.status(400).json({ message: 'customDomain is required' });
+        }
+        const customDomain = rawDomain.trim().toLowerCase();
+
+        // Not a full RFC validator — just enough to reject obviously
+        // malformed input before generating a challenge token for it.
+        const DOMAIN_PATTERN = /^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/;
+        if (!DOMAIN_PATTERN.test(customDomain)) {
+            return res.status(400).json({ message: 'That does not look like a valid domain (e.g. shop.example.com).' });
+        }
+
+        // Plan gating: SubscriptionPlan.features.customDomain must be true.
+        const subscription = await Subscription.findOne({ userId: req.user._id }).populate('planId');
+        const plan = subscription?.planId as any;
+        if (!plan || !plan.features?.customDomain) {
+            return res.status(403).json({
+                message: 'Custom domains are not included in your current plan. Upgrade to a plan with custom domain support.',
+                code: 'FEATURE_LOCKED'
+            });
+        }
+
+        const collision = await Store.findOne({ 'domain.customDomain': customDomain, _id: { $ne: store._id } });
+        if (collision) {
+            return res.status(409).json({ message: 'This custom domain is already connected to another store.' });
+        }
+
+        const verificationToken = DomainVerificationService.generateVerificationToken();
+        store.domain.customDomain = customDomain;
+        store.domain.verificationToken = verificationToken;
+        store.domain.isVerified = false;
+
+        try {
+            await store.save();
+        } catch (saveError: any) {
+            // Guards the (rare) race where two requests pass the collision
+            // check above for the same domain before either saves.
+            if (saveError?.code === 11000) {
+                return res.status(409).json({ message: 'This custom domain is already connected to another store.' });
+            }
+            throw saveError;
+        }
+
+        res.json({
+            message: 'Custom domain saved. Add the DNS record below, then click Verify.',
+            customDomain,
+            verification: {
+                type: 'TXT',
+                host: DomainVerificationService.getChallengeHostname(customDomain),
+                value: verificationToken
+            },
+            isVerified: false
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+// @desc    Check the DNS TXT challenge and mark the custom domain verified
+// @route   POST /api/stores/:id/domain/verify
+// @access  Private/Merchant
+export const verifyCustomDomain = async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await Store.findOne({ _id: req.params.id, ownerId: req.user._id });
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        if (!store.domain.customDomain || !store.domain.verificationToken) {
+            return res.status(400).json({ message: 'No custom domain pending verification for this store.' });
+        }
+
+        if (store.domain.isVerified) {
+            return res.json({ isVerified: true, message: 'Already verified.' });
+        }
+
+        const result = await DomainVerificationService.verify(store.domain.customDomain, store.domain.verificationToken);
+
+        if (!result.verified) {
+            return res.status(400).json({ isVerified: false, message: result.error });
+        }
+
+        store.domain.isVerified = true;
+        store.domain.type = 'custom';
+        await store.save();
+
+        res.json({
+            isVerified: true,
+            message: "Domain verified. Once its DNS is pointed at Buildora's servers, it will start serving your store."
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+// @desc    Disconnect a custom domain from a store
+// @route   DELETE /api/stores/:id/domain
+// @access  Private/Merchant
+export const removeCustomDomain = async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await Store.findOne({ _id: req.params.id, ownerId: req.user._id });
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        const previousDomain = store.domain.customDomain;
+
+        store.domain.customDomain = undefined;
+        store.domain.verificationToken = undefined;
+        store.domain.isVerified = false;
+        store.domain.type = 'subdomain';
+        await store.save();
+
+        if (previousDomain) {
+            const { redisClient } = await import('../config/redis');
+            await redisClient.del(`store_customization:${previousDomain}`);
+        }
+
+        res.json({ message: 'Custom domain removed.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
 // @desc    Delete store
 // @route   DELETE /api/stores/:id
 // @access  Private/Merchant
 export const deleteStore = async (req: AuthRequest, res: Response) => {
     try {
-        const { password } = req.body;
+        const { password, transferCreditsToStoreId } = req.body;
         if (!password) {
             return res.status(400).json({ message: 'Password is required to confirm store deletion.' });
         }
@@ -395,6 +588,57 @@ export const deleteStore = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({
                 message: 'Cannot delete store with existing products. Please delete all products first.'
             });
+        }
+
+        // Email credits: previously deleteStore never looked at the store's
+        // EmailAccount at all, so it stayed behind as an orphaned document
+        // forever, silently taking any purchased credits down with it.
+        const emailAccount = await EmailAccount.findOne({ storeId: store._id });
+        if (emailAccount) {
+            if (emailAccount.reserved > 0) {
+                // A campaign send is mid-flight against this store's credits
+                // — deleting now would leave a dangling reservation with no
+                // store left to settle/release it against.
+                return res.status(400).json({
+                    message: 'Cannot delete store while an email campaign is in progress. Wait for it to finish, or cancel it first.'
+                });
+            }
+
+            if (emailAccount.purchasedBalance > 0) {
+                const otherStores = await Store.find({ ownerId: req.user._id, _id: { $ne: store._id } }).select('name');
+
+                if (otherStores.length === 0) {
+                    // Nothing to move it to — the merchant is deleting their
+                    // only store, so the purchased balance is forfeited.
+                    // Recorded on the ledger before the account (and store)
+                    // disappear, so the loss is auditable rather than silent.
+                    await EmailLedgerEntry.create({
+                        storeId: store._id,
+                        type: 'correction',
+                        amount: -emailAccount.purchasedBalance,
+                        description: `Forfeited ${emailAccount.purchasedBalance} purchased email credits — store deleted with no other store to transfer them to.`
+                    });
+                } else if (!transferCreditsToStoreId) {
+                    // Ask the merchant where to send the credits instead of
+                    // silently losing (or silently keeping, which isn't
+                    // possible once the store is gone) real money they paid
+                    // for.
+                    return res.status(409).json({
+                        code: 'EMAIL_CREDITS_TRANSFER_REQUIRED',
+                        message: `This store has ${emailAccount.purchasedBalance} purchased email credits. Choose another store to move them to before deleting.`,
+                        purchasedBalance: emailAccount.purchasedBalance,
+                        otherStores: otherStores.map(s => ({ _id: s._id, name: s.name }))
+                    });
+                } else {
+                    const destination = otherStores.find(s => s._id.toString() === transferCreditsToStoreId);
+                    if (!destination) {
+                        return res.status(404).json({ message: 'Destination store not found or unauthorized' });
+                    }
+                    await CampaignQuotaService.transferPurchasedCredits(store._id.toString(), transferCreditsToStoreId, emailAccount.purchasedBalance);
+                }
+            }
+
+            await EmailAccount.deleteOne({ storeId: store._id });
         }
 
         // Remove store from user's stores array
@@ -690,7 +934,9 @@ export const uploadStoreLogo = async (req: AuthRequest, res: Response) => {
         if (store.status === 'live') {
             const cachePayload = JSON.stringify(store.toObject());
             await redisClient.setex(`store_customization:${store.domain.subdomain}`, 3600, cachePayload);
-            if (store.domain.customDomain) {
+            // Only warm the customDomain cache key once it's verified — see
+            // the identical guard (and why) in updateStore above.
+            if (store.domain.customDomain && store.domain.isVerified) {
                 await redisClient.setex(`store_customization:${store.domain.customDomain}`, 3600, cachePayload);
             }
         } else {

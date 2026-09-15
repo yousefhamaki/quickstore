@@ -22,6 +22,15 @@ export interface ISubscriptionPlan extends Document {
          * /api/merchant/offers/campaigns write endpoints.
          */
         allowUCD: boolean;
+        /**
+         * Controls whether the merchant can configure a homepage hero
+         * slider (storeController's updateStore checks this before saving
+         * theme.customizations.heroSlider, and the public storefront read
+         * path checks it before rendering saved slides). Defaults to true
+         * on every plan for launch — admins can later restrict it per plan
+         * from the admin dashboard's Plans page without a code change.
+         */
+        allowHeroSlider: boolean;
     }; // Logic-based features
     emailLimit?: number; // Monthly emails allowance
     duration: number; // in days
@@ -48,6 +57,7 @@ const SubscriptionPlanSchema: Schema = new Schema({
         dropshipping: { type: Boolean, default: false },
         customDomain: { type: Boolean, default: false },
         allowUCD: { type: Boolean, default: false },
+        allowHeroSlider: { type: Boolean, default: true },
     },
     emailLimit: { type: Number, default: 0 },
     duration: { type: Number, required: true, default: 30 },

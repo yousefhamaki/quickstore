@@ -127,7 +127,7 @@ export function ProductActions({ product }: { product: any }) {
                                         key={value}
                                         onClick={() => handleOptionSelect(option.name, value)}
                                         className={cn(
-                                            "h-12 px-6 rounded-2xl text-sm font-bold border-2 transition-all duration-300",
+                                            "h-12 px-6 rounded-2xl text-sm font-bold border-2 transition duration-300",
                                             selectedOptions[option.name] === value
                                                 ? "border-primary bg-primary text-white shadow-lg scale-105"
                                                 : "border-gray-100 bg-white text-gray-600 hover:border-gray-200"
@@ -147,14 +147,14 @@ export function ProductActions({ product }: { product: any }) {
                 <div className="flex items-center bg-gray-50 rounded-[24px] p-1 border w-full md:w-auto">
                     <button
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-[20px] transition-all"
+                        className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-[20px] transition"
                     >
                         <Minus size={18} />
                     </button>
                     <span className="w-14 text-center font-black text-lg">{quantity}</span>
                     <button
                         onClick={() => setQuantity(quantity + 1)}
-                        className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-[20px] transition-all"
+                        className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-[20px] transition"
                     >
                         <Plus size={18} />
                     </button>

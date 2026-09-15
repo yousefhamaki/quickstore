@@ -75,7 +75,11 @@ export interface WalletTransaction {
     userId: string;
     type: 'credit' | 'debit';
     amount: number;
-    reason: 'order_fee' | 'plan_payment' | 'recharge' | 'gift';
+    // Backed by WalletLedger.reason on the backend, which is a free-text
+    // category (not a rigid enum) so a new reason can never break this API.
+    // Known values today: 'gift' | 'plan_payment' | 'plan_upgrade' |
+    // 'recharge' | 'order_fee' | 'addon_purchase' | 'admin_adjustment'.
+    reason: string;
     referenceId?: string;
     createdAt: string;
 }
@@ -105,8 +109,13 @@ export const rechargeWallet = async (amount: number, method: string, walletNumbe
     return data as { paymentUrl?: string; referenceCode?: string; success: boolean; message?: string };
 };
 
-export const subscribeToPlan = async (planId: string, billingCycle?: 'monthly' | 'yearly'): Promise<any> => {
-    const { data } = await api.post('/billing/subscribe', { planId, billingCycle });
+export const subscribeToPlan = async (planId: string, billingCycle?: 'monthly' | 'yearly', confirmDowngrade?: boolean): Promise<any> => {
+    const { data } = await api.post('/billing/subscribe', { planId, billingCycle, confirmDowngrade });
+    return data;
+};
+
+export const getSubscriptionPreview = async (planId: string, billingCycle?: 'monthly' | 'yearly'): Promise<any> => {
+    const { data } = await api.post('/billing/subscribe/preview', { planId, billingCycle });
     return data;
 };
 

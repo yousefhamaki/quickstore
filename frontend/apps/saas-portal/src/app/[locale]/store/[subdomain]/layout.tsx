@@ -7,8 +7,20 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CartWrapper } from "./CartWrapper";
 import { HeaderCart } from "@shared/components/storefront/HeaderCart";
+import { HeaderAccount } from "@shared/components/storefront/HeaderAccount";
 import { VisitorTracker } from "@shared/components/storefront/VisitorTracker";
 import { TrackingPixels } from "@shared/components/storefront/TrackingPixels";
+import { imagePreset } from "@shared/lib/cloudinaryImage";
+
+// ISR: cache the rendered storefront shell for 60s instead of doing a full
+// SSR pass (store fetch + Redis + Mongo fallback + React render) on every
+// single visit. Repeat traffic within the window is served straight from
+// Next's cache; the next visit after it expires triggers a background
+// re-render so nobody blocks on it (stale-while-revalidate). A merchant's
+// own changes (theme, products, branding) can take up to this long to
+// appear to a shopper who already has the page cached — an accepted
+// tradeoff for the load reduction, not a bug if a change feels "delayed".
+export const revalidate = 60;
 
 interface StoreLayoutProps {
     children: ReactNode;
@@ -73,6 +85,12 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
     const primaryColor = branding.primaryColor || "#3B82F6";
     const fontFamily = branding.fontFamily || "Inter";
 
+    const customizations = store.theme?.customizations || {};
+    const buttonRadiusMap: Record<string, string> = { sharp: '6px', soft: '16px', pill: '9999px' };
+    const buttonRadius = buttonRadiusMap[customizations.buttonRadius] || buttonRadiusMap.pill;
+    const announcementBar = customizations.announcementBar;
+    const footerCopyright = customizations.footer?.copyrightText;
+
     return (
         <CartWrapper storeId={store._id}>
             <VisitorTracker storeId={store._id} />
@@ -84,11 +102,12 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
                     :root {
                         --store-primary: ${primaryColor};
                         --store-font: '${fontFamily}', sans-serif;
+                        --store-button-radius: ${buttonRadius};
                     }
                     .store-button {
                         background-color: var(--store-primary);
                         color: white;
-                        border-radius: 9999px;
+                        border-radius: var(--store-button-radius);
                         padding: 12px 24px;
                         font-weight: 700;
                         transition: transform 0.2s;
@@ -97,13 +116,26 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
                         transform: scale(1.05);
                     }
                 ` }} />
-                
+
+                {/* Announcement Bar — merchant-configurable, see settings/theme */}
+                {announcementBar?.enabled && announcementBar?.text && (
+                    <div
+                        className="w-full text-center py-2.5 px-4 text-[11px] font-bold uppercase tracking-widest"
+                        style={{
+                            backgroundColor: announcementBar.backgroundColor || primaryColor,
+                            color: announcementBar.textColor || '#ffffff'
+                        }}
+                    >
+                        {announcementBar.text}
+                    </div>
+                )}
+
                 {/* Store Header */}
                 <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b">
                     <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                         <Link href="/" className="flex items-center gap-2">
                             {store.logo?.url ? (
-                                <img src={store.logo.url} alt={store.name} className="h-8 w-auto object-contain" />
+                                <img src={imagePreset.logo(store.logo.url)} alt={store.name} fetchPriority="high" decoding="async" className="h-8 w-auto object-contain" />
                             ) : (
                                 <span className="text-xl font-black tracking-tighter" style={{ color: primaryColor }}>
                                     {store.name.toUpperCase()}
@@ -115,7 +147,8 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
                             <Link href="/track-order" className="hover:text-black transition-colors">{t('trackOrder')}</Link>
                             <Link href="/contact" className="hover:text-black transition-colors">{t('contact')}</Link>
                         </nav>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                            <HeaderAccount />
                             <HeaderCart />
                         </div>
                     </div>
@@ -136,7 +169,9 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
                             <Link href="/policies/terms" className="hover:text-black transition-colors">{t('termsOfService')}</Link>
                         </nav>
                         <div className="pt-4 space-y-2">
-                            <p className="text-gray-400 text-[10px] font-medium uppercase tracking-widest">© 2026 {store.name}. {t('allRightsReserved')}</p>
+                            <p className="text-gray-400 text-[10px] font-medium uppercase tracking-widest">
+                                {footerCopyright || `© ${new Date().getFullYear()} ${store.name}. ${t('allRightsReserved')}`}
+                            </p>
                             <div className="flex justify-center gap-4 text-gray-500">
                                 <span className="text-[10px] font-black opacity-50">{t('poweredBy')}</span>
                             </div>

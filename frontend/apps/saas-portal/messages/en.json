@@ -1115,6 +1115,123 @@
       "termsOfService": "Terms of Service",
       "allRightsReserved": "All rights reserved.",
       "poweredBy": "POWERED BY BUILDORA"
+    },
+    "account": {
+      "login": {
+        "title": "Welcome Back",
+        "subtitle": "Log in to view your orders and saved details.",
+        "email": "Email Address",
+        "password": "Password",
+        "submit": "Log In",
+        "submitting": "Logging in...",
+        "noAccount": "Don't have an account?",
+        "createOne": "Create one",
+        "error": "Invalid email or password.",
+        "forgotLink": "Forgot your password?"
+      },
+      "register": {
+        "title": "Create Your Account",
+        "subtitle": "Track orders, save addresses, and check out faster.",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email Address",
+        "phone": "Phone Number (Optional)",
+        "password": "Password",
+        "passwordHint": "At least 6 characters",
+        "submit": "Create Account",
+        "submitting": "Creating account...",
+        "haveAccount": "Already have an account?",
+        "logIn": "Log in",
+        "error": "Could not create account."
+      },
+      "nav": {
+        "overview": "Overview",
+        "orders": "Orders",
+        "addresses": "Addresses",
+        "logout": "Log Out"
+      },
+      "overview": {
+        "title": "My Account",
+        "welcome": "Welcome back, {name}",
+        "email": "Email",
+        "phone": "Phone",
+        "noPhone": "Not set",
+        "viewOrders": "View Orders",
+        "manageAddresses": "Manage Addresses"
+      },
+      "orders": {
+        "title": "My Orders",
+        "empty": "You haven't placed any orders yet.",
+        "startShopping": "Start Shopping",
+        "viewDetails": "View Details",
+        "placedOn": "Placed on {date}"
+      },
+      "addresses": {
+        "title": "Saved Addresses",
+        "empty": "You don't have any saved addresses yet.",
+        "addNew": "Add Address",
+        "default": "Default",
+        "setDefault": "Set as Default",
+        "edit": "Edit",
+        "delete": "Delete",
+        "form": {
+          "fullName": "Full Name",
+          "phone": "Phone Number",
+          "address": "Address",
+          "city": "City",
+          "state": "State/Governorate",
+          "postalCode": "Postal Code (Optional)",
+          "country": "Country",
+          "isDefault": "Set as default address",
+          "save": "Save Address",
+          "cancel": "Cancel"
+        },
+        "deleteConfirm": "Delete this address?",
+        "added": "Address added",
+        "updated": "Address updated",
+        "deleted": "Address deleted"
+      },
+      "loginRequired": "Please log in to view this page.",
+      "goToLogin": "Go to Login",
+      "forgotPassword": {
+        "title": "Reset Your Password",
+        "subtitle": "Enter your email and we'll send you a reset link.",
+        "email": "Email Address",
+        "submit": "Send Reset Link",
+        "submitting": "Sending...",
+        "success": "If an account exists with that email, a password reset link has been sent.",
+        "backToLogin": "Back to Login"
+      },
+      "resetPassword": {
+        "title": "Choose a New Password",
+        "subtitle": "Enter a new password for your account.",
+        "newPassword": "New Password",
+        "passwordHint": "At least 6 characters",
+        "submit": "Reset Password",
+        "submitting": "Resetting...",
+        "success": "Your password has been reset. Redirecting to your account...",
+        "invalidToken": "This reset link is invalid or has expired.",
+        "requestNew": "Request a new one"
+      },
+      "refund": {
+        "title": "Refund",
+        "request": "Request a Refund",
+        "amountLabel": "Amount (EGP)",
+        "maxAmount": "Up to EGP {amount}",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "Why are you requesting a refund?",
+        "photoLabel": "Attach a photo (optional)",
+        "submit": "Submit Request",
+        "submitting": "Submitting...",
+        "cancel": "Cancel",
+        "pending": "Refund request pending review",
+        "approved": "Refund approved: EGP {amount}",
+        "rejected": "Refund request rejected",
+        "note": "Note from the store",
+        "success": "Refund request submitted",
+        "error": "Failed to submit refund request",
+        "notEligible": "This order isn't eligible for a refund."
+      }
     }
   },
   "privacy": {

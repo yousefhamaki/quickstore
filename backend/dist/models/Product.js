@@ -125,6 +125,7 @@ ProductSchema.virtual('totalAvailable').get(function () {
 });
 ProductSchema.index({ storeId: 1, slug: 1 }, { unique: true });
 ProductSchema.index({ storeId: 1, status: 1 });
+ProductSchema.index({ storeId: 1, status: 1, createdAt: -1 });
 ProductSchema.index({ storeId: 1, category: 1 });
 ProductSchema.index({ storeId: 1, name: 'text', description: 'text', tags: 'text' });
 ProductSchema.index({ "variants.sku": 1 }, { sparse: true });

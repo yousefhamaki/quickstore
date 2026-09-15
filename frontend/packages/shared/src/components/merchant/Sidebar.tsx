@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl';
 const NavItem = memo(({ icon, label, href, active = false }: { icon: React.ReactNode, label: string, href: string, active?: boolean }) => {
     return (
         <NavLink href={href} className="block w-full">
-            <div className={`w-full flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 font-medium'}`}>
+            <div className={`w-full flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 rounded-xl transition duration-200 cursor-pointer ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 font-medium'}`}>
                 {icon}
                 <span className="font-bold">{label}</span>
             </div>

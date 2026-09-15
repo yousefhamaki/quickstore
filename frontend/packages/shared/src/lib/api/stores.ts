@@ -21,9 +21,11 @@ export const updateStore = async (id: string, storeData: Partial<Store>): Promis
     return data;
 };
 
-export const deleteStore = async ({ id, password }: { id: string; password?: string }): Promise<void> => {
+export const deleteStore = async (
+    { id, password, transferCreditsToStoreId }: { id: string; password?: string; transferCreditsToStoreId?: string }
+): Promise<void> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await api.delete(`/stores/${id}`, { data: { password } } as any);
+    await api.delete(`/stores/${id}`, { data: { password, transferCreditsToStoreId } } as any);
 };
 
 export const publishStore = async (id: string): Promise<{ message: string; store: Store; storeUrl: string }> => {
@@ -62,5 +64,33 @@ export const uploadStoreLogo = async (id: string, formData: FormData): Promise<{
             'Content-Type': 'multipart/form-data',
         },
     });
+    return data;
+};
+
+export interface CustomDomainVerification {
+    type: 'TXT';
+    host: string;
+    value: string;
+}
+
+interface SetCustomDomainResponse {
+    message: string;
+    customDomain: string;
+    verification: CustomDomainVerification;
+    isVerified: boolean;
+}
+
+export const setCustomDomain = async (id: string, customDomain: string): Promise<SetCustomDomainResponse> => {
+    const { data } = await api.post<SetCustomDomainResponse>(`/stores/${id}/domain`, { customDomain });
+    return data;
+};
+
+export const verifyCustomDomain = async (id: string): Promise<{ isVerified: boolean; message?: string }> => {
+    const { data } = await api.post<{ isVerified: boolean; message?: string }>(`/stores/${id}/domain/verify`);
+    return data;
+};
+
+export const removeCustomDomain = async (id: string): Promise<{ message: string }> => {
+    const { data } = await api.delete<{ message: string }>(`/stores/${id}/domain`);
     return data;
 };

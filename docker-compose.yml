@@ -43,19 +43,5 @@ services:
     ports:
       - "3000:3000"
 
-  merchant-dashboard:
-    build:
-      context: ./frontend
-      dockerfile: apps/merchant-dashboard/Dockerfile
-    container_name: buildora_merchant_dashboard
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - NEXT_PUBLIC_API_URL=https://api.buildora.live
-      - NEXT_PUBLIC_DOMAIN=buildora.live
-    ports:
-      - "3001:3001"
-
 volumes:
   redis_data:

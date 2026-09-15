@@ -18,6 +18,14 @@ export const adminQueue = new Queue('admin-events', {
       type: 'exponential',
       delay: 5000,
     },
+    removeOnComplete: {
+      count: 100,
+      age: 24 * 60 * 60,
+    },
+    removeOnFail: {
+      count: 1000,
+      age: 7 * 24 * 60 * 60,
+    },
   },
 });
 

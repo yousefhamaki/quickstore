@@ -14,7 +14,7 @@ import {
     getCampaignAnalytics,
 } from '../controllers/offerController';
 import { protect, authorize } from '../middleware/authMiddleware';
-import { billingContext, storefrontBillingContext } from '../middleware/billingMiddleware';
+import { billingContext, storefrontBillingContext, requireStorefrontFeature } from '../middleware/billingMiddleware';
 import { requireFeature } from '../middleware/featureGate';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,14 +28,14 @@ export const publicOfferRouter = express.Router();
  * Returns ranked list of eligible EvaluatedOffer objects.
  * No auth — storefront-facing, reads only.
  */
-publicOfferRouter.post('/evaluate', evaluateStorefrontOffers);
+publicOfferRouter.post('/evaluate', storefrontBillingContext, requireStorefrontFeature('ucd'), evaluateStorefrontOffers);
 
 /**
  * GET /api/public/offers/campaigns/:id
  * Query: storeId
  * Returns the populated campaign details with safe product data projection.
  */
-publicOfferRouter.get('/campaigns/:id', getPublicCampaign);
+publicOfferRouter.get('/campaigns/:id', storefrontBillingContext, requireStorefrontFeature('ucd'), getPublicCampaign);
 
 /**
  * POST /api/public/offers/impression
@@ -68,7 +68,7 @@ publicOfferRouter.post('/decision', recordDecision);
  * storefrontBillingContext is attached to resolve store subscription context
  * needed by processOrderFee without requiring merchant auth.
  */
-publicOfferRouter.post('/accept', storefrontBillingContext, acceptOffer);
+publicOfferRouter.post('/accept', storefrontBillingContext, requireStorefrontFeature('ucd'), acceptOffer);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Merchant Router  (mounted at /api/merchant/offers in server.ts)

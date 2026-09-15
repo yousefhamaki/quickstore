@@ -49,6 +49,7 @@ exports.getOrderStats = exports.addMerchantNote = exports.createOrder = exports.
 const Order_1 = __importDefault(require("../models/Order"));
 const Store_1 = __importDefault(require("../models/Store"));
 const Product_1 = __importDefault(require("../models/Product"));
+const authMiddleware_1 = require("../middleware/authMiddleware");
 const InventoryLog_1 = __importDefault(require("../models/InventoryLog"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const OfferCampaign_1 = __importDefault(require("../models/OfferCampaign"));
@@ -102,7 +103,7 @@ exports.getOrders = getOrders;
 // @access  Private/Merchant
 const getOrderById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -125,7 +126,7 @@ exports.getOrderById = getOrderById;
 const updateOrderStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let session = null;
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -354,7 +355,7 @@ exports.createOrder = createOrder;
 // @access  Private/Merchant
 const addMerchantNote = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }
@@ -377,7 +378,7 @@ exports.addMerchantNote = addMerchantNote;
 // @access  Private/Merchant
 const getOrderStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const store = yield Store_1.default.findOne({ ownerId: req.user._id });
+        const store = yield (0, authMiddleware_1.resolveStore)(req);
         if (!store) {
             return res.status(404).json({ message: 'Store not found' });
         }

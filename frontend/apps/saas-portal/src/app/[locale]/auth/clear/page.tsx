@@ -3,13 +3,14 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { authCookieOptions } from '@shared/lib/authCookie';
 
 export default function ClearCookiesPage() {
     const router = useRouter();
 
     useEffect(() => {
         // Clear all auth-related data
-        Cookies.remove('token');
+        Cookies.remove('token', authCookieOptions());
         localStorage.removeItem('user');
 
         // Redirect to login after a short delay
