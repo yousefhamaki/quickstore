@@ -48,7 +48,6 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
     // Error states
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [backendReady, setBackendReady] = useState(true);
 
     // Fetch data on mount
     useEffect(() => {
@@ -84,21 +83,9 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
             setError(null);
             const data = await getSEOSettings(storeId, token!);
             setSettings(data);
-            setBackendReady(true);
-        } catch (err: any) {
-            // Check if it's a 404 (endpoint not implemented)
-            if (err.message?.includes('Failed to fetch') || err.message?.includes('404')) {
-                setBackendReady(false);
-                // Set default settings for demo
-                setSettings({
-                    allowIndexing: true,
-                    sitemapEnabled: true,
-                });
-                // Don't log to console - backend not ready is expected
-            } else {
-                setError('Failed to load SEO settings');
-                console.error(err);
-            }
+        } catch (err) {
+            setError('Failed to load SEO settings');
+            console.error(err);
         } finally {
             setLoadingSettings(false);
         }
@@ -125,14 +112,8 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
             const data = await getProductsSEO(storeId, token!);
             setProducts(data);
         } catch (err) {
-            // Backend not ready, silently fail
-            if (!backendReady) {
-                // Set empty products for demo
-                setProducts([]);
-            } else {
-                setError('Failed to load products');
-                console.error(err);
-            }
+            setError('Failed to load products');
+            console.error(err);
         } finally {
             setLoadingProducts(false);
         }
@@ -148,13 +129,8 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
             setSuccessMessage('SEO settings saved successfully!');
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (err) {
-            if (!backendReady) {
-                // Backend not ready, show helpful message
-                setError('Backend API not implemented yet. See the blue banner above for next steps.');
-            } else {
-                setError('Failed to save SEO settings');
-                console.error(err);
-            }
+            setError('Failed to save SEO settings');
+            console.error(err);
         } finally {
             setSavingSettings(false);
         }
@@ -169,13 +145,8 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
             setSuccessMessage('SEO health refreshed!');
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (err) {
-            if (!backendReady) {
-                // Backend not ready, show helpful message
-                setError('Backend API not implemented yet. See the blue banner above for next steps.');
-            } else {
-                setError('Failed to refresh SEO health');
-                console.error(err);
-            }
+            setError('Failed to refresh SEO health');
+            console.error(err);
         } finally {
             setRefreshingHealth(false);
         }
@@ -193,13 +164,8 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
             setSuccessMessage('Product SEO updated!');
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (err) {
-            if (!backendReady) {
-                // Backend not ready, show helpful message
-                setError('Backend API not implemented yet. See the blue banner above for next steps.');
-            } else {
-                setError('Failed to update product SEO');
-                console.error(err);
-            }
+            setError('Failed to update product SEO');
+            console.error(err);
         } finally {
             setUpdatingProduct(false);
         }
@@ -268,33 +234,6 @@ export default function SEOCenterPage({ params }: { params: Promise<{ storeId: s
                     </p>
                 </div>
             </div>
-
-            {/* Backend Not Ready Banner */}
-            {!backendReady && (
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
-                    <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                            <Settings className="text-blue-600" size={24} />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="font-black uppercase tracking-tight text-blue-900 mb-2">
-                                Backend Integration Required
-                            </h3>
-                            <p className="text-sm text-blue-800 font-medium mb-3">
-                                The SEO Center frontend is ready, but the backend API endpoints need to be implemented.
-                                You're currently viewing the UI with demo data.
-                            </p>
-                            <div className="text-xs text-blue-700 font-medium space-y-1">
-                                <p>📋 <strong>Next Steps:</strong></p>
-                                <p className="ml-4">1. Implement the 6 required API endpoints (see SEO_CENTER_ARCHITECTURE.md)</p>
-                                <p className="ml-4">2. Update Store model with SEO settings</p>
-                                <p className="ml-4">3. Add SEOHealth model and service</p>
-                                <p className="ml-4">4. Test endpoints and refresh this page</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Success/Error Messages */}
             {successMessage && (

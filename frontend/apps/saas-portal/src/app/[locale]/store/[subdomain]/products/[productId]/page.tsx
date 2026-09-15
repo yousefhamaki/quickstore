@@ -23,6 +23,11 @@ interface ProductPageProps {
     }>;
 }
 
+// Reads the merchant's per-product SEO overrides (product.seo.*) with the
+// raw product name/description as the fallback — previously this ignored
+// product.seo entirely, so the "Product SEO" tab in the SEO Center had no
+// effect on the actual product page's <head>, search snippet, or share
+// preview.
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
     try {
         const { subdomain, productId } = await params;
@@ -31,13 +36,39 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
             getProductDetails(productId)
         ]) as [any, any];
 
+        const seo = product.seo || {};
+        const title = seo.title || product.name;
+        const description = seo.description || product.description;
+        const image = product.images?.[0]?.url;
+
+        const baseUrl = store.domain?.customDomain && store.domain?.isVerified
+            ? `https://${store.domain.customDomain}`
+            : `https://${store.domain?.subdomain}.quickstore.live`;
+
+        const allowIndexing = !seo.noindex && product.status === 'active' && store.status === 'live';
+
         return {
-            title: `${product.name} | ${store.name}`,
-            description: product.description,
+            title: `${title} | ${store.name}`,
+            description,
+            keywords: seo.keywords,
+            robots: {
+                index: allowIndexing,
+                follow: !seo.nofollow,
+            },
+            alternates: {
+                canonical: seo.canonicalUrl || `${baseUrl}/products/${product._id}`,
+            },
             openGraph: {
-                title: product.name,
-                description: product.description,
-                images: product.images?.[0]?.url ? [product.images[0].url] : []
+                type: 'website',
+                title,
+                description,
+                images: image ? [image] : []
+            },
+            twitter: {
+                card: 'summary_large_image',
+                title,
+                description,
+                images: image ? [image] : []
             }
         };
     } catch {
@@ -82,8 +113,50 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     const primaryColor = store.branding?.primaryColor || "#3B82F6";
 
+    const productSeo = product.seo || {};
+    const structuredDataOverrides = productSeo.structuredData || {};
+    const productBaseUrl = store.domain?.customDomain && store.domain?.isVerified
+        ? `https://${store.domain.customDomain}`
+        : `https://${store.domain?.subdomain}.quickstore.live`;
+
+    // Product JSON-LD — rich search result data (price, availability,
+    // brand). Respects the per-product overrides a merchant can set in the
+    // SEO Center's "Product SEO" tab (brand/gtin/mpn/condition/availability),
+    // falling back to real product data when they're left blank.
+    const availability = structuredDataOverrides.availability
+        || (product.inventory?.quantity > 0 ? 'InStock' : 'OutOfStock');
+    const productSchema: Record<string, any> = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.name,
+        description: product.description,
+        image: (product.images || []).map((img: any) => img.url),
+        ...(product.sku ? { sku: product.sku } : {}),
+        ...(structuredDataOverrides.gtin ? { gtin: structuredDataOverrides.gtin } : {}),
+        ...(structuredDataOverrides.mpn ? { mpn: structuredDataOverrides.mpn } : {}),
+        brand: {
+            "@type": "Brand",
+            name: structuredDataOverrides.brand || store.name
+        },
+        offers: {
+            "@type": "Offer",
+            price: product.price,
+            priceCurrency: store.settings?.currency || 'EGP',
+            availability: `https://schema.org/${availability}`,
+            url: `${productBaseUrl}/products/${product._id}`,
+            seller: {
+                "@type": "Organization",
+                name: store.name
+            }
+        }
+    };
+
     return (
         <div className="container mx-auto px-4 py-12 md:py-20 animate-in fade-in duration-700">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+            />
             {/* Track product view for marketing pixels */}
             <ProductViewTracker product={product} />
 

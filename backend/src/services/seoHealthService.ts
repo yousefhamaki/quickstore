@@ -30,24 +30,30 @@ export class SEOHealthService {
         // ========================================
 
         // Check 1: Store meta title
-        if (!store.settings.marketing?.seoTitle) {
+        //
+        // store.seo.metaTitle is the real, reachable field — written by the
+        // SEO Center's "Global Settings" tab (see routes/seo.ts). The older
+        // store.settings.marketing.seoTitle field predates the SEO Center
+        // and has no UI writing to it anymore, but is kept as a fallback in
+        // case any store has historical data only there.
+        if (!store.seo?.metaTitle && !store.settings.marketing?.seoTitle) {
             issues.warnings.push({
                 type: 'missing_title',
                 severity: 'warning',
                 message: 'Store meta title not set',
                 affectedPages: [{ pageType: 'homepage', url: '/' }],
-                fix: 'Set a custom SEO title in Settings → Marketing → SEO'
+                fix: 'Set a custom SEO title in SEO Center → Global Settings'
             });
         }
 
         // Check 2: Store meta description
-        if (!store.settings.marketing?.seoDescription) {
+        if (!store.seo?.metaDescription && !store.settings.marketing?.seoDescription) {
             issues.warnings.push({
                 type: 'missing_description',
                 severity: 'warning',
                 message: 'Store meta description not set',
                 affectedPages: [{ pageType: 'homepage', url: '/' }],
-                fix: 'Set a custom SEO description in Settings → Marketing → SEO'
+                fix: 'Set a custom SEO description in SEO Center → Global Settings'
             });
         }
 
