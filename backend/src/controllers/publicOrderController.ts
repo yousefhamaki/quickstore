@@ -15,6 +15,8 @@ import { redisClient } from '../config/redis';
 import { createNotification } from '../services/notificationService';
 import { sendGatedCustomerEmail } from '../services/orderEmailService';
 import { sendGatedWhatsAppMessage } from '../services/whatsapp/whatsappMessageService';
+import { sendNewOrderOwnerEmail } from '../services/emailService';
+import User from '../models/User';
 
 // @desc    Create new order from storefront
 // @route   POST /api/public/orders
@@ -682,6 +684,41 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 message: `Order #${createdOrder.orderNumber} for ${numericTotal.toLocaleString()} EGP was just placed.`,
                 link: `/dashboard/stores/${oidStoreId}/orders/${createdOrder._id}`,
             }).catch(() => {});
+
+            // ================================================================
+            // New-order owner email alert — FREE, UNGATED platform email (not
+            // credit-gated like sendGatedCustomerEmail below). Merchants running
+            // this as a website can't realistically keep the dashboard open, so
+            // this is the reliable, fast-to-notice channel for a brand new
+            // order. Must never block/delay the customer-facing response, and
+            // (unlike the DB notification above) failures are logged since this
+            // channel is meant to be dependable.
+            // ================================================================
+            (async () => {
+                try {
+                    const owner = await User.findById(activeStore.ownerId).select('email name').lean();
+                    if (!owner?.email) {
+                        console.error(`[publicOrderController] No owner email found for store ${oidStoreId}; new-order alert email not sent for order ${createdOrder.orderNumber}`);
+                        return;
+                    }
+
+                    await sendNewOrderOwnerEmail({
+                        ownerEmail: owner.email,
+                        ownerName: owner.name,
+                        storeName: activeStore.name,
+                        orderNumber: createdOrder.orderNumber,
+                        orderTotal: numericTotal,
+                        currency: activeStore.settings?.currency || 'EGP',
+                        customerName: `${customerData.firstName} ${customerData.lastName}`.trim(),
+                        customerPhone: customerData.phone,
+                        customerEmail: customerData.email,
+                        items: items.map((item: any) => ({ name: item.name, quantity: Number(item.quantity) })),
+                        orderLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/stores/${oidStoreId}/orders/${createdOrder._id}`,
+                    });
+                } catch (err) {
+                    console.error('[publicOrderController] Failed to send new-order owner alert email:', err);
+                }
+            })();
 
             if (activeStore.settings?.emailNotifications?.sendOrderConfirmation !== false && customerData.email) {
                 sendGatedCustomerEmail({

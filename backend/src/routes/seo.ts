@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import { protect, AuthRequest } from '../middleware/authMiddleware';
 import Store from '../models/Store';
 import Product from '../models/Product';
+import seoHealthService from '../services/seoHealthService';
 
 const router = express.Router();
 
@@ -94,6 +95,14 @@ router.put('/stores/:storeId/seo/settings', protect, async (req: AuthRequest, re
 });
 
 // GET /api/seo/health/:storeId
+//
+// Delegates to seoHealthService — the comprehensive, cached health-check
+// implementation (9 real checks: missing/duplicate titles & descriptions,
+// title/description length, unpublished store) backed by the SEOHealth
+// model. This route used to carry its own separate, much simpler inline
+// copy of this logic (3 checks, no persistence/caching, no duplicate
+// detection) that disagreed with seoHealthService on which store field even
+// holds the meta title — that duplicate implementation is now gone.
 router.get('/seo/health/:storeId', protect, async (req: AuthRequest, res: Response) => {
     try {
         const store = await Store.findById(req.params.storeId);
@@ -107,80 +116,8 @@ router.get('/seo/health/:storeId', protect, async (req: AuthRequest, res: Respon
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // Calculate SEO health
-        const products = await Product.find({ storeId: req.params.storeId });
-
-        let score = 100;
-        const issues: any[] = [];
-
-        // Check global settings
-        if (!store.seo?.metaTitle) {
-            score -= 10;
-            issues.push({
-                type: 'critical',
-                title: 'Missing Meta Title',
-                description: 'Your store needs a meta title for better SEO',
-                fix: 'Add a meta title in Global SEO Settings'
-            });
-        }
-
-        if (!store.seo?.metaDescription) {
-            score -= 10;
-            issues.push({
-                type: 'warning',
-                title: 'Missing Meta Description',
-                description: 'Add a meta description to improve click-through rates',
-                fix: 'Add a meta description in Global SEO Settings'
-            });
-        }
-
-        // Check products
-        const productsWithoutSEO = products.filter(p => !p.seo?.title);
-        if (productsWithoutSEO.length > 0) {
-            score -= Math.min(20, productsWithoutSEO.length * 2);
-            issues.push({
-                type: 'suggestion',
-                title: `${productsWithoutSEO.length} Products Missing SEO`,
-                description: 'Optimize product titles and descriptions for search engines',
-                fix: 'Edit product SEO in the Product SEO tab'
-            });
-        }
-
-        const grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F';
-
-        // Categorize issues by type
-        const categorizedIssues = {
-            critical: issues.filter(i => i.type === 'critical').map(i => ({
-                message: i.title,
-                fix: i.fix,
-                affectedPages: []
-            })),
-            warnings: issues.filter(i => i.type === 'warning').map(i => ({
-                message: i.title,
-                fix: i.fix,
-                affectedPages: []
-            })),
-            suggestions: issues.filter(i => i.type === 'suggestion').map(i => ({
-                message: i.title,
-                fix: i.fix,
-                affectedPages: []
-            }))
-        };
-
-        res.json({
-            health: {
-                score: Math.max(0, score),
-                grade,
-                issues: categorizedIssues,
-                metrics: {
-                    totalPages: products.length + 1,
-                    indexedPages: store.seo?.allowIndexing ? products.length + 1 : 0,
-                    pagesWithMissingTitles: productsWithoutSEO.length,
-                    pagesWithDuplicateTitles: 0
-                },
-                lastCheckedAt: new Date()
-            }
-        });
+        const health = await seoHealthService.getOrRefreshHealth(req.params.storeId as string);
+        res.json({ health });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -199,78 +136,11 @@ router.post('/seo/health/:storeId/refresh', protect, async (req: AuthRequest, re
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // Same logic as GET
-        const products = await Product.find({ storeId: req.params.storeId });
-
-        let score = 100;
-        const issues: any[] = [];
-
-        if (!store.seo?.metaTitle) {
-            score -= 10;
-            issues.push({
-                type: 'critical',
-                title: 'Missing Meta Title',
-                description: 'Your store needs a meta title for better SEO',
-                fix: 'Add a meta title in Global SEO Settings'
-            });
-        }
-
-        if (!store.seo?.metaDescription) {
-            score -= 10;
-            issues.push({
-                type: 'warning',
-                title: 'Missing Meta Description',
-                description: 'Add a meta description to improve click-through rates',
-                fix: 'Add a meta description in Global SEO Settings'
-            });
-        }
-
-        const productsWithoutSEO = products.filter(p => !p.seo?.title);
-        if (productsWithoutSEO.length > 0) {
-            score -= Math.min(20, productsWithoutSEO.length * 2);
-            issues.push({
-                type: 'suggestion',
-                title: `${productsWithoutSEO.length} Products Missing SEO`,
-                description: 'Optimize product titles and descriptions for search engines',
-                fix: 'Edit product SEO in the Product SEO tab'
-            });
-        }
-
-        const grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F';
-
-        // Categorize issues by type
-        const categorizedIssues = {
-            critical: issues.filter(i => i.type === 'critical').map(i => ({
-                message: i.title,
-                fix: i.fix,
-                affectedPages: []
-            })),
-            warnings: issues.filter(i => i.type === 'warning').map(i => ({
-                message: i.title,
-                fix: i.fix,
-                affectedPages: []
-            })),
-            suggestions: issues.filter(i => i.type === 'suggestion').map(i => ({
-                message: i.title,
-                fix: i.fix,
-                affectedPages: []
-            }))
-        };
-
-        res.json({
-            health: {
-                score: Math.max(0, score),
-                grade,
-                issues: categorizedIssues,
-                metrics: {
-                    totalPages: products.length + 1,
-                    indexedPages: store.seo?.allowIndexing ? products.length + 1 : 0,
-                    pagesWithMissingTitles: productsWithoutSEO.length,
-                    pagesWithDuplicateTitles: 0
-                },
-                lastCheckedAt: new Date()
-            }
-        });
+        // Force a fresh check (unlike GET, which reuses a cached result
+        // until it goes stale) — this is the merchant explicitly clicking
+        // "Refresh".
+        const health = await seoHealthService.checkStoreHealth(req.params.storeId as string);
+        res.json({ health });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -291,14 +161,73 @@ router.get('/stores/:storeId/products', protect, async (req: AuthRequest, res: R
 
         const products = await Product.find({ storeId: req.params.storeId });
 
-        // Format for SEO Center
+        // Format for SEO Center — field names must match the frontend's
+        // ProductSEO type (productName/productSlug, not name/slug) or
+        // ProductSEOList silently renders blank product names.
         const productsWithSEO = products.map(p => ({
             productId: p._id,
-            name: p.name,
+            productName: p.name,
+            productSlug: p.slug,
             seo: p.seo || {}
         }));
 
         res.json({ products: productsWithSEO });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// POST /api/stores/:storeId/products/seo/generate-all
+//
+// Bulk-fills a default SEO title/description/keywords for every product in
+// the store that doesn't have its own yet — from the product's own
+// name/shortDescription/tags, truncated to search-engine-safe lengths.
+// Products that already have a custom title AND description are left
+// completely untouched; this only fills gaps, it never overwrites
+// something a merchant deliberately wrote (same "leave blank to use
+// product name/description" contract the Product SEO tab already
+// documents — this is just doing it in bulk instead of one product at a
+// time). This is what the SEO Center's "Auto-fill Missing SEO" button
+// calls.
+router.post('/stores/:storeId/products/seo/generate-all', protect, async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await Store.findById(req.params.storeId);
+
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        if (store.ownerId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const products = await Product.find({ storeId: req.params.storeId });
+        let updatedCount = 0;
+
+        for (const product of products) {
+            const needsTitle = !product.seo?.title;
+            const needsDescription = !product.seo?.description;
+            const hasNoKeywords = !product.seo?.keywords || product.seo.keywords.length === 0;
+            const candidateKeywords = product.tags && product.tags.length > 0 ? product.tags : undefined;
+            const willAddKeywords = hasNoKeywords && !!candidateKeywords;
+
+            // Skip entirely if there's nothing to actually add — e.g. a
+            // product with custom title+description but no tags to draw
+            // keywords from would otherwise get a pointless save() and
+            // inflate updatedCount without changing anything.
+            if (!needsTitle && !needsDescription && !willAddKeywords) continue;
+
+            product.seo = {
+                ...product.seo,
+                title: product.seo?.title || product.name.slice(0, 60),
+                description: product.seo?.description || (product.shortDescription || product.description || '').slice(0, 160),
+                keywords: willAddKeywords ? candidateKeywords : product.seo?.keywords
+            };
+            await product.save();
+            updatedCount++;
+        }
+
+        res.json({ updatedCount, totalProducts: products.length });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

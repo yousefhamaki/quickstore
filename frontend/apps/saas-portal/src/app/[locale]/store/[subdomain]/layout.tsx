@@ -34,23 +34,61 @@ const getStoreCached = cache(async (subdomain: string) => {
 });
 
 // 2. Metadata (Fundamentally halts TTFB to inject <head> strings)
+//
+// Reads the merchant's SEO Center "Global Settings" (store.seo.*) with the
+// raw store name/description as the fallback — previously this ignored
+// store.seo entirely, so nothing a merchant configured in the SEO Center
+// ever reached a real page's <head>, search snippet, or share preview.
 export async function generateMetadata({ params }: { params: Promise<{ subdomain: string }> }): Promise<Metadata> {
     try {
         const { subdomain } = await params;
         const store = await getStoreCached(subdomain) as any;
+        const seo = store.seo || {};
+
+        const baseUrl = store.domain?.customDomain && store.domain?.isVerified
+            ? `https://${store.domain.customDomain}`
+            : `https://${store.domain?.subdomain}.quickstore.live`;
+
+        const title = seo.metaTitle || store.name;
+        const description = seo.metaDescription || store.description;
+        const ogImage = seo.ogImage?.url || store.logo?.url;
+        // Indexing is only allowed when both the merchant opted in AND the
+        // store is actually live — a draft/paused store must never be
+        // indexed regardless of the toggle. robots.txt already enforces
+        // this at the crawl level; this is the equivalent per-page
+        // <meta name="robots"> tag, which robots.txt alone doesn't set.
+        const allowIndexing = seo.allowIndexing !== false && store.status === 'live';
+
         return {
-            title: store.name,
-            description: store.description,
+            title,
+            description,
+            keywords: seo.keywords,
             manifest: '/manifest.json',
             appleWebApp: {
                 capable: true,
                 statusBarStyle: 'default',
                 title: store.name,
             },
+            robots: {
+                index: allowIndexing,
+                follow: allowIndexing,
+            },
+            alternates: {
+                canonical: baseUrl,
+            },
             openGraph: {
-                title: store.name,
-                description: store.description,
-                images: store.logo?.url ? [store.logo.url] : []
+                type: (seo.ogType as any) || 'website',
+                title,
+                description,
+                siteName: store.name,
+                images: ogImage ? [ogImage] : [],
+            },
+            twitter: {
+                card: (seo.twitterCard as any) || 'summary_large_image',
+                site: seo.twitterUsername,
+                title,
+                description,
+                images: ogImage ? [ogImage] : [],
             },
             icons: {
                 icon: store.favicon?.url || '/favicon.ico',
@@ -91,8 +129,37 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
     const announcementBar = customizations.announcementBar;
     const footerCopyright = customizations.footer?.copyrightText;
 
+    const seoBaseUrl = store.domain?.customDomain && store.domain?.isVerified
+        ? `https://${store.domain.customDomain}`
+        : `https://${store.domain?.subdomain}.quickstore.live`;
+
+    // Organization JSON-LD — sitewide structured data for rich search
+    // results (the storefront had none of this before). Product-level
+    // structured data lives on the product page itself.
+    const organizationSchema = {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: store.name,
+        url: seoBaseUrl,
+        ...(store.logo?.url ? { logo: store.logo.url } : {}),
+        ...(store.contact?.email || store.contact?.phone
+            ? {
+                contactPoint: {
+                    "@type": "ContactPoint",
+                    ...(store.contact?.phone ? { telephone: store.contact.phone } : {}),
+                    ...(store.contact?.email ? { email: store.contact.email } : {}),
+                    contactType: "customer service"
+                }
+            }
+            : {})
+    };
+
     return (
         <CartWrapper storeId={store._id}>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+            />
             <VisitorTracker storeId={store._id} />
             <TrackingPixels marketing={store.settings?.marketing} />
             <div style={{ "--primary": primaryColor, fontFamily } as any} className="min-h-screen bg-white">
