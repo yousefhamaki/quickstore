@@ -9,7 +9,7 @@ const POLICY_ROLES: Record<string, string[]> = {
         'receipts.view', 'receipts.review',
         'plans.view', 'plans.create', 'plans.update', 'plans.delete',
         'tickets.view', 'tickets.reply', 'tickets.status',
-        'audit.view'
+        'audit.view', 'settings.manage'
     ],
     finance_admin: [
         'analytics.view',

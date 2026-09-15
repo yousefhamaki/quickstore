@@ -12,6 +12,7 @@ import { getAllStores, overrideSubscription, toggleStoreStatus } from '../servic
 import { getAllPlans, createPlan, updatePlan, deletePlan } from '../services/admin/plan.service';
 import { getAllTickets, addReply, updateTicketStatus } from '../services/admin/ticket.service';
 import { logAdminAction } from '../services/admin/audit.service';
+import { getSignupGiftSettings, updateSignupGiftSettings } from '../services/admin/settings.service';
 
 const getIp = (req: AuthRequest): string | undefined => {
     return typeof req.ip === 'string' ? req.ip : undefined;
@@ -328,6 +329,33 @@ export const getTransactionStats = async (req: AuthRequest, res: Response) => {
             creditCount: byType['credit']?.count ?? 0,
             byReason: reasonAgg.map(r => ({ reason: r._id, total: r.total, count: r.count }))
         });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+};
+
+// ============================================================================
+// Global platform settings (currently: the signup-gift promo). Self-contained
+// block — see services/admin/settings.service.ts and models/PlatformConfig.ts.
+// ============================================================================
+
+export const getSignupGiftSettingsController = async (req: AuthRequest, res: Response) => {
+    try {
+        const settings = await getSignupGiftSettings();
+        res.json(settings);
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+};
+
+export const updateSignupGiftSettingsController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { reason, ...data } = req.body;
+        if (!reason) {
+            return res.status(400).json({ message: 'Audit reason is required' });
+        }
+        const settings = await updateSignupGiftSettings(data, req.user._id, reason, getIp(req));
+        res.json(settings);
     } catch (error: any) {
         res.status(500).json({ message: error.message || 'Server error' });
     }

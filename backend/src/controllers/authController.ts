@@ -11,6 +11,7 @@ import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { sendBuyerVerificationEmail, sendMerchantWelcomeEmail, sendTwoFactorCodeEmail } from '../services/emailService';
 import { ensureWallet, autoSubscribeRecord } from './billingController';
+import { grantSignupGiftAndNotify } from '../services/platformConfigService';
 
 const TWO_FA_CHALLENGE_EXPIRY = '5m';
 
@@ -80,6 +81,12 @@ export const registerUser = async (req: Request, res: Response) => {
         });
 
         if (user) {
+            // Only create the (0-balance) wallet record here — the signup
+            // gift itself is deliberately NOT granted at raw registration.
+            // Granting it before the email is verified would let someone
+            // farm wallet credit with disposable addresses that are never
+            // confirmed. The gift is granted in verifyEmail() below instead
+            // (see services/platformConfigService.ts).
             await ensureWallet(user._id.toString());
 
             // If planId is provided, attempt to auto-subscribe/setup
@@ -144,7 +151,15 @@ export const loginUser = async (req: Request, res: Response) => {
                 return res.json({ requires2FA: true, method: user.twoFactorMethod, challengeToken });
             }
 
-            await ensureWallet(user._id.toString());
+            // Backfill for legacy users who somehow don't have a wallet yet.
+            // Only grant the signup gift as part of that backfill if the
+            // account's email is actually verified — an unverified legacy
+            // account should not receive gift credit just by logging in.
+            if (user.isVerified) {
+                await grantSignupGiftAndNotify(user._id.toString(), user.email, user.name);
+            } else {
+                await ensureWallet(user._id.toString());
+            }
 
             // Populate plan name for frontend feature gating
             const sub = await Subscription.findOne({ userId: user._id }).populate('planId');
@@ -201,6 +216,17 @@ export const verifyEmail = async (req: Request, res: Response) => {
         user.emailVerificationTokenHash = undefined;
         user.emailVerificationExpiresAt = undefined;
         await user.save();
+
+        // Grant the signup gift now that the email is confirmed real (see
+        // services/platformConfigService.ts) — this is the primary grant
+        // point for local signups. Awaited (not fire-and-forget) since the
+        // wallet write itself should be reliable; the notification/email it
+        // triggers on a real grant are still fire-and-forget internally.
+        try {
+            await grantSignupGiftAndNotify(user._id.toString(), user.email, user.name);
+        } catch (err) {
+            console.error('[AuthController] Failed to grant signup gift on verification:', err);
+        }
 
         // Send onboarding welcome email to new merchant asynchronously
         if (user.role === 'merchant') {
@@ -326,7 +352,9 @@ export const googleLogin = async (req: Request, res: Response) => {
             return res.json({ requires2FA: true, method: user.twoFactorMethod, challengeToken });
         }
 
-        await ensureWallet(user._id.toString());
+        // Google already verifies the email, so this path grants the signup
+        // gift immediately (idempotent — see grantSignupGiftAndNotify).
+        await grantSignupGiftAndNotify(user._id.toString(), user.email, user.name);
 
         const activeSub = await Subscription.findOne({ userId: user._id }).populate('planId');
         const planName = (activeSub?.planId as any)?.name || 'Free';

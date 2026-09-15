@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IAdminAuditLog extends Document {
     actorId: mongoose.Types.ObjectId;
     action: string; // e.g. 'wallet.adjust', 'store.suspend'
-    targetType: 'User' | 'Store' | 'SubscriptionPlan' | 'PaymentReceipt' | 'SupportTicket';
+    targetType: 'User' | 'Store' | 'SubscriptionPlan' | 'PaymentReceipt' | 'SupportTicket' | 'PlatformConfig';
     targetId: mongoose.Types.ObjectId;
     beforeState: Record<string, any>;
     afterState: Record<string, any>;
