@@ -1,12 +1,14 @@
 'use client';
 
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { NavLink } from '@shared/components/NavLink';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@shared/context/AuthContext';
-import { LayoutDashboard, Settings, LayoutTemplate, Wallet, Zap, Store } from 'lucide-react';
+import { LayoutDashboard, Settings, LayoutTemplate, Wallet, Zap, Store, Pencil } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { NotificationBell } from '@shared/components/merchant/NotificationBell';
+import { EditProfileModal } from '@shared/components/merchant/EditProfileModal';
 
 // Memoized NavItem to prevent re-renders
 const NavItem = memo(({ icon, label, href, active = false }: { icon: React.ReactNode, label: string, href: string, active?: boolean }) => {
@@ -21,18 +23,26 @@ const NavItem = memo(({ icon, label, href, active = false }: { icon: React.React
 });
 NavItem.displayName = 'NavItem';
 
-// Memoized user section
-const UserSection = memo(({ user, onLogout, logoutText }: { user: any, onLogout: () => void, logoutText: string }) => (
+// User section — the identity block is a button so clicking it opens the
+// Edit Profile modal (the name shown here was previously not editable
+// anywhere in the app at all).
+const UserSection = memo(({ user, onLogout, onEditProfile, logoutText, editHint }: { user: any, onLogout: () => void, onEditProfile: () => void, logoutText: string, editHint: string }) => (
     <div className="p-4 border-t space-y-3">
-        <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 flex items-center space-x-3 rtl:space-x-reverse">
-            <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+        <button
+            type="button"
+            onClick={onEditProfile}
+            title={editHint}
+            className="w-full p-4 rounded-xl bg-blue-50 border border-blue-100 flex items-center space-x-3 rtl:space-x-reverse group hover:border-blue-300 transition-colors text-left rtl:text-right"
+        >
+            <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold flex-shrink-0">
                 {user?.name?.charAt(0)}
             </div>
             <div className="overflow-hidden flex-1">
                 <p className="text-sm font-bold truncate">{user?.name}</p>
                 <p className="text-xs text-blue-600 font-medium">Merchant</p>
             </div>
-        </div>
+            <Pencil className="h-3.5 w-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        </button>
         <button
             onClick={onLogout}
             className="w-full px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm transition-colors"
@@ -48,6 +58,8 @@ function Sidebar() {
     const { user, logout } = useAuth();
     const t = useTranslations('dashboard');
     const tCommon = useTranslations('common');
+    const tProfile = useTranslations('merchant.profile');
+    const [editProfileOpen, setEditProfileOpen] = useState(false);
 
     // Memoize nav items to prevent recreation on every render
     const navItems = useMemo(() => [
@@ -68,19 +80,22 @@ function Sidebar() {
     return (
         <aside className="w-64 bg-white border-r hidden md:flex flex-col h-full sticky top-0">
             <div className="p-6 border-b">
-                <NavLink href="/merchant" className="flex items-center space-x-3 rtl:space-x-reverse">
-                    <div className="relative h-8 w-8 flex-shrink-0">
-                        <Image
-                            src="/new-logo.png"
-                            alt="Buildora Logo"
-                            width={32}
-                            height={32}
-                            className="object-contain"
-                            priority
-                        />
-                    </div>
-                    <h2 className="text-2xl font-black text-blue-600 tracking-tighter cursor-pointer">{tCommon('brand.name').toUpperCase()}</h2>
-                </NavLink>
+                <div className="flex items-center justify-between">
+                    <NavLink href="/merchant" className="flex items-center space-x-3 rtl:space-x-reverse">
+                        <div className="relative h-8 w-8 flex-shrink-0">
+                            <Image
+                                src="/new-logo.png"
+                                alt="Buildora Logo"
+                                width={32}
+                                height={32}
+                                className="object-contain"
+                                priority
+                            />
+                        </div>
+                        <h2 className="text-2xl font-black text-blue-600 tracking-tighter cursor-pointer">{tCommon('brand.name').toUpperCase()}</h2>
+                    </NavLink>
+                    <NotificationBell />
+                </div>
                 <p className="text-xs text-gray-400 font-bold uppercase mt-1">{t('sidebar.merchantPanel')}</p>
             </div>
             <nav className="flex-grow p-4 space-y-2">
@@ -94,7 +109,14 @@ function Sidebar() {
                     />
                 ))}
             </nav>
-            <UserSection user={user} onLogout={handleLogout} logoutText={t('sidebar.logout')} />
+            <UserSection
+                user={user}
+                onLogout={handleLogout}
+                onEditProfile={() => setEditProfileOpen(true)}
+                logoutText={t('sidebar.logout')}
+                editHint={tProfile('editHint')}
+            />
+            <EditProfileModal open={editProfileOpen} onClose={() => setEditProfileOpen(false)} />
         </aside>
     );
 }

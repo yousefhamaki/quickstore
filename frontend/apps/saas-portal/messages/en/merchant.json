@@ -1,4 +1,30 @@
 {
+    "profile": {
+        "editHint": "Edit your name",
+        "title": "Edit Profile",
+        "description": "Update your display name.",
+        "nameLabel": "Full name",
+        "emailLabel": "Email address",
+        "emailNote": "Email can't be changed here yet.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving...",
+        "nameRequired": "Name is required.",
+        "success": "Profile updated.",
+        "error": "Failed to update profile."
+    },
+    "notifications": {
+        "bellLabel": "Notifications",
+        "title": "Notifications",
+        "pageDescription": "Updates about your orders, reviews, refunds, and subscription.",
+        "markAllRead": "Mark all as read",
+        "empty": "You're all caught up — no notifications yet.",
+        "viewAll": "View all notifications",
+        "loadError": "Failed to load notifications.",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {pages}"
+    },
     "security": {
         "password": {
             "title": "Password",

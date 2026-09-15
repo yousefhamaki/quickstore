@@ -6,6 +6,7 @@ import Store from '../models/Store';
 import { AuthRequest, resolveStore } from '../middleware/authMiddleware';
 import { CustomerAuthRequest } from '../middleware/customerAuthMiddleware';
 import { applyOrderRefund, RefundValidationError } from './orderController';
+import { createNotification } from '../services/notificationService';
 
 // ============================================================
 // Customer-facing (mounted under /api/account/:storeId/... — see
@@ -57,6 +58,18 @@ export const createRefundRequest = async (req: CustomerAuthRequest, res: Respons
             photoUrl,
             photoPublicId
         });
+
+        const store = await Store.findById(storeId).select('ownerId');
+        if (store) {
+            createNotification({
+                userId: store.ownerId.toString(),
+                storeId,
+                type: 'refund_requested',
+                title: 'Refund request received',
+                message: `A customer requested a refund of EGP ${numericAmount.toLocaleString()} for order #${order.orderNumber}.`,
+                link: `/dashboard/stores/${storeId}/refund-requests`,
+            }).catch(() => {});
+        }
 
         res.status(201).json(request);
     } catch (error) {

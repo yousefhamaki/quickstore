@@ -12,6 +12,7 @@ import User from '../../models/User';
 import '../../models/SubscriptionPlan';
 import { redisClient, acquireLock } from '../../config/redis';
 import { sendInvoiceEmail } from '../emailService';
+import { createNotification } from '../notificationService';
 import { WALLET_LEDGER_REASONS } from '../../constants/walletLedgerReasons';
 import { addBillingCycle, addBillingCycleUntilFuture } from '../../utils/billingCycle';
 
@@ -201,6 +202,13 @@ const processDueActiveSubscription = async (sub: ISubscription, now: Date, summa
                 );
                 summary.renewed++;
                 sendRenewalEmail(sub.userId, plan.name, price, sub.billingCycle);
+                createNotification({
+                    userId: sub.userId.toString(),
+                    type: 'subscription_renewed',
+                    title: 'Subscription renewed',
+                    message: `Your ${plan.name} plan was renewed for ${price.toLocaleString()} EGP.`,
+                    link: '/merchant/billing',
+                }).catch(() => {});
             } else {
                 const gracePeriodEnd = new Date(now.getTime() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000);
                 await Subscription.updateOne(
@@ -210,6 +218,13 @@ const processDueActiveSubscription = async (sub: ISubscription, now: Date, summa
                 );
                 summary.movedToPastDue++;
                 console.log(`[SubscriptionRenewalService] Subscription ${sub._id} moved to past_due (insufficient wallet balance). Grace period until ${gracePeriodEnd.toISOString()}.`);
+                createNotification({
+                    userId: sub.userId.toString(),
+                    type: 'subscription_past_due',
+                    title: 'Subscription payment failed',
+                    message: `We couldn't renew your ${plan.name} plan due to insufficient wallet balance. Top up before ${gracePeriodEnd.toLocaleDateString()} to avoid losing access.`,
+                    link: '/merchant/billing',
+                }).catch(() => {});
             }
         });
     } catch (err) {
@@ -252,6 +267,13 @@ const processPastDueSubscription = async (sub: ISubscription, now: Date, summary
         if (recovered) {
             summary.renewed++;
             sendRenewalEmail(sub.userId, plan.name, price, sub.billingCycle);
+            createNotification({
+                userId: sub.userId.toString(),
+                type: 'subscription_renewed',
+                title: 'Subscription renewed',
+                message: `Your ${plan.name} plan was renewed for ${price.toLocaleString()} EGP.`,
+                link: '/merchant/billing',
+            }).catch(() => {});
             return;
         }
 
@@ -259,6 +281,13 @@ const processPastDueSubscription = async (sub: ISubscription, now: Date, summary
             await Subscription.updateOne({ _id: sub._id }, { $set: { status: 'expired' } });
             summary.movedToExpired++;
             console.log(`[SubscriptionRenewalService] Subscription ${sub._id} expired (grace period elapsed with insufficient balance).`);
+            createNotification({
+                userId: sub.userId.toString(),
+                type: 'subscription_expired',
+                title: 'Subscription expired',
+                message: `Your ${plan.name} plan has expired due to an unpaid renewal. Top up your wallet and resubscribe to restore access.`,
+                link: '/merchant/plans',
+            }).catch(() => {});
         } else {
             summary.stillPastDue++;
         }

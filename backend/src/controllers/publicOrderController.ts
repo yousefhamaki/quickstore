@@ -12,6 +12,7 @@ import InventoryLog from '../models/InventoryLog';
 import { PaymentFactory } from '../services/payment/PaymentFactory';
 import { clearStoreProductCaches } from './productController';
 import { redisClient } from '../config/redis';
+import { createNotification } from '../services/notificationService';
 
 // @desc    Create new order from storefront
 // @route   POST /api/public/orders
@@ -670,6 +671,15 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             }
 
             if (session) await session.commitTransaction();
+
+            createNotification({
+                userId: activeStore.ownerId.toString(),
+                storeId: oidStoreId.toString(),
+                type: 'order_created',
+                title: 'New order received',
+                message: `Order #${createdOrder.orderNumber} for ${numericTotal.toLocaleString()} EGP was just placed.`,
+                link: `/dashboard/stores/${oidStoreId}/orders/${createdOrder._id}`,
+            }).catch(() => {});
 
             res.status(201).json({
                 success: true,

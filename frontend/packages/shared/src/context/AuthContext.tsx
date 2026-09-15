@@ -25,6 +25,7 @@ interface AuthContextType {
     token: string | null;
     login: (token: string, user: User) => void;
     logout: () => void;
+    updateUser: (patch: Partial<User>) => void;
     isLoading: boolean;
 }
 
@@ -112,6 +113,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    // Merges fields (e.g. a new name from the profile-edit form) into the
+    // cached user — without this, the sidebar/header would keep showing the
+    // stale value until the next full login, since `user` is otherwise only
+    // ever set at login time or from the localStorage cache.
+    const updateUser = (patch: Partial<User>) => {
+        setUser((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev, ...patch };
+            localStorage.setItem('user', JSON.stringify(next));
+            return next;
+        });
+    };
+
     const logout = () => {
         // Fire-and-forget: revoke the session server-side too, so a copy of
         // this token taken before now can't keep working until its natural
@@ -128,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+        <AuthContext.Provider value={{ user, token, login, logout, updateUser, isLoading }}>
             {children}
         </AuthContext.Provider>
     );

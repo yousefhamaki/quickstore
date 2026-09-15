@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerUser, loginUser, getUserProfile, verifyEmail, googleLogin, resendVerificationEmail } from '../controllers/authController';
+import { registerUser, loginUser, getUserProfile, updateUserProfile, verifyEmail, googleLogin, resendVerificationEmail } from '../controllers/authController';
 import { protect } from '../middleware/authMiddleware';
 import rateLimit from 'express-rate-limit';
 
@@ -22,6 +22,7 @@ router.post('/verify-email', authLimiter, verifyEmail);
 // @ts-ignore
 router.post('/google', authLimiter, googleLogin);
 router.get('/profile', protect, getUserProfile);
+router.put('/profile', protect, updateUserProfile);
 // @ts-ignore
 router.post('/resend-verification', authLimiter, resendVerificationEmail);
 

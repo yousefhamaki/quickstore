@@ -380,6 +380,41 @@ export const getUserProfile = async (req: any, res: Response) => {
     }
 };
 
+// @desc    Update the logged-in user's own profile info (currently: display name)
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateUserProfile = async (req: any, res: Response) => {
+    const { name } = req.body;
+
+    if (typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ message: 'Name is required.' });
+    }
+    if (name.trim().length > 100) {
+        return res.status(400).json({ message: 'Name must be 100 characters or fewer.' });
+    }
+
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            { $set: { name: name.trim() } },
+            { new: true }
+        );
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+        });
+    } catch (error) {
+        console.error('[AuthController] updateUserProfile failed:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // @desc    Resend email verification link
 // @route   POST /api/auth/resend-verification
 // @access  Public (requires email in body)

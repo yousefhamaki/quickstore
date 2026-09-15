@@ -7,6 +7,8 @@ import Product from '../models/Product';
 import { AuthRequest, resolveStore } from '../middleware/authMiddleware';
 import { redisClient } from '../config/redis';
 import { clearStoreProductCaches } from './productController';
+import { createNotification } from '../services/notificationService';
+import Store from '../models/Store';
 
 /**
  * Recomputes a product's denormalized rating fields from its APPROVED
@@ -171,6 +173,18 @@ export const createReview = async (req: Request, res: Response) => {
                 return res.status(409).json({ message: 'You already reviewed this product for this order.' });
             }
             throw err;
+        }
+
+        const store = await Store.findById(storeId).select('ownerId');
+        if (store) {
+            createNotification({
+                userId: store.ownerId.toString(),
+                storeId,
+                type: 'review_submitted',
+                title: 'New review submitted',
+                message: `${numericRating}★ review awaiting moderation.`,
+                link: `/dashboard/stores/${storeId}/reviews`,
+            }).catch(() => {});
         }
 
         res.status(201).json({
