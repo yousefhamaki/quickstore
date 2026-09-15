@@ -436,7 +436,12 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
         if (updatedStore) {
             const { redisClient } = await import('../config/redis');
             if (updatedStore.status === 'live') {
-                const cachePayload = JSON.stringify(updatedStore.toObject());
+                // .toJSON() (not .toObject()) so EmailSenderSchema's toJSON
+                // transform strips settings.emailSender.smtp.passwordEncrypted
+                // before this reaches the cache — the public endpoint's
+                // cache-hit path serves this blob straight to anonymous
+                // visitors with no transform of its own.
+                const cachePayload = JSON.stringify(updatedStore.toJSON());
                 await redisClient.setex(`store_customization:${updatedStore.domain.subdomain}`, 3600, cachePayload);
                 // Only warm the customDomain cache key once it's verified —
                 // otherwise a public request for that (unverified) domain
@@ -975,7 +980,9 @@ export const uploadStoreLogo = async (req: AuthRequest, res: Response) => {
         // Zero Cache-Miss: Overwrite Redis cache if store is live, otherwise ensure it is deleted
         const { redisClient } = await import('../config/redis');
         if (store.status === 'live') {
-            const cachePayload = JSON.stringify(store.toObject());
+            // .toJSON() (not .toObject()) — see identical rationale in
+            // updateStore above.
+            const cachePayload = JSON.stringify(store.toJSON());
             await redisClient.setex(`store_customization:${store.domain.subdomain}`, 3600, cachePayload);
             // Only warm the customDomain cache key once it's verified — see
             // the identical guard (and why) in updateStore above.

@@ -58,7 +58,15 @@ export const getStoreBySubdomain = async (req: Request, res: Response) => {
                 { 'domain.subdomain': subdomain },
                 { 'domain.customDomain': subdomain, 'domain.isVerified': true }
             ]
-        }).lean(); // Huge performance hydration bypass
+        })
+            // .lean() bypasses Mongoose document hydration (huge performance
+            // win for a read-heavy public endpoint), but it also bypasses
+            // EmailSenderSchema's toJSON transform (see Store.ts), which is
+            // the only thing that normally strips the SMTP password
+            // ciphertext from a store response. So it's excluded explicitly
+            // here at the query level instead.
+            .select('-settings.emailSender.smtp.passwordEncrypted')
+            .lean();
 
         if (!store) {
             return res.status(404).json({ message: 'Store not found or not published' });

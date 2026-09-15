@@ -7,7 +7,12 @@ import { PLAN_MAPPING, PLAN_NAMES } from '../config/planFeatures';
 // Helper for Zero Cache-Miss Redis update
 const overwriteStoreCache = async (store: any) => {
     try {
-        const plainStore = store.toObject();
+        // .toJSON() (not .toObject()) so EmailSenderSchema's toJSON transform
+        // strips settings.emailSender.smtp.passwordEncrypted before this
+        // reaches the cache — publicController.getStoreBySubdomain's
+        // cache-hit path serves this blob straight to anonymous visitors
+        // with no transform of its own.
+        const plainStore = store.toJSON();
         const cacheKey = `store_customization:${store.domain.subdomain}`;
         await redisClient.setex(cacheKey, 3600, JSON.stringify(plainStore));
 
