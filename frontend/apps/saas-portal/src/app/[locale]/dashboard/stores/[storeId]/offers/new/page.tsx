@@ -9,22 +9,24 @@ import { Label } from "@shared/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Save, LayoutTemplate, Settings2, PackagePlus, Search, X, Loader2, Package } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { getProducts, getProductById } from "@shared/services/productService";
 import { imagePreset } from "@shared/lib/cloudinaryImage";
 
-function ProductSelector({ 
-    storeId, 
-    selectedProduct, 
-    onSelect, 
-    onRemove, 
-    placeholder = "Search product by name..." 
-}: { 
+function ProductSelector({
+    storeId,
+    selectedProduct,
+    onSelect,
+    onRemove,
+    placeholder
+}: {
     storeId: string; 
     selectedProduct: any; 
     onSelect: (prod: any) => void; 
     onRemove: () => void; 
-    placeholder?: string; 
+    placeholder?: string;
 }) {
+    const t = useTranslations("merchant.marketing.offers.form.offerDetails");
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
@@ -96,22 +98,22 @@ function ProductSelector({
                         onClick={onRemove}
                         className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 font-bold uppercase text-xs"
                     >
-                        Remove
+                        {t("removeProduct")}
                     </Button>
                 </div>
             ) : (
                 <div className="relative">
                     <div className="relative z-10">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input 
+                        <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onFocus={handleFocus}
-                            placeholder={placeholder} 
-                            className="pl-10 h-12 pr-10"
+                            placeholder={placeholder ?? t("searchProductPlaceholder")}
+                            className="pl-10 pr-10 h-12"
                         />
                         {searching && (
-                            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 animate-spin" />
+                            <Loader2 className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 animate-spin" />
                         )}
                     </div>
                     {open && (
@@ -120,7 +122,7 @@ function ProductSelector({
                             <div className="absolute z-20 w-full mt-2 bg-background border rounded-xl shadow-lg max-h-48 overflow-y-auto p-2 space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
                                 {results.length === 0 && !searching ? (
                                     <div className="p-4 text-center text-sm text-muted-foreground">
-                                        No products found
+                                        {t("noProductsFound")}
                                     </div>
                                 ) : (
                                     results.map((product) => (
@@ -163,10 +165,11 @@ function ProductSelector({
 export default function NewCampaignWizard({ params }: { params: Promise<{ storeId: string }> }) {
     const { storeId } = use(params);
     const router = useRouter();
-    
+    const t = useTranslations("merchant.marketing.offers.form");
+
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         name: '',
         type: 'upsell',
@@ -181,10 +184,10 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
         discountType: 'percentage',
         discountValue: 10,
         // Display options
-        displayTitle: 'Upgrade Your Order',
-        displaySubtitle: 'Special one-time offer',
-        callToActionText: 'Yes, add to my order',
-        declineText: 'No thanks'
+        displayTitle: t('display.defaultHeadline'),
+        displaySubtitle: t('display.defaultSubtitle'),
+        callToActionText: t('display.defaultAcceptText'),
+        declineText: t('display.defaultDeclineText')
     });
 
     const [pricingTiers, setPricingTiers] = useState<{ quantity: number; totalPrice: number }[]>([
@@ -328,10 +331,10 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
             }
             
             await createCampaign(payload);
-            toast.success('Campaign created successfully!');
+            toast.success(t('createSuccess'));
             router.push(`/dashboard/stores/${storeId}/offers`);
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to create campaign');
+            toast.error(error?.response?.data?.message || t('createError'));
         } finally {
             setIsLoading(false);
         }
@@ -346,8 +349,8 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                     </Link>
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-black tracking-tighter">New Campaign</h1>
-                    <p className="text-muted-foreground font-medium">Create a conversion-optimized offer</p>
+                    <h1 className="text-3xl font-black tracking-tighter">{t('newTitle')}</h1>
+                    <p className="text-muted-foreground font-medium">{t('newSubtitle')}</p>
                 </div>
             </div>
 
@@ -355,9 +358,9 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
             <div className="flex items-center justify-between mb-8 relative">
                 <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-muted -z-10" />
                 {[
-                    { n: 1, l: 'Basics', i: <Settings2 size={18} /> },
-                    { n: 2, l: 'Offer details', i: <PackagePlus size={18} /> },
-                    { n: 3, l: 'Display', i: <LayoutTemplate size={18} /> }
+                    { n: 1, l: t('stepBasics'), i: <Settings2 size={18} /> },
+                    { n: 2, l: t('stepOfferDetails'), i: <PackagePlus size={18} /> },
+                    { n: 3, l: t('stepDisplay'), i: <LayoutTemplate size={18} /> }
                 ].map((s) => (
                     <div key={s.n} className="flex flex-col items-center gap-2 bg-background px-4">
                         <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-colors ${
@@ -373,91 +376,91 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
             <div className="bg-card border rounded-[32px] p-8 shadow-sm">
                 {step === 1 && (
                     <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                        <h2 className="text-2xl font-bold">Campaign Basics</h2>
-                        
+                        <h2 className="text-2xl font-bold">{t('basics.heading')}</h2>
+
                         <div className="space-y-2">
-                            <Label>Campaign Name (Internal)</Label>
-                            <Input 
+                            <Label>{t('basics.campaignName')}</Label>
+                            <Input
                                 value={formData.name}
                                 onChange={(e) => updateForm('name', e.target.value)}
-                                placeholder="e.g. Summer Checkout Upsell" 
+                                placeholder={t('basics.campaignNamePlaceholder')}
                                 className="h-12"
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Offer Type</Label>
-                                <select 
+                                <Label>{t('basics.offerType')}</Label>
+                                <select
                                     value={formData.type}
                                     onChange={(e) => updateForm('type', e.target.value)}
                                     className="w-full h-12 rounded-md border border-input bg-background px-3"
                                 >
-                                    <option value="upsell">Upsell (Upgrade/Replace)</option>
-                                    <option value="cross_sell">Cross-sell (Add-on)</option>
-                                    <option value="down_sell">Down-sell (Alternative)</option>
-                                    <option value="volume_discount">Volume Discount (Tiers)</option>
-                                    <option value="bogo">BOGO (Buy X Get Y)</option>
-                                    <option value="cart_threshold">Cart Threshold Promotion</option>
-                                    <option value="offer_page">Offer Page (Direct Checkout & Tiers)</option>
+                                    <option value="upsell">{t('basics.types.upsell')}</option>
+                                    <option value="cross_sell">{t('basics.types.cross_sell')}</option>
+                                    <option value="down_sell">{t('basics.types.down_sell')}</option>
+                                    <option value="volume_discount">{t('basics.types.volume_discount')}</option>
+                                    <option value="bogo">{t('basics.types.bogo')}</option>
+                                    <option value="cart_threshold">{t('basics.types.cart_threshold')}</option>
+                                    <option value="offer_page">{t('basics.types.offer_page')}</option>
                                 </select>
                             </div>
-                            
+
                             <div className="space-y-2">
-                                <Label>Placement</Label>
-                                <select 
+                                <Label>{t('basics.placement')}</Label>
+                                <select
                                     value={formData.placement}
                                     onChange={(e) => updateForm('placement', e.target.value)}
                                     className="w-full h-12 rounded-md border border-input bg-background px-3"
                                 >
-                                    <option value="product_page">Product Page</option>
-                                    <option value="cart">Cart Drawer/Page</option>
-                                    <option value="checkout">Checkout Flow</option>
-                                    <option value="post_purchase">Post Purchase Offer</option>
-                                    <option value="standalone">Standalone Landing Page</option>
+                                    <option value="product_page">{t('basics.placements.product_page')}</option>
+                                    <option value="cart">{t('basics.placements.cart')}</option>
+                                    <option value="checkout">{t('basics.placements.checkout')}</option>
+                                    <option value="post_purchase">{t('basics.placements.post_purchase')}</option>
+                                    <option value="standalone">{t('basics.placements.standalone')}</option>
                                 </select>
                             </div>
                         </div>
 
                         {formData.type !== 'offer_page' && (
                             <div className="space-y-2">
-                                <Label>Trigger Event</Label>
-                                <select 
+                                <Label>{t('basics.triggerEvent')}</Label>
+                                <select
                                     value={formData.triggerEvent}
                                     onChange={(e) => updateForm('triggerEvent', e.target.value)}
                                     className="w-full h-12 rounded-md border border-input bg-background px-3"
                                 >
-                                    <option value="product_page">On Product Page Load</option>
-                                    <option value="cart_view">On Cart View</option>
-                                    <option value="checkout_start">On Checkout Start</option>
-                                    <option value="checkout_abandon">On Exit Intent</option>
-                                    <option value="post_purchase">Post Purchase</option>
+                                    <option value="product_page">{t('basics.triggerEvents.product_page')}</option>
+                                    <option value="cart_view">{t('basics.triggerEvents.cart_view')}</option>
+                                    <option value="checkout_start">{t('basics.triggerEvents.checkout_start')}</option>
+                                    <option value="checkout_abandon">{t('basics.triggerEvents.checkout_abandon')}</option>
+                                    <option value="post_purchase">{t('basics.triggerEvents.post_purchase')}</option>
                                 </select>
                             </div>
                         )}
 
                         <div className="grid grid-cols-2 gap-4 border-t pt-4">
                             <div className="space-y-2">
-                                <Label>Priority Group</Label>
-                                <select 
+                                <Label>{t('basics.priorityGroup')}</Label>
+                                <select
                                     value={formData.priorityGroup}
                                     onChange={(e) => updateForm('priorityGroup', e.target.value)}
                                     className="w-full h-12 rounded-md border border-input bg-background px-3"
                                 >
-                                    <option value="critical">Critical (Always Evaluated First)</option>
-                                    <option value="high">High</option>
-                                    <option value="normal">Normal</option>
-                                    <option value="low">Low (Evaluated Last)</option>
+                                    <option value="critical">{t('basics.priorityGroups.critical')}</option>
+                                    <option value="high">{t('basics.priorityGroups.high')}</option>
+                                    <option value="normal">{t('basics.priorityGroups.normal')}</option>
+                                    <option value="low">{t('basics.priorityGroups.low')}</option>
                                 </select>
                             </div>
-                            
+
                             <div className="space-y-2">
-                                <Label>Priority Level (numeric)</Label>
-                                <Input 
+                                <Label>{t('basics.priorityLevel')}</Label>
+                                <Input
                                     type="number"
                                     value={formData.priority}
                                     onChange={(e) => updateForm('priority', Number(e.target.value))}
-                                    placeholder="e.g. 100" 
+                                    placeholder={t('basics.priorityPlaceholder')}
                                     className="h-12"
                                 />
                             </div>
@@ -477,8 +480,8 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                     }`} />
                                 </button>
                                 <div>
-                                    <Label className="font-bold cursor-pointer" onClick={() => updateForm('allowStacking', !formData.allowStacking)}>Allow Stacking</Label>
-                                    <p className="text-xs text-muted-foreground font-medium">Allows other campaigns to apply alongside this one.</p>
+                                    <Label className="font-bold cursor-pointer" onClick={() => updateForm('allowStacking', !formData.allowStacking)}>{t('basics.allowStacking')}</Label>
+                                    <p className="text-xs text-muted-foreground font-medium">{t('basics.allowStackingDesc')}</p>
                                 </div>
                             </div>
 
@@ -495,8 +498,8 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                     }`} />
                                 </button>
                                 <div>
-                                    <Label className="font-bold cursor-pointer" onClick={() => updateForm('exclusiveCampaign', !formData.exclusiveCampaign)}>Exclusive Campaign</Label>
-                                    <p className="text-xs text-muted-foreground font-medium">Disables all other campaigns if this campaign qualifies.</p>
+                                    <Label className="font-bold cursor-pointer" onClick={() => updateForm('exclusiveCampaign', !formData.exclusiveCampaign)}>{t('basics.exclusiveCampaign')}</Label>
+                                    <p className="text-xs text-muted-foreground font-medium">{t('basics.exclusiveCampaignDesc')}</p>
                                 </div>
                             </div>
                         </div>
@@ -505,11 +508,11 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
 
                 {step === 2 && (
                     <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                        <h2 className="text-2xl font-bold">Offer Configuration</h2>
+                        <h2 className="text-2xl font-bold">{t('offerDetails.heading')}</h2>
 
                         {['upsell', 'cross_sell', 'down_sell', 'offer_page'].includes(formData.type) && (
                             <div className="space-y-4">
-                                <Label>Offer Product</Label>
+                                <Label>{t('offerDetails.offerProduct')}</Label>
                                 <ProductSelector
                                     storeId={storeId}
                                     selectedProduct={selectedProduct}
@@ -521,7 +524,7 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                         setSelectedProduct(null);
                                         updateForm('offerProductId', '');
                                     }}
-                                    placeholder="Select campaign product..."
+                                    placeholder={t('offerDetails.selectProductPlaceholder')}
                                 />
 
                                 {formData.type === 'offer_page' ? (
@@ -529,26 +532,26 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center">
                                                 <div>
-                                                    <Label className="text-base font-bold">Pricing Tiers (Egypt Bundles)</Label>
-                                                    <p className="text-xs text-muted-foreground font-medium">Set total bundle prices for each quantity.</p>
+                                                    <Label className="text-base font-bold">{t('offerDetails.offerPage.pricingTiersLabel')}</Label>
+                                                    <p className="text-xs text-muted-foreground font-medium">{t('offerDetails.offerPage.pricingTiersDesc')}</p>
                                                 </div>
-                                                <Button 
-                                                    type="button" 
-                                                    variant="outline" 
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
                                                     size="sm"
                                                     onClick={() => setPricingTiers(p => [...p, { quantity: p.length + 1, totalPrice: 0 }])}
                                                     className="rounded-full h-9 px-4 font-bold text-xs uppercase"
                                                 >
-                                                    + Add Tier
+                                                    {t('offerDetails.offerPage.addTier')}
                                                 </Button>
                                             </div>
-                                            
+
                                             <div className="space-y-3">
                                                 {pricingTiers.map((tier, idx) => (
                                                     <div key={idx} className="flex gap-4 items-center">
                                                         <div className="flex-1 space-y-1">
-                                                            <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Quantity</span>
-                                                            <Input 
+                                                            <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">{t('offerDetails.offerPage.quantity')}</span>
+                                                            <Input
                                                                 type="number"
                                                                 value={tier.quantity}
                                                                 onChange={(e) => {
@@ -556,13 +559,13 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                                                     setPricingTiers(p => p.map((t, i) => i === idx ? { ...t, quantity: val } : t));
                                                                 }}
                                                                 className="h-11"
-                                                                placeholder="Qty"
+                                                                placeholder={t('offerDetails.offerPage.quantityPlaceholder')}
                                                                 min="1"
                                                             />
                                                         </div>
                                                         <div className="flex-1 space-y-1">
-                                                            <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Total Price (EGP)</span>
-                                                            <Input 
+                                                            <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">{t('offerDetails.offerPage.totalPrice')}</span>
+                                                            <Input
                                                                 type="number"
                                                                 value={tier.totalPrice}
                                                                 onChange={(e) => {
@@ -570,19 +573,19 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                                                     setPricingTiers(p => p.map((t, i) => i === idx ? { ...t, totalPrice: val } : t));
                                                                 }}
                                                                 className="h-11"
-                                                                placeholder="Total Price"
+                                                                placeholder={t('offerDetails.offerPage.totalPricePlaceholder')}
                                                                 min="0"
                                                             />
                                                         </div>
                                                         {pricingTiers.length > 1 && (
-                                                            <Button 
-                                                                type="button" 
-                                                                variant="ghost" 
-                                                                size="sm" 
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
                                                                 className="text-red-500 hover:text-red-700 mt-5 shrink-0 font-bold uppercase text-[10px]"
                                                                 onClick={() => setPricingTiers(p => p.filter((_, i) => i !== idx))}
                                                             >
-                                                                Delete
+                                                                {t('offerDetails.offerPage.delete')}
                                                             </Button>
                                                         )}
                                                     </div>
@@ -591,12 +594,12 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                         </div>
 
                                         <div className="space-y-2 border-t pt-4">
-                                            <Label>Custom Shipping Fee Override (EGP) - Optional</Label>
-                                            <Input 
+                                            <Label>{t('offerDetails.offerPage.shippingFeeLabel')}</Label>
+                                            <Input
                                                 type="number"
                                                 value={shippingFeeInput}
                                                 onChange={(e) => setShippingFeeInput(e.target.value)}
-                                                placeholder="e.g. 20 (leave empty to use store default)" 
+                                                placeholder={t('offerDetails.offerPage.shippingFeePlaceholder')}
                                                 className="h-12"
                                                 min="0"
                                             />
@@ -605,22 +608,22 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                 ) : (
                                     <div className="grid grid-cols-2 gap-4 border-t pt-4">
                                         <div className="space-y-2">
-                                            <Label>Discount Type</Label>
-                                            <select 
+                                            <Label>{t('offerDetails.discountType')}</Label>
+                                            <select
                                                 value={formData.discountType}
                                                 onChange={(e) => updateForm('discountType', e.target.value)}
                                                 className="w-full h-12 rounded-md border border-input bg-background px-3"
                                             >
-                                                <option value="percentage">% Off</option>
-                                                <option value="fixed">Fixed Amount Off</option>
-                                                <option value="override">Override Price To</option>
-                                                <option value="none">No Discount</option>
+                                                <option value="percentage">{t('offerDetails.discountTypes.percentage')}</option>
+                                                <option value="fixed">{t('offerDetails.discountTypes.fixed')}</option>
+                                                <option value="override">{t('offerDetails.discountTypes.override')}</option>
+                                                <option value="none">{t('offerDetails.discountTypes.none')}</option>
                                             </select>
                                         </div>
-                                        
+
                                         <div className="space-y-2">
-                                            <Label>Discount Value</Label>
-                                            <Input 
+                                            <Label>{t('offerDetails.discountValue')}</Label>
+                                            <Input
                                                 type="number"
                                                 value={formData.discountValue}
                                                 onChange={(e) => updateForm('discountValue', e.target.value)}
@@ -635,7 +638,7 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                         {formData.type === 'bogo' && (
                             <div className="space-y-6 animate-in fade-in duration-300">
                                 <div className="space-y-4">
-                                    <Label className="text-base font-bold">1. Buy Trigger Product</Label>
+                                    <Label className="text-base font-bold">{t('offerDetails.bogo.buyTrigger')}</Label>
                                     <ProductSelector
                                         storeId={storeId}
                                         selectedProduct={bogoTriggerProduct}
@@ -647,10 +650,10 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                             setBogoTriggerProduct(null);
                                             setBogoConfig(p => ({ ...p, triggerProductId: '' }));
                                         }}
-                                        placeholder="Search trigger product..."
+                                        placeholder={t('offerDetails.bogo.searchTriggerPlaceholder')}
                                     />
                                     <div className="space-y-2">
-                                        <Label>Required Trigger Quantity</Label>
+                                        <Label>{t('offerDetails.bogo.requiredTriggerQty')}</Label>
                                         <Input
                                             type="number"
                                             value={bogoConfig.triggerQuantity}
@@ -662,7 +665,7 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                 </div>
 
                                 <div className="space-y-4 border-t pt-4">
-                                    <Label className="text-base font-bold">2. Get Reward Product</Label>
+                                    <Label className="text-base font-bold">{t('offerDetails.bogo.getReward')}</Label>
                                     <ProductSelector
                                         storeId={storeId}
                                         selectedProduct={bogoRewardProduct}
@@ -674,11 +677,11 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                             setBogoRewardProduct(null);
                                             setBogoConfig(p => ({ ...p, rewardProductId: '' }));
                                         }}
-                                        placeholder="Search reward product..."
+                                        placeholder={t('offerDetails.bogo.searchRewardPlaceholder')}
                                     />
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label>Reward Quantity</Label>
+                                            <Label>{t('offerDetails.bogo.rewardQty')}</Label>
                                             <Input
                                                 type="number"
                                                 value={bogoConfig.rewardQuantity}
@@ -688,20 +691,20 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Reward Discount Type</Label>
+                                            <Label>{t('offerDetails.bogo.rewardDiscountType')}</Label>
                                             <select
                                                 value={bogoConfig.discountType}
                                                 onChange={(e) => setBogoConfig(p => ({ ...p, discountType: e.target.value }))}
                                                 className="w-full h-11 rounded-md border border-input bg-background px-3"
                                             >
-                                                <option value="percentage">% Off</option>
-                                                <option value="fixed">Fixed Amount Off</option>
-                                                <option value="override">Override Price To</option>
+                                                <option value="percentage">{t('offerDetails.discountTypes.percentage')}</option>
+                                                <option value="fixed">{t('offerDetails.discountTypes.fixed')}</option>
+                                                <option value="override">{t('offerDetails.discountTypes.override')}</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Reward Discount Value (use 100 for 100% free gift)</Label>
+                                        <Label>{t('offerDetails.bogo.rewardDiscountValue')}</Label>
                                         <Input
                                             type="number"
                                             value={bogoConfig.discountValue}
@@ -717,17 +720,17 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                             <div className="space-y-6 animate-in fade-in duration-300">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <Label className="text-base font-bold">Volume Discount Tiers</Label>
-                                        <p className="text-xs text-muted-foreground font-medium">Add quantity discounts (e.g. Buy 2 get 10% off).</p>
+                                        <Label className="text-base font-bold">{t('offerDetails.volumeDiscount.heading')}</Label>
+                                        <p className="text-xs text-muted-foreground font-medium">{t('offerDetails.volumeDiscount.desc')}</p>
                                     </div>
-                                    <Button 
-                                        type="button" 
-                                        variant="outline" 
+                                    <Button
+                                        type="button"
+                                        variant="outline"
                                         size="sm"
                                         onClick={() => setVolumeTiers(p => [...p, { quantity: p.length + 2, discountType: 'percentage', discountValue: 10 }])}
                                         className="rounded-full h-9 px-4 font-bold text-xs uppercase"
                                     >
-                                        + Add Tier
+                                        {t('offerDetails.volumeDiscount.addTier')}
                                     </Button>
                                 </div>
 
@@ -735,8 +738,8 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                     {volumeTiers.map((tier, idx) => (
                                         <div key={idx} className="flex gap-4 items-end border p-4 rounded-2xl bg-muted/25">
                                             <div className="flex-1 space-y-1">
-                                                <Label className="text-xs">Min Quantity</Label>
-                                                <Input 
+                                                <Label className="text-xs">{t('offerDetails.volumeDiscount.minQuantity')}</Label>
+                                                <Input
                                                     type="number"
                                                     value={tier.quantity}
                                                     onChange={(e) => {
@@ -748,8 +751,8 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                                 />
                                             </div>
                                             <div className="flex-1 space-y-1">
-                                                <Label className="text-xs">Discount Type</Label>
-                                                <select 
+                                                <Label className="text-xs">{t('offerDetails.volumeDiscount.discountType')}</Label>
+                                                <select
                                                     value={tier.discountType}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
@@ -757,13 +760,13 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                                     }}
                                                     className="w-full h-11 rounded-md border border-input bg-background px-3"
                                                 >
-                                                    <option value="percentage">% Off</option>
-                                                    <option value="fixed">Fixed Amount Off</option>
+                                                    <option value="percentage">{t('offerDetails.discountTypes.percentage')}</option>
+                                                    <option value="fixed">{t('offerDetails.discountTypes.fixed')}</option>
                                                 </select>
                                             </div>
                                             <div className="flex-1 space-y-1">
-                                                <Label className="text-xs">Discount Value</Label>
-                                                <Input 
+                                                <Label className="text-xs">{t('offerDetails.volumeDiscount.discountValue')}</Label>
+                                                <Input
                                                     type="number"
                                                     value={tier.discountValue}
                                                     onChange={(e) => {
@@ -775,14 +778,14 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                                 />
                                             </div>
                                             {volumeTiers.length > 1 && (
-                                                <Button 
-                                                    type="button" 
-                                                    variant="ghost" 
-                                                    size="sm" 
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
                                                     className="text-rose-500 hover:text-rose-700 font-bold uppercase text-[10px] h-11 px-2"
                                                     onClick={() => setVolumeTiers(p => p.filter((_, i) => i !== idx))}
                                                 >
-                                                    Delete
+                                                    {t('offerDetails.volumeDiscount.delete')}
                                                 </Button>
                                             )}
                                         </div>
@@ -794,7 +797,7 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                         {formData.type === 'cart_threshold' && (
                             <div className="space-y-6 animate-in fade-in duration-300">
                                 <div className="space-y-2">
-                                    <Label className="text-base font-bold">Minimum Subtotal Threshold (EGP)</Label>
+                                    <Label className="text-base font-bold">{t('offerDetails.cartThreshold.minSubtotalLabel')}</Label>
                                     <Input
                                         type="number"
                                         value={thresholdConfig.minSubtotal}
@@ -802,11 +805,11 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                         className="h-12"
                                         min="1"
                                     />
-                                    <p className="text-xs text-muted-foreground font-medium font-bold">Offers rewards when the customer's cart subtotal exceeds this amount.</p>
+                                    <p className="text-xs text-muted-foreground font-medium font-bold">{t('offerDetails.cartThreshold.minSubtotalDesc')}</p>
                                 </div>
 
                                 <div className="space-y-4 border-t pt-4">
-                                    <Label className="text-base font-bold">Reward Product / Free Gift</Label>
+                                    <Label className="text-base font-bold">{t('offerDetails.cartThreshold.rewardProductLabel')}</Label>
                                     <ProductSelector
                                         storeId={storeId}
                                         selectedProduct={thresholdRewardProduct}
@@ -818,11 +821,11 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                             setThresholdRewardProduct(null);
                                             setThresholdConfig(p => ({ ...p, rewardProductId: '' }));
                                         }}
-                                        placeholder="Search reward product..."
+                                        placeholder={t('offerDetails.cartThreshold.searchRewardPlaceholder')}
                                     />
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label>Reward Quantity</Label>
+                                            <Label>{t('offerDetails.cartThreshold.rewardQty')}</Label>
                                             <Input
                                                 type="number"
                                                 value={thresholdConfig.rewardQuantity}
@@ -832,20 +835,20 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Reward Discount Type</Label>
+                                            <Label>{t('offerDetails.cartThreshold.rewardDiscountType')}</Label>
                                             <select
                                                 value={thresholdConfig.discountType}
                                                 onChange={(e) => setThresholdConfig(p => ({ ...p, discountType: e.target.value }))}
                                                 className="w-full h-11 rounded-md border border-input bg-background px-3"
                                             >
-                                                <option value="percentage">% Off</option>
-                                                <option value="fixed">Fixed Amount Off</option>
-                                                <option value="override">Override Price To</option>
+                                                <option value="percentage">{t('offerDetails.discountTypes.percentage')}</option>
+                                                <option value="fixed">{t('offerDetails.discountTypes.fixed')}</option>
+                                                <option value="override">{t('offerDetails.discountTypes.override')}</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Reward Discount Value (use 100 for 100% free gift)</Label>
+                                        <Label>{t('offerDetails.cartThreshold.rewardDiscountValue')}</Label>
                                         <Input
                                             type="number"
                                             value={thresholdConfig.discountValue}
@@ -861,38 +864,38 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
 
                 {step === 3 && (
                     <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                        <h2 className="text-2xl font-bold">Customer Facing Display</h2>
-                        
+                        <h2 className="text-2xl font-bold">{t('display.heading')}</h2>
+
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Headline / Title</Label>
-                                <Input 
+                                <Label>{t('display.headline')}</Label>
+                                <Input
                                     value={formData.displayTitle}
                                     onChange={(e) => updateForm('displayTitle', e.target.value)}
                                     className="h-12"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>Subtitle (Optional)</Label>
-                                <Input 
+                                <Label>{t('display.subtitle')}</Label>
+                                <Input
                                     value={formData.displaySubtitle}
                                     onChange={(e) => updateForm('displaySubtitle', e.target.value)}
                                     className="h-12"
                                 />
                             </div>
-                            
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Accept Button Text</Label>
-                                    <Input 
+                                    <Label>{t('display.acceptButtonText')}</Label>
+                                    <Input
                                         value={formData.callToActionText}
                                         onChange={(e) => updateForm('callToActionText', e.target.value)}
                                         className="h-12"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Decline Button Text</Label>
-                                    <Input 
+                                    <Label>{t('display.declineButtonText')}</Label>
+                                    <Input
                                         value={formData.declineText}
                                         onChange={(e) => updateForm('declineText', e.target.value)}
                                         className="h-12"
@@ -905,30 +908,30 @@ export default function NewCampaignWizard({ params }: { params: Promise<{ storeI
 
                 {/* Footer Controls */}
                 <div className="flex justify-between mt-12 pt-8 border-t">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         onClick={() => setStep(s => Math.max(1, s - 1))}
                         disabled={step === 1 || isLoading}
                         className="h-12 px-6"
                     >
-                        Back
+                        {t('back')}
                     </Button>
 
                     {step < 3 ? (
-                        <Button 
+                        <Button
                             onClick={() => setStep(s => Math.min(3, s + 1))}
                             className="h-12 px-8 rounded-full"
                         >
-                            Next Step <ArrowRight className="ml-2 w-4 h-4" />
+                            {t('nextStep')} <ArrowRight className="ml-2 w-4 h-4 rtl:mr-2 rtl:ml-0 rtl:rotate-180" />
                         </Button>
                     ) : (
-                        <Button 
+                        <Button
                             onClick={handleSubmit}
                             disabled={isLoading}
                             className="h-12 px-8 rounded-full bg-primary hover:bg-primary/90"
                         >
-                            {isLoading ? 'Creating...' : (
-                                <><Save className="mr-2 w-4 h-4" /> Publish Campaign</>
+                            {isLoading ? t('creating') : (
+                                <><Save className="mr-2 rtl:ml-2 rtl:mr-0 w-4 h-4" /> {t('publishCampaign')}</>
                             )}
                         </Button>
                     )}

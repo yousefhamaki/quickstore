@@ -597,6 +597,184 @@
             "googleDesc": "حلل حركة المرور في موقعك وسلوك المستخدمين.",
             "tiktokDesc": "تتبع التحويلات لإعلانات تيك توك الخاصة بك.",
             "snapchatDesc": "قس تأثير حملات سناب شات الخاصة بك."
+        },
+        "offers": {
+            "list": {
+                "title": "عروض التحويل",
+                "subtitle": "زد متوسط قيمة الطلب عبر عروض الترقية والبيع التكميلي والبيع التنازلي",
+                "create": "إنشاء حملة",
+                "proGateTitle": "افتح ميزات التحويل المتقدمة",
+                "proGateDesc": "عروض الترقية والبيع التكميلي والبيع التنازلي عند مغادرة الصفحة متاحة في باقة Professional Plus.",
+                "upgradeBtn": "الترقية إلى Pro",
+                "emptyTitle": "لا توجد حملات بعد",
+                "emptyDesc": "أنشئ أول عرض ترقية أو بيع تكميلي لبدء زيادة الإيرادات لكل زائر.",
+                "columnName": "اسم الحملة",
+                "columnType": "النوع",
+                "columnStatus": "الحالة",
+                "columnViews": "المشاهدات",
+                "columnAccepts": "القبول",
+                "columnRevenue": "الإيرادات",
+                "columnActions": "الإجراءات",
+                "copyLink": "نسخ الرابط",
+                "linkCopied": "تم نسخ رابط صفحة العرض إلى الحافظة!",
+                "pause": "إيقاف مؤقت",
+                "activate": "تفعيل",
+                "types": {
+                    "upsell": "ترقية",
+                    "cross_sell": "بيع تكميلي",
+                    "down_sell": "بيع تنازلي",
+                    "volume_discount": "خصم الكمية",
+                    "bogo": "اشترِ واحصل (BOGO)",
+                    "cart_threshold": "حد سلة التسوق",
+                    "offer_page": "صفحة العرض"
+                },
+                "statuses": {
+                    "draft": "مسودة",
+                    "active": "نشط",
+                    "paused": "متوقف مؤقتاً",
+                    "expired": "منتهي",
+                    "archived": "مؤرشف"
+                },
+                "triggerEvents": {
+                    "product_page": "صفحة المنتج",
+                    "cart_view": "عرض السلة",
+                    "checkout_start": "بدء الدفع",
+                    "checkout_abandon": "نية الخروج",
+                    "post_purchase": "بعد الشراء"
+                }
+            },
+            "form": {
+                "newTitle": "حملة جديدة",
+                "newSubtitle": "أنشئ عرضاً محسّناً لزيادة التحويلات",
+                "editTitle": "تعديل الحملة",
+                "editSubtitle": "عدّل إعدادات العرض المحسّن للتحويلات",
+                "loadingCampaign": "جاري تحميل تفاصيل الحملة...",
+                "stepBasics": "الأساسيات",
+                "stepOfferDetails": "تفاصيل العرض",
+                "stepDisplay": "العرض المرئي",
+                "back": "رجوع",
+                "nextStep": "الخطوة التالية",
+                "creating": "جاري الإنشاء...",
+                "publishCampaign": "نشر الحملة",
+                "saving": "جاري الحفظ...",
+                "saveChanges": "حفظ تغييرات الحملة",
+                "createSuccess": "تم إنشاء الحملة بنجاح!",
+                "createError": "فشل إنشاء الحملة",
+                "updateSuccess": "تم تحديث الحملة بنجاح!",
+                "updateError": "فشل تحديث الحملة",
+                "loadError": "فشل تحميل بيانات الحملة",
+                "basics": {
+                    "heading": "أساسيات الحملة",
+                    "campaignName": "اسم الحملة (داخلي)",
+                    "campaignNamePlaceholder": "مثلاً: عرض ترقية الصيف عند الدفع",
+                    "offerType": "نوع العرض",
+                    "placement": "مكان الظهور",
+                    "triggerEvent": "حدث التشغيل",
+                    "priorityGroup": "مجموعة الأولوية",
+                    "priorityLevel": "مستوى الأولوية (رقمي)",
+                    "priorityPlaceholder": "مثلاً: 100",
+                    "allowStacking": "السماح بالتراكم",
+                    "allowStackingDesc": "يسمح بتطبيق حملات أخرى جنباً إلى جنب مع هذه الحملة.",
+                    "exclusiveCampaign": "حملة حصرية",
+                    "exclusiveCampaignDesc": "تعطّل جميع الحملات الأخرى إذا تحققت شروط هذه الحملة.",
+                    "types": {
+                        "upsell": "ترقية (تحسين/استبدال)",
+                        "cross_sell": "بيع تكميلي (إضافة)",
+                        "down_sell": "بيع تنازلي (بديل)",
+                        "volume_discount": "خصم الكمية (مستويات)",
+                        "bogo": "BOGO (اشترِ X واحصل على Y)",
+                        "cart_threshold": "عرض ترويجي لحد سلة التسوق",
+                        "offer_page": "صفحة العرض (دفع مباشر ومستويات أسعار)"
+                    },
+                    "placements": {
+                        "product_page": "صفحة المنتج",
+                        "cart": "سلة التسوق (لوحة/صفحة)",
+                        "checkout": "عملية الدفع",
+                        "post_purchase": "عرض بعد الشراء",
+                        "standalone": "صفحة هبوط مستقلة"
+                    },
+                    "priorityGroups": {
+                        "critical": "حرجة (تُقيَّم أولاً دائماً)",
+                        "high": "مرتفعة",
+                        "normal": "عادية",
+                        "low": "منخفضة (تُقيَّم أخيراً)"
+                    },
+                    "triggerEvents": {
+                        "product_page": "عند تحميل صفحة المنتج",
+                        "cart_view": "عند عرض السلة",
+                        "checkout_start": "عند بدء الدفع",
+                        "checkout_abandon": "عند نية مغادرة الصفحة",
+                        "post_purchase": "بعد الشراء"
+                    }
+                },
+                "offerDetails": {
+                    "heading": "إعدادات العرض",
+                    "offerProduct": "منتج العرض",
+                    "selectProductPlaceholder": "اختر منتج الحملة...",
+                    "searchProductPlaceholder": "ابحث عن منتج بالاسم...",
+                    "removeProduct": "إزالة",
+                    "noProductsFound": "لم يتم العثور على منتجات",
+                    "discountType": "نوع الخصم",
+                    "discountValue": "قيمة الخصم",
+                    "discountTypes": {
+                        "percentage": "نسبة مئوية %",
+                        "fixed": "مبلغ ثابت",
+                        "override": "تجاوز السعر إلى",
+                        "none": "بدون خصم"
+                    },
+                    "offerPage": {
+                        "pricingTiersLabel": "مستويات التسعير (باقات مصر)",
+                        "pricingTiersDesc": "حدد إجمالي سعر الباقة لكل كمية.",
+                        "addTier": "+ إضافة مستوى",
+                        "quantity": "الكمية",
+                        "quantityPlaceholder": "الكمية",
+                        "totalPrice": "السعر الإجمالي (ج.م)",
+                        "totalPricePlaceholder": "السعر الإجمالي",
+                        "delete": "حذف",
+                        "shippingFeeLabel": "رسوم شحن مخصصة (ج.م) - اختياري",
+                        "shippingFeePlaceholder": "مثلاً: 20 (اتركه فارغاً لاستخدام الإعداد الافتراضي للمتجر)"
+                    },
+                    "bogo": {
+                        "buyTrigger": "1. منتج الشراء المُحفِّز",
+                        "searchTriggerPlaceholder": "ابحث عن المنتج المُحفِّز...",
+                        "requiredTriggerQty": "الكمية المطلوبة للتحفيز",
+                        "getReward": "2. منتج المكافأة",
+                        "searchRewardPlaceholder": "ابحث عن منتج المكافأة...",
+                        "rewardQty": "كمية المكافأة",
+                        "rewardDiscountType": "نوع خصم المكافأة",
+                        "rewardDiscountValue": "قيمة خصم المكافأة (استخدم 100 لهدية مجانية بالكامل)"
+                    },
+                    "volumeDiscount": {
+                        "heading": "مستويات خصم الكمية",
+                        "desc": "أضف خصومات حسب الكمية (مثلاً: اشترِ 2 واحصل على خصم 10%).",
+                        "addTier": "+ إضافة مستوى",
+                        "minQuantity": "الحد الأدنى للكمية",
+                        "discountType": "نوع الخصم",
+                        "discountValue": "قيمة الخصم",
+                        "delete": "حذف"
+                    },
+                    "cartThreshold": {
+                        "minSubtotalLabel": "الحد الأدنى لإجمالي السلة (ج.م)",
+                        "minSubtotalDesc": "يمنح مكافآت عندما يتجاوز إجمالي سلة العميل هذا المبلغ.",
+                        "rewardProductLabel": "منتج المكافأة / الهدية المجانية",
+                        "searchRewardPlaceholder": "ابحث عن منتج المكافأة...",
+                        "rewardQty": "كمية المكافأة",
+                        "rewardDiscountType": "نوع خصم المكافأة",
+                        "rewardDiscountValue": "قيمة خصم المكافأة (استخدم 100 لهدية مجانية بالكامل)"
+                    }
+                },
+                "display": {
+                    "heading": "العرض الظاهر للعميل",
+                    "headline": "العنوان الرئيسي",
+                    "subtitle": "العنوان الفرعي (اختياري)",
+                    "acceptButtonText": "نص زر القبول",
+                    "declineButtonText": "نص زر الرفض",
+                    "defaultHeadline": "قم بترقية طلبك",
+                    "defaultSubtitle": "عرض خاص لمرة واحدة",
+                    "defaultAcceptText": "نعم، أضفه إلى طلبي",
+                    "defaultDeclineText": "لا شكراً"
+                }
+            }
         }
     }
 }

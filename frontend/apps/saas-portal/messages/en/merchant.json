@@ -597,6 +597,184 @@
             "googleDesc": "Analyze your website traffic and user behavior.",
             "tiktokDesc": "Track conversions for your TikTok ads.",
             "snapchatDesc": "Measure the impact of your Snapchat campaigns."
+        },
+        "offers": {
+            "list": {
+                "title": "Conversion Offers",
+                "subtitle": "Boost your Average Order Value with Upsells, Cross-sells, and Down-sells",
+                "create": "Create Campaign",
+                "proGateTitle": "Unlock Advanced Conversions",
+                "proGateDesc": "Upsells, Cross-sells, and Exit-Intent Down-sells are available on the Professional Plus plan.",
+                "upgradeBtn": "Upgrade to Pro",
+                "emptyTitle": "No campaigns yet",
+                "emptyDesc": "Create your first Upsell or Cross-sell to start maximizing revenue per visitor.",
+                "columnName": "Campaign Name",
+                "columnType": "Type",
+                "columnStatus": "Status",
+                "columnViews": "Views",
+                "columnAccepts": "Accepts",
+                "columnRevenue": "Revenue",
+                "columnActions": "Actions",
+                "copyLink": "Copy Link",
+                "linkCopied": "Offer Page URL copied to clipboard!",
+                "pause": "Pause",
+                "activate": "Activate",
+                "types": {
+                    "upsell": "Upsell",
+                    "cross_sell": "Cross-sell",
+                    "down_sell": "Down-sell",
+                    "volume_discount": "Volume Discount",
+                    "bogo": "BOGO",
+                    "cart_threshold": "Cart Threshold",
+                    "offer_page": "Offer Page"
+                },
+                "statuses": {
+                    "draft": "Draft",
+                    "active": "Active",
+                    "paused": "Paused",
+                    "expired": "Expired",
+                    "archived": "Archived"
+                },
+                "triggerEvents": {
+                    "product_page": "Product Page",
+                    "cart_view": "Cart View",
+                    "checkout_start": "Checkout Start",
+                    "checkout_abandon": "Exit Intent",
+                    "post_purchase": "Post Purchase"
+                }
+            },
+            "form": {
+                "newTitle": "New Campaign",
+                "newSubtitle": "Create a conversion-optimized offer",
+                "editTitle": "Edit Campaign",
+                "editSubtitle": "Modify conversion-optimized settings",
+                "loadingCampaign": "Loading campaign details...",
+                "stepBasics": "Basics",
+                "stepOfferDetails": "Offer details",
+                "stepDisplay": "Display",
+                "back": "Back",
+                "nextStep": "Next Step",
+                "creating": "Creating...",
+                "publishCampaign": "Publish Campaign",
+                "saving": "Saving...",
+                "saveChanges": "Save Campaign Changes",
+                "createSuccess": "Campaign created successfully!",
+                "createError": "Failed to create campaign",
+                "updateSuccess": "Campaign updated successfully!",
+                "updateError": "Failed to update campaign",
+                "loadError": "Failed to load campaign data",
+                "basics": {
+                    "heading": "Campaign Basics",
+                    "campaignName": "Campaign Name (Internal)",
+                    "campaignNamePlaceholder": "e.g. Summer Checkout Upsell",
+                    "offerType": "Offer Type",
+                    "placement": "Placement",
+                    "triggerEvent": "Trigger Event",
+                    "priorityGroup": "Priority Group",
+                    "priorityLevel": "Priority Level (numeric)",
+                    "priorityPlaceholder": "e.g. 100",
+                    "allowStacking": "Allow Stacking",
+                    "allowStackingDesc": "Allows other campaigns to apply alongside this one.",
+                    "exclusiveCampaign": "Exclusive Campaign",
+                    "exclusiveCampaignDesc": "Disables all other campaigns if this campaign qualifies.",
+                    "types": {
+                        "upsell": "Upsell (Upgrade/Replace)",
+                        "cross_sell": "Cross-sell (Add-on)",
+                        "down_sell": "Down-sell (Alternative)",
+                        "volume_discount": "Volume Discount (Tiers)",
+                        "bogo": "BOGO (Buy X Get Y)",
+                        "cart_threshold": "Cart Threshold Promotion",
+                        "offer_page": "Offer Page (Direct Checkout & Tiers)"
+                    },
+                    "placements": {
+                        "product_page": "Product Page",
+                        "cart": "Cart Drawer/Page",
+                        "checkout": "Checkout Flow",
+                        "post_purchase": "Post Purchase Offer",
+                        "standalone": "Standalone Landing Page"
+                    },
+                    "priorityGroups": {
+                        "critical": "Critical (Always Evaluated First)",
+                        "high": "High",
+                        "normal": "Normal",
+                        "low": "Low (Evaluated Last)"
+                    },
+                    "triggerEvents": {
+                        "product_page": "On Product Page Load",
+                        "cart_view": "On Cart View",
+                        "checkout_start": "On Checkout Start",
+                        "checkout_abandon": "On Exit Intent",
+                        "post_purchase": "Post Purchase"
+                    }
+                },
+                "offerDetails": {
+                    "heading": "Offer Configuration",
+                    "offerProduct": "Offer Product",
+                    "selectProductPlaceholder": "Select campaign product...",
+                    "searchProductPlaceholder": "Search product by name...",
+                    "removeProduct": "Remove",
+                    "noProductsFound": "No products found",
+                    "discountType": "Discount Type",
+                    "discountValue": "Discount Value",
+                    "discountTypes": {
+                        "percentage": "% Off",
+                        "fixed": "Fixed Amount Off",
+                        "override": "Override Price To",
+                        "none": "No Discount"
+                    },
+                    "offerPage": {
+                        "pricingTiersLabel": "Pricing Tiers (Egypt Bundles)",
+                        "pricingTiersDesc": "Set total bundle prices for each quantity.",
+                        "addTier": "+ Add Tier",
+                        "quantity": "Quantity",
+                        "quantityPlaceholder": "Qty",
+                        "totalPrice": "Total Price (EGP)",
+                        "totalPricePlaceholder": "Total Price",
+                        "delete": "Delete",
+                        "shippingFeeLabel": "Custom Shipping Fee Override (EGP) - Optional",
+                        "shippingFeePlaceholder": "e.g. 20 (leave empty to use store default)"
+                    },
+                    "bogo": {
+                        "buyTrigger": "1. Buy Trigger Product",
+                        "searchTriggerPlaceholder": "Search trigger product...",
+                        "requiredTriggerQty": "Required Trigger Quantity",
+                        "getReward": "2. Get Reward Product",
+                        "searchRewardPlaceholder": "Search reward product...",
+                        "rewardQty": "Reward Quantity",
+                        "rewardDiscountType": "Reward Discount Type",
+                        "rewardDiscountValue": "Reward Discount Value (use 100 for 100% free gift)"
+                    },
+                    "volumeDiscount": {
+                        "heading": "Volume Discount Tiers",
+                        "desc": "Add quantity discounts (e.g. Buy 2 get 10% off).",
+                        "addTier": "+ Add Tier",
+                        "minQuantity": "Min Quantity",
+                        "discountType": "Discount Type",
+                        "discountValue": "Discount Value",
+                        "delete": "Delete"
+                    },
+                    "cartThreshold": {
+                        "minSubtotalLabel": "Minimum Subtotal Threshold (EGP)",
+                        "minSubtotalDesc": "Offers rewards when the customer's cart subtotal exceeds this amount.",
+                        "rewardProductLabel": "Reward Product / Free Gift",
+                        "searchRewardPlaceholder": "Search reward product...",
+                        "rewardQty": "Reward Quantity",
+                        "rewardDiscountType": "Reward Discount Type",
+                        "rewardDiscountValue": "Reward Discount Value (use 100 for 100% free gift)"
+                    }
+                },
+                "display": {
+                    "heading": "Customer Facing Display",
+                    "headline": "Headline / Title",
+                    "subtitle": "Subtitle (Optional)",
+                    "acceptButtonText": "Accept Button Text",
+                    "declineButtonText": "Decline Button Text",
+                    "defaultHeadline": "Upgrade Your Order",
+                    "defaultSubtitle": "Special one-time offer",
+                    "defaultAcceptText": "Yes, add to my order",
+                    "defaultDeclineText": "No thanks"
+                }
+            }
         }
     }
 }
