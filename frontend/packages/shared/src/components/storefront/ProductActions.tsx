@@ -15,7 +15,22 @@ import { flyToCart } from "@shared/lib/flyToCart";
 export function ProductActions({ product }: { product: any }) {
     const t = useTranslations('store.product');
     const [quantity, setQuantity] = useState(1);
-    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+    // Default to a real variant combination on load (first in-stock one when
+    // stock is tracked, else just the first) rather than leaving every
+    // option unselected — with nothing picked, the price/charge silently
+    // stays at the base product price until a shopper has clicked EVERY
+    // option axis, which reads as "the variant price doesn't work" even
+    // though it's just waiting on the rest of the selection.
+    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
+        if (!product.options?.length || !product.variants?.length) return {};
+        const activeVariants = product.variants.filter((v: any) => !v.isDeleted);
+        if (activeVariants.length === 0) return {};
+        const inStockVariant = product.trackInventory
+            ? activeVariants.find((v: any) => (v.inventory || 0) - (v.reserved || 0) > 0)
+            : null;
+        const defaultVariant = inStockVariant || activeVariants[0];
+        return { ...defaultVariant.options };
+    });
     const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>([]);
     const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
     const { addToCart, updateQuantity, removeFromCart, cart } = useCart();
