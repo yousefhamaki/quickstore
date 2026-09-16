@@ -215,6 +215,44 @@ export interface ISEOSettings {
     sitemapEnabled: boolean;
 }
 
+/**
+ * Storewide sale — a single active discount applied to every product's
+ * otherwise-charged price (base price, or a selected variant's own price
+ * when it has one), except products in `excludedCategoryIds`. See
+ * utils/storeSale.ts for the single shared computation used by both the
+ * public product read paths (publicController.ts) and the authoritative
+ * checkout price resolution (publicOrderController.createPublicOrder) — so
+ * what the storefront displays always matches what's actually charged.
+ * `startAt`/`endAt` are optional; when unset the sale is purely
+ * `enabled`-gated (always on/off, no schedule window).
+ */
+export interface IStoreSaleSettings {
+    enabled: boolean;
+    type: 'percentage' | 'fixed';
+    value: number;
+    startAt?: Date;
+    endAt?: Date;
+    excludedCategoryIds: mongoose.Types.ObjectId[];
+}
+
+/**
+ * Post-delivery personal voucher — automatically generated and emailed to
+ * a customer the FIRST time one of their orders reaches 'delivered' (see
+ * orderController.updateOrderStatus's one-time side effect, guarded by
+ * Order.voucherIssued the same way refundSideEffectsApplied guards its own
+ * one-time logic). `minOrderAmountToTrigger` of 0/undefined means every
+ * delivered order qualifies. The generated Coupon is scoped to that one
+ * customer via Coupon.restrictedToCustomerEmail and expires `expiresInDays`
+ * after issuance.
+ */
+export interface IPostPurchaseVoucherSettings {
+    enabled: boolean;
+    type: 'percentage' | 'fixed';
+    value: number;
+    minOrderAmountToTrigger?: number;
+    expiresInDays: number;
+}
+
 export interface IStoreSettings {
     currency: string;
     language: string;
@@ -227,6 +265,8 @@ export interface IStoreSettings {
     emailSender: IEmailSenderSettings;
     whatsappNotifications: IWhatsAppNotificationSettings;
     marketing: IMarketingSettings;
+    storeSale: IStoreSaleSettings;
+    postPurchaseVoucher: IPostPurchaseVoucherSettings;
 }
 
 /**
@@ -525,6 +565,23 @@ const StoreSchema: Schema = new Schema(
                     },
                     defaultMessage: { type: String, default: 'Check out this amazing product!' }
                 }
+            },
+
+            storeSale: {
+                enabled: { type: Boolean, default: false },
+                type: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
+                value: { type: Number, default: 0 },
+                startAt: { type: Date },
+                endAt: { type: Date },
+                excludedCategoryIds: [{ type: Schema.Types.ObjectId, ref: 'Category' }]
+            },
+
+            postPurchaseVoucher: {
+                enabled: { type: Boolean, default: false },
+                type: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
+                value: { type: Number, default: 0 },
+                minOrderAmountToTrigger: { type: Number, default: 0 },
+                expiresInDays: { type: Number, default: 30 }
             }
         },
 

@@ -30,7 +30,7 @@ export const getCoupons = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const createCoupon = async (req: AuthRequest, res: Response) => {
     try {
-        const { storeId, code, type, value, maxUsage, expiresAt, minOrderAmount } = req.body;
+        const { storeId, code, type, value, maxUsage, expiresAt, minOrderAmount, autoApply } = req.body;
 
         const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
         if (!store) {
@@ -45,6 +45,11 @@ export const createCoupon = async (req: AuthRequest, res: Response) => {
             maxUsage,
             expiresAt,
             minOrderAmount,
+            // restrictedToCustomerEmail is intentionally NOT accepted here —
+            // that field is only ever set by the system itself when issuing a
+            // post-purchase personal voucher (see orderController's
+            // updateOrderStatus), never by a merchant through this form.
+            autoApply: !!autoApply,
             isActive: true
         });
 
@@ -74,7 +79,16 @@ export const updateCoupon = async (req: AuthRequest, res: Response) => {
 
         const updatedCoupon = await Coupon.findByIdAndUpdate(
             req.params.id,
-            { ...req.body, storeId: undefined, code: req.body.code?.toUpperCase() },
+            {
+                ...req.body,
+                storeId: undefined,
+                code: req.body.code?.toUpperCase(),
+                // restrictedToCustomerEmail is system-only (post-purchase
+                // voucher issuance) — never editable through this merchant
+                // endpoint, even though the rest of the body is otherwise
+                // trusted/spread as-is.
+                restrictedToCustomerEmail: coupon.restrictedToCustomerEmail
+            },
             { new: true }
         );
 

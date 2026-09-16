@@ -140,7 +140,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         },
         offers: {
             "@type": "Offer",
-            price: product.price,
+            price: product.effectivePrice ?? product.price,
             priceCurrency: store.settings?.currency || 'EGP',
             availability: `https://schema.org/${availability}`,
             url: `${productBaseUrl}/products/${product._id}`,
@@ -323,7 +323,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
                                     <div className="px-2 space-y-1">
                                         <h3 className="font-bold text-lg group-hover:text-primary transition-colors duration-300">{p.name}</h3>
                                         <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">{p.category}</p>
-                                        <p className="text-lg font-black mt-2">EGP {p.price.toLocaleString()}</p>
+                                        <div className="flex items-baseline gap-2 mt-2">
+                                            <p className={`text-lg font-black ${p.onSale ? 'text-red-600' : ''}`}>
+                                                EGP {(p.effectivePrice ?? p.price).toLocaleString()}
+                                            </p>
+                                            {p.onSale && typeof p.effectiveCompareAtPrice === 'number' && (
+                                                <p className="text-xs font-bold text-gray-400 line-through">
+                                                    EGP {p.effectiveCompareAtPrice.toLocaleString()}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </Link>
                             ))}

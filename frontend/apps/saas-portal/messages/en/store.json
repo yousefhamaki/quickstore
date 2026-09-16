@@ -13,7 +13,8 @@
         "viewDetails": "View Details",
         "specifications": "Specifications",
         "extras": "Extras",
-        "total": "Total"
+        "total": "Total",
+        "onSale": "Sale"
     },
     "home": {
         "welcome": "Welcome to",
@@ -46,6 +47,11 @@
         "placeOrder": "Place Order",
         "processing": "Processing...",
         "goBack": "Go Back",
+        "couponPlaceholder": "Coupon Code",
+        "applyCoupon": "Apply",
+        "applied": "Applied",
+        "autoApplied": "auto-applied",
+        "discount": "Discount",
         "form": {
             "firstName": "First Name",
             "lastName": "Last Name",
@@ -63,7 +69,10 @@
         },
         "messages": {
             "success": "Order placed successfully!",
-            "error": "Failed to place order. Please try again."
+            "error": "Failed to place order. Please try again.",
+            "couponApplied": "Coupon applied!",
+            "couponRemoved": "Coupon removed",
+            "minAmount": "This coupon requires a minimum order of EGP {amount}"
         }
     },
     "storeContact": {

@@ -18,7 +18,8 @@ import {
     Lock,
     Sparkles,
     Loader2,
-    Globe
+    Globe,
+    Tag
 } from "lucide-react";
 import { useFeatureAccess } from "@shared/hooks/useFeatureAccess";
 import { useRouter } from "next/navigation";
@@ -142,6 +143,26 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                             onClick={() => router.push(`/dashboard/stores/${storeId}/marketing/coupons`)}
                         >
                             Manage Coupons
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Storewide Sale & Thank-You Voucher */}
+                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative">
+                    <CardHeader className="bg-muted/30 border-b p-6">
+                        <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                            <Tag className="w-6 h-6" />
+                        </div>
+                        <CardTitle className="text-xl font-black uppercase tracking-tight">Storewide Sale</CardTitle>
+                        <CardDescription className="font-medium">Run a site-wide discount and auto-reward customers after delivery.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        <Button
+                            className="w-full rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
+                            variant="outline"
+                            onClick={() => router.push(`/dashboard/stores/${storeId}/marketing/sale`)}
+                        >
+                            Configure Sale &amp; Voucher
                         </Button>
                     </CardContent>
                 </Card>

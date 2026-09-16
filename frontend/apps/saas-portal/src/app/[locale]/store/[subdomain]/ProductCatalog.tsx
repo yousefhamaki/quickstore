@@ -130,7 +130,20 @@ export default function ProductCatalog({ products, categories: realCategories, c
                                                 <span className="text-[10px] text-gray-400 font-bold">({product.ratingCount})</span>
                                             </div>
                                         )}
-                                        <p className="text-lg font-black mt-2">EGP {(product.price ?? 0).toLocaleString()}</p>
+                                        {/* effectivePrice/effectiveCompareAtPrice come from the
+                                            backend's storewide-sale decoration (see
+                                            publicController.ts) — falls back to the raw price
+                                            for any product shape that predates it. */}
+                                        <div className="flex items-baseline gap-2 mt-2">
+                                            <p className={`text-lg font-black ${product.onSale ? 'text-red-600' : ''}`}>
+                                                EGP {(product.effectivePrice ?? product.price ?? 0).toLocaleString()}
+                                            </p>
+                                            {product.onSale && typeof product.effectiveCompareAtPrice === 'number' && (
+                                                <p className="text-xs font-bold text-gray-400 line-through">
+                                                    EGP {product.effectiveCompareAtPrice.toLocaleString()}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </Link>
                             </motion.div>

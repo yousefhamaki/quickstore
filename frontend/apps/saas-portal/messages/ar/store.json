@@ -13,7 +13,8 @@
         "viewDetails": "عرض التفاصيل",
         "specifications": "المواصفات",
         "extras": "إضافات",
-        "total": "الإجمالي"
+        "total": "الإجمالي",
+        "onSale": "تخفيض"
     },
     "home": {
         "welcome": "مرحباً بكم في",
@@ -46,6 +47,11 @@
         "placeOrder": "إتمام الطلب",
         "processing": "جاري المعالجة...",
         "goBack": "العودة",
+        "couponPlaceholder": "كود الخصم",
+        "applyCoupon": "تطبيق",
+        "applied": "تم التطبيق",
+        "autoApplied": "مُطبّق تلقائياً",
+        "discount": "الخصم",
         "form": {
             "firstName": "الاسم الأول",
             "lastName": "اسم العائلة",
@@ -63,7 +69,10 @@
         },
         "messages": {
             "success": "تم تقديم الطلب بنجاح!",
-            "error": "فشل تقديم الطلب. يرجى المحاولة مرة أخرى."
+            "error": "فشل تقديم الطلب. يرجى المحاولة مرة أخرى.",
+            "couponApplied": "تم تطبيق الكوبون!",
+            "couponRemoved": "تمت إزالة الكوبون",
+            "minAmount": "يتطلب هذا الكوبون حد أدنى للطلب قدره {amount} جنيه"
         }
     },
     "storeContact": {

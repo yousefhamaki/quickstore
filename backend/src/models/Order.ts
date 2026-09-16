@@ -152,6 +152,14 @@ export interface IOrder extends Document {
      * for even though those are shared with this same transition.
      */
     refundSideEffectsApplied?: boolean;
+    /**
+     * Set the first time this order transitions into 'delivered' — guards
+     * the post-purchase personal voucher issuance (see
+     * orderController.updateOrderStatus) so a merchant re-saving/toggling
+     * status back and forth never generates more than one voucher per
+     * order. Same one-time-side-effect pattern as refundSideEffectsApplied.
+     */
+    voucherIssued?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -282,6 +290,7 @@ const OrderSchema: Schema = new Schema(
         refundedAmount: { type: Number, default: 0 },
         feeReversedAmount: { type: Number, default: 0 },
         refundSideEffectsApplied: { type: Boolean, default: false },
+        voucherIssued: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

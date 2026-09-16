@@ -11,6 +11,10 @@ export interface Coupon {
     minOrderAmount?: number;
     expiresAt?: string;
     isActive: boolean;
+    /** Auto-applied at checkout with no code entry — see the storefront checkout page. */
+    autoApply?: boolean;
+    /** Set only on a system-issued personal voucher (post-purchase) — read-only, never set by this dashboard's coupon form. */
+    restrictedToCustomerEmail?: string;
 }
 
 export interface SocialSharingSettings {

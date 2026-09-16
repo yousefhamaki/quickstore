@@ -97,12 +97,21 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
         // price — mirrors the server-side pricing-integrity fix in
         // publicOrderController.createPublicOrder, which independently
         // re-derives the same authoritative price at order-creation time.
+        //
+        // effectivePrice (when present) is the sale-aware price computed by
+        // the SAME server-side helper createPublicOrder uses for the
+        // storewide sale (see publicController's decorateProductWithSale) —
+        // prefer it over the raw base/variant price so a product/variant on
+        // sale is added to the cart at its actual sale price, not the
+        // pre-sale one. Falls back to the raw price for any product shape
+        // that hasn't gone through that decoration (e.g. an offer/campaign
+        // product object built inline by the caller).
         const matchedVariant = variantId
             ? product.variants?.find((v: any) => String(v._id) === String(variantId))
             : undefined;
-        const unitPrice = (matchedVariant && typeof matchedVariant.price === 'number')
-            ? matchedVariant.price
-            : product.price;
+        const unitPrice = matchedVariant
+            ? (typeof matchedVariant.effectivePrice === 'number' ? matchedVariant.effectivePrice : matchedVariant.price)
+            : (typeof product.effectivePrice === 'number' ? product.effectivePrice : product.price);
 
         // Same treatment for optional paid extras: resolve each selected
         // extra's price from product.extras here (never trust a caller-

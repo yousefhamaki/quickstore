@@ -48,7 +48,8 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
         maxUsage: -1,
         minOrderAmount: 0,
         expiresAt: '',
-        isActive: true
+        isActive: true,
+        autoApply: false
     });
 
     useEffect(() => {
@@ -78,7 +79,8 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
                 maxUsage: coupon.maxUsage,
                 minOrderAmount: coupon.minOrderAmount || 0,
                 expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().split('T')[0] : '',
-                isActive: coupon.isActive
+                isActive: coupon.isActive,
+                autoApply: !!coupon.autoApply
             });
         } else {
             setEditingCoupon(null);
@@ -89,7 +91,8 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
                 maxUsage: -1,
                 minOrderAmount: 0,
                 expiresAt: '',
-                isActive: true
+                isActive: true,
+                autoApply: false
             });
         }
         setModalOpen(true);
@@ -165,9 +168,21 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
                         <Card key={coupon._id} className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative glass">
                             <CardHeader className="bg-muted/30 border-b p-6 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
-                                    <Badge variant={coupon.isActive ? "default" : "secondary"} className="rounded-full font-black text-[10px] uppercase px-3">
-                                        {coupon.isActive ? t("active") : t("inactive")}
-                                    </Badge>
+                                    <div className="flex items-center gap-1.5">
+                                        <Badge variant={coupon.isActive ? "default" : "secondary"} className="rounded-full font-black text-[10px] uppercase px-3">
+                                            {coupon.isActive ? t("active") : t("inactive")}
+                                        </Badge>
+                                        {coupon.autoApply && (
+                                            <Badge variant="outline" className="rounded-full font-black text-[10px] uppercase px-3 border-emerald-300 text-emerald-600">
+                                                Auto-apply
+                                            </Badge>
+                                        )}
+                                        {coupon.restrictedToCustomerEmail && (
+                                            <Badge variant="outline" className="rounded-full font-black text-[10px] uppercase px-3 border-purple-300 text-purple-600">
+                                                Personal voucher
+                                            </Badge>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <Ticket className="w-5 h-5 text-orange-500" />
                                         <CardTitle className="text-xl font-black uppercase tracking-tight">{coupon.code}</CardTitle>
@@ -332,6 +347,17 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
                                 <Switch
                                     checked={formData.isActive}
                                     onCheckedChange={checked => setFormData({ ...formData, isActive: checked })}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/50 border">
+                                <div className="space-y-0.5">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest">Auto-apply (no code required)</Label>
+                                    <p className="text-[10px] font-medium text-muted-foreground uppercase">Automatically applied at checkout once its minimum order is met — the shopper never types a code.</p>
+                                </div>
+                                <Switch
+                                    checked={formData.autoApply}
+                                    onCheckedChange={checked => setFormData({ ...formData, autoApply: checked })}
                                 />
                             </div>
                         </div>

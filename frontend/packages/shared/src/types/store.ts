@@ -89,6 +89,23 @@ export interface StoreContact {
     instagram?: string;
 }
 
+export interface StoreSaleSettings {
+    enabled: boolean;
+    type: 'percentage' | 'fixed';
+    value: number;
+    startAt?: string;
+    endAt?: string;
+    excludedCategoryIds: string[];
+}
+
+export interface PostPurchaseVoucherSettings {
+    enabled: boolean;
+    type: 'percentage' | 'fixed';
+    value: number;
+    minOrderAmountToTrigger?: number;
+    expiresInDays: number;
+}
+
 export interface StoreStats {
     totalProducts: number;
     totalOrders: number;
@@ -214,6 +231,8 @@ export interface Store {
             };
         };
         marketing?: MarketingSettings;
+        storeSale?: StoreSaleSettings;
+        postPurchaseVoucher?: PostPurchaseVoucherSettings;
     };
     stats: StoreStats;
     createdAt: string;
