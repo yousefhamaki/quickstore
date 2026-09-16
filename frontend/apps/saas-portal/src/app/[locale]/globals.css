@@ -197,6 +197,31 @@
   animation: progress-indeterminate 1.5s infinite linear;
 }
 
+/* Add-to-cart feedback: a quick "poof" on the product photo the instant it
+   leaves for the cart (paired with the flying clone from flyToCart.ts), and
+   a bump on the header cart icon the instant the clone lands on it. */
+@keyframes add-to-cart-pop {
+  0% { transform: scale(1); filter: brightness(1); }
+  35% { transform: scale(0.94); filter: brightness(1.08); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.animate-add-to-cart-pop {
+  animation: add-to-cart-pop 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cart-bump {
+  0% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(1.35) rotate(-8deg); }
+  55% { transform: scale(0.92) rotate(6deg); }
+  75% { transform: scale(1.12) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.animate-cart-bump {
+  animation: cart-bump 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .cursor-wait {
   cursor: wait !important;
 }

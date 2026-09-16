@@ -167,6 +167,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <div className="aspect-square bg-gray-100 rounded-[40px] overflow-hidden border shadow-sm group">
                         {product.images?.[0]?.url ? (
                             <img
+                                id="product-detail-main-image"
                                 src={imagePreset.detail(product.images[0].url)}
                                 alt={product.name}
                                 fetchPriority="high"

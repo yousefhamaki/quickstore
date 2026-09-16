@@ -10,6 +10,7 @@ import { useOfferEngine } from "@shared/hooks/useOfferEngine";
 import { UpsellTeaser } from "@shared/components/offers/UpsellTeaser";
 import { OfferModal } from "@shared/components/offers/OfferModal";
 import { useEffect } from "react";
+import { flyToCart } from "@shared/lib/flyToCart";
 
 export function ProductActions({ product }: { product: any }) {
     const t = useTranslations('store.product');
@@ -18,6 +19,9 @@ export function ProductActions({ product }: { product: any }) {
     const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>([]);
     const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
     const { addToCart, updateQuantity, removeFromCart, cart } = useCart();
+    // Screen-reader-only confirmation — the fly-to-cart animation replaces
+    // the visible toast, but non-visual feedback still needs to exist.
+    const [a11yAnnouncement, setA11yAnnouncement] = useState('');
 
     const handleOfferAccept = (result: any) => {
         if (result.localAccept && result.offer) {
@@ -126,7 +130,21 @@ export function ProductActions({ product }: { product: any }) {
         // extra ids), so it stays correct even if this component's own
         // displayPrice/extrasTotal logic ever drifts from it.
         addToCart(product, quantity, selectedOptions, selectedVariant?._id, undefined, undefined, undefined, undefined, undefined, selectedExtraIds);
-        toast.success(t('addedToCart', { quantity, name: product.name }));
+
+        // Visual confirmation replaces the old toast: the product photo
+        // pops, then a clone of it flies to the header cart icon (which
+        // bumps on landing) — see flyToCart.ts. Screen-reader users still
+        // get an announcement since none of that is perceivable to them.
+        const mainImage = document.getElementById('product-detail-main-image');
+        if (mainImage) {
+            mainImage.classList.remove('animate-add-to-cart-pop');
+            // Force a reflow so re-adding the class restarts the animation
+            // even if the shopper clicks "Add to cart" again quickly.
+            void (mainImage as HTMLElement).offsetWidth;
+            mainImage.classList.add('animate-add-to-cart-pop');
+            flyToCart(mainImage as HTMLImageElement);
+        }
+        setA11yAnnouncement(t('addedToCart', { quantity, name: product.name }));
     };
 
     const handleOptionSelect = (optionName: string, value: string) => {
@@ -135,6 +153,11 @@ export function ProductActions({ product }: { product: any }) {
 
     return (
         <div className="space-y-8 pt-4">
+            {/* Visually-hidden live region: the add-to-cart animation is a
+                purely visual confirmation, so screen-reader users get an
+                equivalent text announcement instead. */}
+            <span aria-live="polite" className="sr-only">{a11yAnnouncement}</span>
+
             {/* Price — reflects the selected variant's own price when one is
                 resolved, falling back to the base product price otherwise. */}
             <div className="flex items-baseline gap-3">
