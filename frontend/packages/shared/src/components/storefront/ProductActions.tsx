@@ -81,9 +81,22 @@ export function ProductActions({ product }: { product: any }) {
         ) || null;
     }, [product, selectedOptions]);
 
-    const displayPrice = (selectedVariant && typeof selectedVariant.price === 'number')
-        ? selectedVariant.price
-        : product.price;
+    // effectivePrice/effectiveCompareAtPrice/onSale come from the backend's
+    // decorateProductWithSale (see publicController.ts) — the SAME
+    // storewide-sale computation createPublicOrder uses to derive what's
+    // actually charged, so what's shown here can never drift from it. When
+    // a sale is active for this product, its own "before" price replaces
+    // the product's manually-set compareAtPrice rather than showing both
+    // (see storeSale.ts's doc-comment) — avoids a confusing double
+    // strikethrough.
+    const activeEntity = selectedVariant || product;
+    const displayPrice = typeof activeEntity.effectivePrice === 'number'
+        ? activeEntity.effectivePrice
+        : (selectedVariant && typeof selectedVariant.price === 'number' ? selectedVariant.price : product.price);
+    const displayCompareAtPrice = typeof activeEntity.effectiveCompareAtPrice === 'number'
+        ? activeEntity.effectiveCompareAtPrice
+        : (!selectedVariant ? product.compareAtPrice : undefined);
+    const isOnSale = !!activeEntity.onSale;
 
     // Optional paid add-ons (Product.extras) — a shopper can pick zero, one,
     // or several; each selected one adds its own price to the total. The
@@ -174,15 +187,23 @@ export function ProductActions({ product }: { product: any }) {
             <span aria-live="polite" className="sr-only">{a11yAnnouncement}</span>
 
             {/* Price — reflects the selected variant's own price when one is
-                resolved, falling back to the base product price otherwise. */}
-            <div className="flex items-baseline gap-3">
-                <p className="text-3xl font-black">
-                    EGP {displayPrice.toLocaleString()}
-                </p>
-                {typeof product.compareAtPrice === 'number' && product.compareAtPrice > displayPrice && (
-                    <p className="text-lg font-bold text-gray-400 line-through">
-                        EGP {product.compareAtPrice.toLocaleString()}
+                resolved, falling back to the base product price otherwise,
+                with the storewide sale (if active) applied on top. */}
+            <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-baseline gap-3">
+                    <p className={cn("text-3xl font-black", isOnSale && "text-red-600")}>
+                        EGP {displayPrice.toLocaleString()}
                     </p>
+                    {typeof displayCompareAtPrice === 'number' && displayCompareAtPrice > displayPrice && (
+                        <p className="text-lg font-bold text-gray-400 line-through">
+                            EGP {displayCompareAtPrice.toLocaleString()}
+                        </p>
+                    )}
+                </div>
+                {isOnSale && (
+                    <span className="bg-red-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                        {t('onSale') || 'Sale'}
+                    </span>
                 )}
             </div>
 

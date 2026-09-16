@@ -13,6 +13,30 @@ import Coupon from '../models/Coupon';
 import { WALLET_LEDGER_REASONS } from '../constants/walletLedgerReasons';
 import { sendGatedCustomerEmail } from '../services/orderEmailService';
 import { sendGatedWhatsAppMessage } from '../services/whatsapp/whatsappMessageService';
+import { sendPostPurchaseVoucherEmail } from '../services/emailService';
+
+/**
+ * A short, readable one-time code for a post-purchase personal voucher —
+ * "THANKS-" prefix so it's recognizable in a customer's inbox/wallet, plus
+ * 6 random chars from an alphabet with ambiguous look-alikes (0/O, 1/I)
+ * removed so it's easy to read back or type in.
+ */
+function generateVoucherCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let suffix = '';
+    for (let i = 0; i < 6; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
+    return `THANKS-${suffix}`;
+}
+
+/** Retries a few times against the (storeId, code) unique index before falling back to a longer, effectively-collision-free code. */
+async function generateUniqueVoucherCode(storeId: mongoose.Types.ObjectId, session: mongoose.ClientSession | null): Promise<string> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const code = generateVoucherCode();
+        const existing = await Coupon.findOne({ storeId, code }).session(session);
+        if (!existing) return code;
+    }
+    return `THANKS-${Date.now().toString(36).toUpperCase()}`;
+}
 
 /**
  * Emails the customer that their order's status changed, gated by the
@@ -418,11 +442,64 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             }
         }
 
+        // ================================================================
+        // Post-purchase personal voucher — automatically issued the FIRST
+        // time this order reaches 'delivered' (guarded by voucherIssued,
+        // the exact same one-time-side-effect pattern refundSideEffectsApplied
+        // uses above so a merchant flipping status back and forth, or a
+        // repeat save of the same status, never issues a second voucher for
+        // one order). The Coupon is created inside this same transaction so
+        // it's atomic with the order's voucherIssued flag; the email itself
+        // is sent AFTER commit (see below), same treatment as
+        // notifyCustomerStatusChanged.
+        // ================================================================
+        let issuedVoucher: { code: string; type: 'percentage' | 'fixed'; value: number; expiresAt: Date } | null = null;
+        let voucherCustomerEmail: string | undefined;
+        if (status === 'delivered' && previousStatus !== 'delivered' && !order.voucherIssued) {
+            const voucherConfig = store.settings?.postPurchaseVoucher;
+            const minTrigger = voucherConfig?.minOrderAmountToTrigger || 0;
+            if (voucherConfig?.enabled && order.total >= minTrigger) {
+                const voucherCustomer = await Customer.findById(order.customerId).session(session);
+                if (voucherCustomer?.email) {
+                    const code = await generateUniqueVoucherCode(store._id, session);
+                    const expiresInDays = voucherConfig.expiresInDays || 30;
+                    const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+
+                    await Coupon.create([{
+                        storeId: store._id,
+                        code,
+                        type: voucherConfig.type,
+                        value: voucherConfig.value,
+                        maxUsage: 1,
+                        minOrderAmount: 0,
+                        expiresAt,
+                        isActive: true,
+                        autoApply: false,
+                        restrictedToCustomerEmail: voucherCustomer.email
+                    }], { session });
+
+                    issuedVoucher = { code, type: voucherConfig.type, value: voucherConfig.value, expiresAt };
+                    voucherCustomerEmail = voucherCustomer.email;
+                }
+            }
+            order.voucherIssued = true;
+        }
+
         const updatedOrder = await order.save({ session });
         await session.commitTransaction();
 
         if (status !== previousStatus) {
             notifyCustomerStatusChanged(updatedOrder, store, status).catch(() => {});
+        }
+
+        if (issuedVoucher && voucherCustomerEmail) {
+            sendPostPurchaseVoucherEmail(store, voucherCustomerEmail, {
+                code: issuedVoucher.code,
+                type: issuedVoucher.type,
+                value: issuedVoucher.value,
+                expiresAt: issuedVoucher.expiresAt,
+                orderNumber: updatedOrder.orderNumber,
+            }).catch((err) => console.error('[OrderController] Failed to send post-purchase voucher email:', err));
         }
 
         res.json(updatedOrder);

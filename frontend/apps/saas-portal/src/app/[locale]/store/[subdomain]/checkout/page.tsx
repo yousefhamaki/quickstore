@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCart } from '@shared/context/CartContext';
-import { getPublicStore, validateCoupon } from '@shared/services/publicStoreService';
+import { getPublicStore, validateCoupon, getAutoApplyCoupon } from '@shared/services/publicStoreService';
 import { createOrder } from '@shared/services/publicOrderService';
 import { ShoppingCart, Truck, CreditCard, ChevronRight, Package, Trash2, CheckCircle2, Ticket, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -47,6 +47,10 @@ export default function CheckoutPage() {
     const { subdomain } = useParams();
     const router = useRouter();
     const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart, addToCart } = useCart();
+    // Declared early (moved up from below the coupon section) so its
+    // `customer` binding is already initialized wherever the auto-apply
+    // coupon effect and handleApplyCoupon reference it further down.
+    const { customer } = useCustomerAuth();
     const [step, setStep] = useState(1); // 1: Cart, 2: Info, 3: Payment
     const [loading, setLoading] = useState(false);
     const [storeId, setStoreId] = useState<string | null>(null);
@@ -141,6 +145,9 @@ export default function CheckoutPage() {
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
     const [verifyingCoupon, setVerifyingCoupon] = useState(false);
+    // Set once the shopper explicitly removes an auto-applied coupon, so the
+    // effect below doesn't just silently re-apply the same one right back.
+    const [autoApplyDismissed, setAutoApplyDismissed] = useState(false);
 
     const handleApplyCoupon = async () => {
         if (!couponInput.trim()) return;
@@ -148,7 +155,7 @@ export default function CheckoutPage() {
         setVerifyingCoupon(true);
         try {
             const store = await getPublicStore(subdomain as string) as any;
-            const response = await validateCoupon(store._id, couponInput.toUpperCase(), getCartTotal()) as any;
+            const response = await validateCoupon(store._id, couponInput.toUpperCase(), getCartTotal(), customer?.email) as any;
 
             if (response.success) {
                 setAppliedCoupon(response.coupon);
@@ -168,9 +175,38 @@ export default function CheckoutPage() {
     };
 
     const removeCoupon = () => {
+        // Only suppress re-applying when the shopper removed an
+        // AUTOMATICALLY-applied coupon — removing a manually-typed one
+        // should still let a genuinely-eligible auto-apply coupon step in.
+        if (appliedCoupon?.isAutoApplied) setAutoApplyDismissed(true);
         setAppliedCoupon(null);
         toast.info(t('messages.couponRemoved'));
     };
+
+    // Auto-applied cart-threshold discount: no code required. Finds and
+    // shows the store's best eligible auto-apply coupon (see
+    // publicController.getAutoApplyCoupon) as soon as the cart subtotal
+    // qualifies — BEFORE the order is placed, same visibility a
+    // manually-typed code gets. Never overrides a coupon the shopper is
+    // already actively using (manual or previously auto-applied), and never
+    // reappears once explicitly dismissed. The server independently
+    // re-derives and re-validates whichever coupon actually applies at
+    // order-creation time — this is display/UX only.
+    useEffect(() => {
+        if (!storeId || cart.length === 0 || appliedCoupon || autoApplyDismissed) return;
+        const subtotal = getCartTotal();
+        if (subtotal <= 0) return;
+
+        getAutoApplyCoupon(storeId, subtotal, customer?.email)
+            .then((response: any) => {
+                if (response?.success && response.coupon) {
+                    setAppliedCoupon({ ...response.coupon, isAutoApplied: true });
+                }
+            })
+            .catch(() => {
+                // No eligible auto-apply coupon right now (404) — nothing to show.
+            });
+    }, [storeId, cart, appliedCoupon, autoApplyDismissed, customer?.email]);
 
     const getDiscountAmount = () => {
         if (!appliedCoupon) return 0;
@@ -193,8 +229,8 @@ export default function CheckoutPage() {
     // Logged-in customer prefill: check out faster by not retyping contact
     // info and a saved address every time. Guarded by a ref so it only
     // fires once — a bare `reset()` on every `customer` change would wipe
-    // out whatever the shopper is actively typing.
-    const { customer } = useCustomerAuth();
+    // out whatever the shopper is actively typing. (`customer` itself comes
+    // from useCustomerAuth() near the top of this component.)
     const hasPrefilled = useRef(false);
     useEffect(() => {
         if (!customer || hasPrefilled.current) return;
@@ -505,11 +541,11 @@ export default function CheckoutPage() {
                                             onChange={(e) => setCouponInput(e.target.value)}
                                             placeholder={t('couponPlaceholder')}
                                             className="flex-1 h-12 bg-white border rounded-full px-6 outline-none text-sm font-bold uppercase tracking-widest focus:ring-2 focus:ring-black/5"
-                                            disabled={!!appliedCoupon || verifyingCoupon}
+                                            disabled={(!!appliedCoupon && !appliedCoupon.isAutoApplied) || verifyingCoupon}
                                         />
                                         <button
                                             onClick={handleApplyCoupon}
-                                            disabled={!couponInput || !!appliedCoupon || verifyingCoupon}
+                                            disabled={!couponInput || (!!appliedCoupon && !appliedCoupon.isAutoApplied) || verifyingCoupon}
                                             className="h-12 px-6 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 transition disabled:opacity-50"
                                         >
                                             {verifyingCoupon ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('applyCoupon')}
@@ -519,7 +555,9 @@ export default function CheckoutPage() {
                                         <div className="flex items-center justify-between p-3 bg-green-50 rounded-2xl border border-green-100 text-green-700 animate-in zoom-in-95 duration-300">
                                             <div className="flex items-center gap-2">
                                                 <Ticket size={16} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">{appliedCoupon.code} {t('applied')}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                                    {appliedCoupon.code} {appliedCoupon.isAutoApplied ? (t('autoApplied') || 'auto-applied') : t('applied')}
+                                                </span>
                                             </div>
                                             <button onClick={removeCoupon} className="p-1 hover:bg-green-100 rounded-full transition-colors">
                                                 <X size={14} />

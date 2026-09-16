@@ -17,6 +17,8 @@ import { sendGatedCustomerEmail } from '../services/orderEmailService';
 import { sendGatedWhatsAppMessage } from '../services/whatsapp/whatsappMessageService';
 import { sendNewOrderOwnerEmail } from '../services/emailService';
 import User from '../models/User';
+import { getStoreSalePrice } from '../utils/storeSale';
+import { isCouponEligible, computeCouponDiscount } from '../utils/couponPricing';
 
 // @desc    Create new order from storefront
 // @route   POST /api/public/orders
@@ -265,9 +267,26 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             // from the selected variant (if any) or the base product instead.
             // ================================================================
             if (!campaignId) {
-                item.price = (matchedVariant && typeof matchedVariant.price === 'number')
+                const resolvedBasePrice = (matchedVariant && typeof matchedVariant.price === 'number')
                     ? matchedVariant.price
                     : product.price;
+
+                // ============================================================
+                // STOREWIDE SALE: applied on top of whichever price was just
+                // resolved above (base or variant), at this SAME authoritative
+                // price-resolution point — never computed only for display.
+                // Respects the store's excluded-category list and optional
+                // schedule window; a fixed discount larger than the price
+                // floors at 0 (see utils/storeSale.ts). Skipped entirely for
+                // campaign/offer checkouts (out of scope — those already have
+                // their own intentionally-discounted tier pricing).
+                // ============================================================
+                const { price: saleAdjustedPrice } = getStoreSalePrice(
+                    activeStore.settings?.storeSale as any,
+                    product.categoryId,
+                    resolvedBasePrice
+                );
+                item.price = saleAdjustedPrice;
             }
 
             // ================================================================
@@ -334,43 +353,71 @@ export const createPublicOrder = async (req: Request, res: Response) => {
         }
 
         try {
-            // Verify Coupon if provided
+            // ================================================================
+            // Coupon resolution — reuses the exact same eligibility
+            // (isCouponEligible) and discount (computeCouponDiscount) helpers
+            // from utils/couponPricing.ts as validateCoupon and
+            // getAutoApplyCoupon (publicController.ts), so nothing here can
+            // diverge from what the shopper was shown at checkout. Never
+            // trusts the client for which coupon applies or how much it's
+            // worth — always recomputed from the DB coupon doc(s) and the
+            // server-resolved cartSubtotal below.
+            //
+            // Precedence when BOTH a manually-typed code AND an eligible
+            // auto-apply coupon exist: whichever yields the LARGER discount
+            // wins; an exact tie favors the manually-typed code (a shopper
+            // who bothered to type a code gets it, rather than being
+            // silently switched to an auto-surfaced one of equal value).
+            // Auto-apply coupons never stack with each other — at most one
+            // coupon (manual or auto) ever applies to an order.
+            // ================================================================
+            const cartSubtotal = items.reduce((sum: number, item: any) => sum + (Number(item.price) * Number(item.quantity)), 0);
+            const customerEmail: string | undefined = customerData?.email;
+
+            let manualCoupon: any = null;
             if (couponCode) {
-                const coupon = await Coupon.findOne({
+                manualCoupon = await Coupon.findOne({
                     storeId: oidStoreId,
                     code: couponCode.toUpperCase(),
                     isActive: true
-                });
+                }).session(session);
+            }
 
-                if (coupon) {
-                    // Verify limits again for security
-                    const isExpired = coupon.expiresAt && new Date(coupon.expiresAt) < new Date();
-                    const limitReached = coupon.maxUsage !== -1 && coupon.usageCount >= coupon.maxUsage;
+            const autoApplyCoupons = await Coupon.find({
+                storeId: oidStoreId,
+                isActive: true,
+                autoApply: true
+            }).session(session);
 
-                    const cartSubtotal = items.reduce((sum: number, item: any) => sum + (Number(item.price) * Number(item.quantity)), 0);
-                    const minPriceMet = !coupon.minOrderAmount || cartSubtotal >= coupon.minOrderAmount;
-
-                    if (!isExpired && !limitReached && minPriceMet) {
-                        // Recalculate discount based on items to prevent manipulation
-                        let calculatedDiscount = 0;
-
-                        if (coupon.type === 'percentage') {
-                            calculatedDiscount = (cartSubtotal * coupon.value) / 100;
-                        } else if (coupon.type === 'fixed') {
-                            calculatedDiscount = coupon.value;
-                        } else if (coupon.type === 'free_shipping') {
-                            calculatedDiscount = resolvedShippingFee;
-                        }
-
-                        // Use the calculated discount
-                        finalDiscount = calculatedDiscount;
-
-                        // Increment usage count
-                        coupon.usageCount += 1;
-                        await coupon.save({ session: session || undefined });
-                    }
+            const candidates: any[] = [...(manualCoupon ? [manualCoupon] : []), ...autoApplyCoupons];
+            let chosenCoupon: any = null;
+            let bestDiscount = -1;
+            for (const candidate of candidates) {
+                if (!isCouponEligible(candidate, cartSubtotal, customerEmail)) continue;
+                const discount = computeCouponDiscount(candidate, cartSubtotal, resolvedShippingFee);
+                const isManual = manualCoupon && candidate._id.equals(manualCoupon._id);
+                if (discount > bestDiscount || (discount === bestDiscount && isManual)) {
+                    bestDiscount = discount;
+                    chosenCoupon = candidate;
                 }
             }
+
+            let appliedCouponCode: string | undefined = couponCode || undefined;
+            if (chosenCoupon) {
+                finalDiscount = bestDiscount;
+                appliedCouponCode = chosenCoupon.code;
+                chosenCoupon.usageCount += 1;
+                await chosenCoupon.save({ session: session || undefined });
+            } else if (!campaignId) {
+                // Standard checkout with no eligible coupon at all (manual or
+                // auto-apply): never fall back to a client-submitted discount.
+                finalDiscount = 0;
+                appliedCouponCode = undefined;
+            }
+            // NOTE: a campaign (offer) checkout with no eligible coupon keeps
+            // whatever discountAmount it already computed earlier from the
+            // campaign's own pricing tier (out of scope — OfferCampaign is a
+            // separate system, see module doc-comment at the top of this file).
 
             // ================================================================
             // PRICING INTEGRITY FIX (continued): for standard checkouts, the
@@ -384,8 +431,9 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             // untouched here.
             // ================================================================
             if (!campaignId) {
-                const authoritativeSubtotal = items.reduce((sum: number, item: any) => sum + Number(item.price) * Number(item.quantity), 0);
-                numericTotal = Number((authoritativeSubtotal + resolvedShippingFee - finalDiscount).toFixed(2));
+                // cartSubtotal was already computed authoritatively above
+                // (from the same resolved item prices) for the coupon check.
+                numericTotal = Number((cartSubtotal + resolvedShippingFee - finalDiscount).toFixed(2));
             }
 
             // Calculate transaction fee based on plan
@@ -417,7 +465,12 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                 shipping: resolvedShippingFee,
                 discount: finalDiscount,
                 total: numericTotal,
-                couponCode: couponCode || undefined,
+                // Records whichever coupon actually applied (manual or
+                // auto-apply) — NOT necessarily the client's submitted
+                // couponCode — so a later cancel/refund correctly reverses
+                // usageCount on the right coupon (see orderController's
+                // updateOrderStatus) and the order's own history is accurate.
+                couponCode: appliedCouponCode,
                 transactionFee,
                 status: 'pending',
                 paymentStatus: 'pending',

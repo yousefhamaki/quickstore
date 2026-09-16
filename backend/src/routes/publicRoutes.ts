@@ -7,6 +7,7 @@ import {
     getProductDetails,
     trackStoreVisit,
     validateCoupon,
+    getAutoApplyCoupon,
     subscribeNewsletter
 } from '../controllers/publicController';
 import {
@@ -38,6 +39,7 @@ router.get('/products/:productId', getProductDetails);
 router.get('/products/:productId/reviews', getProductReviews);
 router.post('/products/:productId/reviews', reviewLimiter, createReview);
 router.get('/stores/:storeId/coupons/validate', validateCoupon);
+router.get('/stores/:storeId/coupons/auto-apply', getAutoApplyCoupon);
 router.post('/stores/:storeId/newsletter/subscribe', subscribeNewsletter);
 
 router.post('/orders', storefrontBillingContext, checkServiceAvailability, createPublicOrder);

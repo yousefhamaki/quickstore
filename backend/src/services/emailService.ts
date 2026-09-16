@@ -303,6 +303,48 @@ export const sendOrderShippedEmail = async (
 };
 
 /**
+ * Sends the automatically-issued post-purchase personal voucher — fired
+ * once by orderController.updateOrderStatus the first time an order
+ * reaches 'delivered' (see Store.settings.postPurchaseVoucher). Routed
+ * through the store's own sender when configured, like the other
+ * store-to-customer transactional emails above (order shipped, password
+ * reset), since this is a customer-facing email from the store, not
+ * Buildora itself.
+ */
+export const sendPostPurchaseVoucherEmail = async (
+    store: Pick<IStore, 'name' | 'settings'>,
+    customerEmail: string,
+    voucher: {
+        code: string;
+        type: 'percentage' | 'fixed';
+        value: number;
+        expiresAt: Date;
+        orderNumber: string;
+    }
+) => {
+    try {
+        const valueLabel = voucher.type === 'percentage' ? `${voucher.value}%` : `EGP ${voucher.value}`;
+        const html = renderTemplate('post_purchase_voucher.html', {
+            storeName: store.name,
+            orderNumber: voucher.orderNumber,
+            code: voucher.code,
+            valueLabel,
+            expiresAt: voucher.expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        });
+        const result = await sendStoreEmail(store, {
+            to: customerEmail,
+            subject: `A little thank-you from ${store.name} — here's ${valueLabel} off your next order`,
+            html
+        });
+        if (!result.ok) throw new Error(result.error || 'Failed to send post-purchase voucher email');
+        return result;
+    } catch (error) {
+        console.error('[EmailService] Error sending post-purchase voucher email:', error);
+        throw error;
+    }
+};
+
+/**
  * Sends a 6-digit code for email-based 2FA login challenges.
  */
 export const sendTwoFactorCodeEmail = async (email: string, code: string) => {

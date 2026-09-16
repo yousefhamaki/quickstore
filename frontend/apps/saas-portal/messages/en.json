@@ -1003,7 +1003,8 @@
       "viewDetails": "View Details",
       "specifications": "Specifications",
       "extras": "Extras",
-      "total": "Total"
+      "total": "Total",
+      "onSale": "Sale"
     },
     "home": {
       "welcome": "Welcome to",
@@ -1039,6 +1040,7 @@
       "couponPlaceholder": "Coupon Code",
       "applyCoupon": "Apply",
       "applied": "Applied",
+      "autoApplied": "auto-applied",
       "discount": "Discount",
       "form": {
         "firstName": "First Name",

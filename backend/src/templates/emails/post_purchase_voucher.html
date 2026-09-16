@@ -1,0 +1,30 @@
+{{#> layout
+    title="A thank-you gift from {{storeName}}"
+    accentColor="#16a34a"
+    logoUrl="https://www.quickstore.live/logo.png"
+    logoFallbackUrl="https://placehold.co/180x48/16a34a/ffffff?text=Buildora"
+    brandingName="{{storeName}}"
+    showFooterPoweredBy=true
+    footerText="You received this email because you're a customer of {{storeName}}."
+}}
+    <h1 class="title">Thanks for your order! 🎁</h1>
+    <p class="description">
+        Order <strong>#{{orderNumber}}</strong> from {{storeName}} was delivered — here's <strong>{{valueLabel}} off</strong> your next order, on us.
+    </p>
+    <div class="warning-box" style="background-color: #f0fdf4; border-color: #bbf7d0;">
+        <p class="warning-text" style="color: #166534; font-size: 22px; letter-spacing: 2px; font-weight: 800;">{{code}}</p>
+    </div>
+    <table style="width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; color: #4a5568;">
+        <tr>
+            <td style="padding: 8px 0; font-weight: 700; width: 140px;">Discount</td>
+            <td style="padding: 8px 0;">{{valueLabel}} off your order</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; font-weight: 700;">Valid until</td>
+            <td style="padding: 8px 0;">{{expiresAt}}</td>
+        </tr>
+    </table>
+    <p class="description" style="font-size: 14px;">
+        Just enter this code at checkout the next time you shop with {{storeName}} — it's just for you and can be used once.
+    </p>
+{{/layout}}

@@ -7,6 +7,8 @@ import Customer from '../models/Customer';
 import Subscription from '../models/Subscription';
 import { redisClient } from '../config/redis';
 import { withStockVirtuals, withStockVirtualsMany } from '../utils/productStock';
+import { decorateProductWithSale } from '../utils/storeSale';
+import { pickBestEligibleCoupon } from '../utils/couponPricing';
 
 /**
  * Hero slider is admin-controlled per subscription plan (see
@@ -122,8 +124,18 @@ export const getStoreProducts = async (req: Request, res: Response) => {
             console.warn(`[Redis Fallback] GET failed for ${cacheKey}`, redisErr);
         }
 
+        // The storewide sale (Store.settings.storeSale) is applied to every
+        // response HERE, after the cache lookup — never baked into the
+        // cached payload itself. Same trick as gateHeroSlider above:
+        // toggling the sale (or its schedule window rolling over) takes
+        // effect on the very next request, with no cache invalidation to
+        // wire up and no risk of a stale sale-adjusted price lingering for
+        // up to the list cache's 30-minute TTL.
+        const saleConfig = await getStoreSaleConfig(storeId as string);
+
         if (cachedData) {
-            return res.json(JSON.parse(cachedData));
+            const cachedProducts = JSON.parse(cachedData);
+            return res.json(cachedProducts.map((p: any) => decorateProductWithSale(p, saleConfig)));
         }
 
         const filter: any = { storeId, status: 'active' };
@@ -149,11 +161,21 @@ export const getStoreProducts = async (req: Request, res: Response) => {
             console.warn(`[Redis Fallback] SET failed for ${cacheKey}`, redisErr);
         }
 
-        res.json(products);
+        res.json(products.map((p: any) => decorateProductWithSale(p, saleConfig)));
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
     }
 };
+
+/**
+ * Fetches just the bit of a store's settings needed to compute the
+ * storewide sale — a small, targeted query so this doesn't have to pull
+ * (or cache) the whole Store document on every product read.
+ */
+async function getStoreSaleConfig(storeId: string) {
+    const store = await Store.findById(storeId).select('settings.storeSale').lean();
+    return (store as any)?.settings?.storeSale || null;
+}
 
 // @desc    Get active categories for a store's storefront nav/filters
 // @route   GET /api/public/stores/:storeId/categories
@@ -178,7 +200,7 @@ export const getProductDetails = async (req: Request, res: Response) => {
     try {
         const { productId } = req.params;
         const cacheKey = `product:${productId}`;
-        
+
         let cachedProduct = null;
         try {
             cachedProduct = await redisClient.get(cacheKey);
@@ -187,7 +209,11 @@ export const getProductDetails = async (req: Request, res: Response) => {
         }
 
         if (cachedProduct) {
-            return res.json(JSON.parse(cachedProduct));
+            const parsed = JSON.parse(cachedProduct);
+            // See getStoreProducts's comment: the sale is applied fresh on
+            // every response (cached or not), never baked into the cache.
+            const saleConfig = await getStoreSaleConfig(parsed.storeId);
+            return res.json(decorateProductWithSale(parsed, saleConfig));
         }
 
         // .select('-costPerItem') — see getStoreProducts above.
@@ -204,7 +230,8 @@ export const getProductDetails = async (req: Request, res: Response) => {
             console.warn(`[Redis Fallback] SET failed for ${cacheKey}`);
         }
 
-        res.json(product);
+        const saleConfig = await getStoreSaleConfig((product as any).storeId);
+        res.json(decorateProductWithSale(product as any, saleConfig));
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
     }
@@ -217,7 +244,7 @@ export const getProductDetails = async (req: Request, res: Response) => {
 export const validateCoupon = async (req: Request, res: Response) => {
     try {
         const { storeId } = req.params;
-        const { code, subtotal } = req.query;
+        const { code, subtotal, email } = req.query;
 
         if (!code) {
             return res.status(400).json({ success: false, message: 'Coupon code is required' });
@@ -253,6 +280,22 @@ export const validateCoupon = async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: 'This coupon has reached its usage limit' });
         }
 
+        // Personal voucher check (post-purchase voucher / any coupon a
+        // merchant scoped to one customer) — only that customer's own email
+        // may use it. Checked here AND independently re-checked in
+        // publicOrderController.createPublicOrder — never trust this
+        // endpoint's answer alone.
+        if (coupon.restrictedToCustomerEmail) {
+            const suppliedEmail = typeof email === 'string' ? email.toLowerCase() : '';
+            if (!suppliedEmail || suppliedEmail !== coupon.restrictedToCustomerEmail.toLowerCase()) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'NOT_YOUR_COUPON',
+                    message: 'This coupon is a personal voucher for a different customer.'
+                });
+            }
+        }
+
         res.json({
             success: true,
             coupon: {
@@ -264,6 +307,52 @@ export const validateCoupon = async (req: Request, res: Response) => {
         });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error validating coupon', error });
+    }
+};
+
+/**
+ * @desc    Find the single best eligible auto-apply coupon for a store,
+ *          given the current cart subtotal — lets the storefront show the
+ *          shopper an automatically-applied discount BEFORE they place the
+ *          order (same "surface it up front" treatment as a manually-typed
+ *          code via validateCoupon above), rather than only discovering it
+ *          silently at order-creation time. createPublicOrder independently
+ *          re-derives this same answer server-side — never trusts whatever
+ *          this endpoint told the client.
+ * @route   GET /api/public/stores/:storeId/coupons/auto-apply?subtotal=X&email=Y
+ */
+export const getAutoApplyCoupon = async (req: Request, res: Response) => {
+    try {
+        const { storeId } = req.params;
+        const { subtotal, email } = req.query;
+        const numericSubtotal = Number(subtotal) || 0;
+
+        const candidates = await Coupon.find({ storeId, isActive: true, autoApply: true });
+        const best = pickBestEligibleCoupon(
+            candidates,
+            numericSubtotal,
+            50, // shipping fee shown here is only for a free_shipping coupon's comparison value — matches the storefront's current flat EGP 50 assumption (see createPublicOrder's resolvedShippingFee for the non-campaign path)
+            typeof email === 'string' ? email : undefined
+        );
+
+        if (!best) {
+            return res.status(404).json({ success: false, message: 'No auto-apply coupon available' });
+        }
+
+        const bestCoupon: any = best.coupon;
+        res.json({
+            success: true,
+            coupon: {
+                _id: bestCoupon._id,
+                code: bestCoupon.code,
+                type: bestCoupon.type,
+                value: bestCoupon.value,
+                autoApply: true
+            },
+            discount: best.discount
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error finding auto-apply coupon', error });
     }
 };
 

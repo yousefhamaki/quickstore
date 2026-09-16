@@ -25,7 +25,21 @@ export const trackVisit = async (storeId: string) => {
     return response.data;
 };
 
-export const validateCoupon = async (storeId: string, code: string, subtotal: number) => {
-    const response = await api.get(`/public/stores/${storeId}/coupons/validate?code=${code}&subtotal=${subtotal}`);
+export const validateCoupon = async (storeId: string, code: string, subtotal: number, email?: string) => {
+    const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
+    const response = await api.get(`/public/stores/${storeId}/coupons/validate?code=${code}&subtotal=${subtotal}${emailParam}`);
+    return response.data;
+};
+
+/**
+ * Finds the best eligible auto-apply coupon (if any) for the current cart
+ * subtotal — lets the checkout page show it to the shopper before they
+ * place the order (see publicController.getAutoApplyCoupon). The server
+ * independently re-derives this same answer at order-creation time, so a
+ * stale/tampered value here can never change what's actually charged.
+ */
+export const getAutoApplyCoupon = async (storeId: string, subtotal: number, email?: string) => {
+    const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
+    const response = await api.get(`/public/stores/${storeId}/coupons/auto-apply?subtotal=${subtotal}${emailParam}`);
     return response.data;
 };
