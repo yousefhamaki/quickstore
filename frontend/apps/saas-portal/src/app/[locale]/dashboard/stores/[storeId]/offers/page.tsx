@@ -20,15 +20,7 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
     const [campaigns, setCampaigns] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Hardcode some translations to avoid adding to i18n files right now
-    const t = {
-        title: 'Conversion Offers',
-        subtitle: 'Boost your Average Order Value with Upsells, Cross-sells, and Down-sells',
-        create: 'Create Campaign',
-        proGateTitle: 'Unlock Advanced Conversions',
-        proGateDesc: 'Upsells, Cross-sells, and Exit-Intent Down-sells are available on the Professional Plus plan.',
-        upgradeBtn: 'Upgrade to Pro',
-    };
+    const t = useTranslations("merchant.marketing.offers.list");
 
     const loadCampaigns = () => {
         setIsLoading(true);
@@ -87,12 +79,12 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                         <Zap size={32} />
                     </div>
                     <div className="space-y-2">
-                        <h2 className="text-3xl font-black tracking-tighter">{t.proGateTitle}</h2>
-                        <p className="text-muted-foreground font-medium">{t.proGateDesc}</p>
+                        <h2 className="text-3xl font-black tracking-tighter">{t("proGateTitle")}</h2>
+                        <p className="text-muted-foreground font-medium">{t("proGateDesc")}</p>
                     </div>
                     <Button asChild size="lg" className="h-14 px-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-xl shadow-purple-500/25">
                         <Link href="/merchant/plans">
-                            {t.upgradeBtn} <ArrowUpRight className="ml-2 w-5 h-5" />
+                            {t("upgradeBtn")} <ArrowUpRight className="ml-2 rtl:mr-2 rtl:ml-0 w-5 h-5" />
                         </Link>
                     </Button>
                 </div>
@@ -104,12 +96,12 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
         <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black tracking-tighter">{t.title}</h1>
-                    <p className="text-muted-foreground font-medium">{t.subtitle}</p>
+                    <h1 className="text-3xl font-black tracking-tighter">{t("title")}</h1>
+                    <p className="text-muted-foreground font-medium">{t("subtitle")}</p>
                 </div>
                 <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/20">
                     <Link href={`/dashboard/stores/${storeId}/offers/new`}>
-                        <Plus className="mr-2 w-5 h-5" /> {t.create}
+                        <Plus className="mr-2 rtl:ml-2 rtl:mr-0 w-5 h-5" /> {t("create")}
                     </Link>
                 </Button>
             </div>
@@ -120,9 +112,9 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                         <Target size={32} />
                     </div>
                     <div className="space-y-2">
-                        <h3 className="text-xl font-bold">No campaigns yet</h3>
+                        <h3 className="text-xl font-bold">{t("emptyTitle")}</h3>
                         <p className="text-muted-foreground max-w-sm mx-auto">
-                            Create your first Upsell or Cross-sell to start maximizing revenue per visitor.
+                            {t("emptyDesc")}
                         </p>
                     </div>
                 </div>
@@ -132,13 +124,13 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b bg-muted/50">
-                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">Campaign Name</th>
-                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">Type</th>
-                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">Status</th>
-                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">Views</th>
-                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">Accepts</th>
-                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">Revenue</th>
-                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground text-right">Actions</th>
+                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">{t("columnName")}</th>
+                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">{t("columnType")}</th>
+                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">{t("columnStatus")}</th>
+                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">{t("columnViews")}</th>
+                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">{t("columnAccepts")}</th>
+                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground">{t("columnRevenue")}</th>
+                                    <th className="p-6 font-bold text-xs uppercase tracking-widest text-muted-foreground text-right rtl:text-left">{t("columnActions")}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
@@ -149,7 +141,7 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                                                 {camp.name}
                                             </div>
                                             <div className="text-xs text-muted-foreground mt-1 uppercase font-semibold tracking-wider">
-                                                {camp.trigger.event}
+                                                {t.has(`triggerEvents.${camp.trigger.event}`) ? t(`triggerEvents.${camp.trigger.event}`) : camp.trigger.event}
                                             </div>
                                         </td>
                                         <td className="p-6">
@@ -158,13 +150,13 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                                                 camp.type === 'down_sell' ? 'bg-amber-100 text-amber-700' :
                                                     'bg-emerald-100 text-emerald-700'
                                                 }`}>
-                                                {camp.type.replace('_', ' ')}
+                                                {t.has(`types.${camp.type}`) ? t(`types.${camp.type}`) : camp.type.replace('_', ' ')}
                                             </span>
                                         </td>
                                         <td className="p-6">
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-2 h-2 rounded-full ${camp.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                <span className="text-sm font-semibold capitalize">{camp.status}</span>
+                                                <span className="text-sm font-semibold">{t.has(`statuses.${camp.status}`) ? t(`statuses.${camp.status}`) : camp.status}</span>
                                             </div>
                                         </td>
                                         <td className="p-6 font-mono text-sm">
@@ -176,7 +168,7 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                                         <td className="p-6 font-mono font-bold text-green-600 flex items-center gap-1">
                                             <TrendingUp size={14} /> EGP {camp.analytics?.revenue?.toLocaleString() || 0}
                                         </td>
-                                        <td className="p-6 text-right flex items-center justify-end gap-2">
+                                        <td className="p-6 text-right rtl:text-left flex items-center justify-end gap-2">
                                             {camp.type === 'offer_page' && store?.domain?.subdomain && (
                                                 <Button
                                                     variant="outline"
@@ -184,20 +176,20 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                                                     onClick={() => {
                                                         const url = getStorefrontOfferUrl(store.domain.subdomain, camp._id);
                                                         navigator.clipboard.writeText(url);
-                                                        toast.success('Offer Page URL copied to clipboard!');
+                                                        toast.success(t("linkCopied"));
                                                     }}
                                                     className="text-xs font-bold uppercase tracking-widest bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                                                 >
-                                                    Copy Link
+                                                    {t("copyLink")}
                                                 </Button>
                                             )}
-                                            <Button 
-                                                variant="outline" 
+                                            <Button
+                                                variant="outline"
                                                 size="sm"
                                                 onClick={() => toggleCampaignStatus(camp._id, camp.status)}
                                                 className="text-xs font-bold uppercase tracking-widest"
                                             >
-                                                {camp.status === 'active' ? 'Pause' : 'Activate'}
+                                                {camp.status === 'active' ? t("pause") : t("activate")}
                                             </Button>
                                         </td>
                                     </tr>
