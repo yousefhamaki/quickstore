@@ -311,14 +311,14 @@ export default function PlansPage() {
                 <DialogContent className="max-w-lg rounded-[32px] p-8">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black tracking-tight">
-                            {previewData?.isUpgrade ? "Confirm Plan Upgrade" : previewData?.isDowngrade ? "Confirm Plan Downgrade" : "Confirm Subscription"}
+                            {previewData?.isUpgrade ? t('checkoutModal.upgradeTitle') : previewData?.isDowngrade ? t('checkoutModal.downgradeTitle') : t('checkoutModal.subscribeTitle')}
                         </DialogTitle>
                         <DialogDescription className="pt-4 text-base">
                             {previewLoading && (
                                 <div className="py-12 flex flex-col items-center justify-center">
                                     <Loader2 className="w-10 h-10 animate-spin text-primary" />
                                     <p className="text-center font-bold text-sm text-muted-foreground mt-4">
-                                        Calculating proration invoice...
+                                        {t('checkoutModal.calculatingProration')}
                                     </p>
                                 </div>
                             )}
@@ -326,51 +326,60 @@ export default function PlansPage() {
                             {!previewLoading && previewData?.isUpgrade && (
                                 <div className="space-y-6">
                                     <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10">
-                                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Upgrade Summary</p>
+                                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">{t('checkoutModal.upgradeSummaryLabel')}</p>
                                         <h4 className="text-xl font-black text-gray-900">
-                                            {locale === 'ar' ? "الترقية إلى الخطة الجديدة" : `Upgrade to ${plans?.find(p => p._id === pendingCheckoutPlanId)?.name}`}
+                                            {t('checkoutModal.upgradeToPlan', {
+                                                plan: (() => {
+                                                    const target = plans?.find(p => p._id === pendingCheckoutPlanId);
+                                                    return (locale === 'ar' ? (target as any)?.name_ar : (target as any)?.name_en) || target?.name || '';
+                                                })()
+                                            })}
                                         </h4>
                                         <p className="text-xs text-muted-foreground font-semibold mt-1">
                                             {previewData.isCycleChange
-                                                ? <>Your billing cycle is changing, so your renewal date resets to: <strong className="text-gray-800">{new Date(previewData.proration.currentExpiryDate).toLocaleDateString()}</strong></>
-                                                : <>Your renewal date remains unchanged: <strong className="text-gray-800">{new Date(previewData.proration.currentExpiryDate).toLocaleDateString()}</strong></>
+                                                ? <>{t('checkoutModal.cycleChangedNotice')}<strong className="text-gray-800">{new Date(previewData.proration.currentExpiryDate).toLocaleDateString()}</strong></>
+                                                : <>{t('checkoutModal.renewalUnchangedNotice')}<strong className="text-gray-800">{new Date(previewData.proration.currentExpiryDate).toLocaleDateString()}</strong></>
                                             }
                                         </p>
                                     </div>
                                     <div className="space-y-3 font-medium text-sm">
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">Original Plan Price</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.originalPlanPrice')}</span>
                                             <span className="font-bold text-gray-900">{previewData.proration.currentPlanPrice.toFixed(2)} EGP</span>
                                         </div>
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">New Plan Price</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.newPlanPrice')}</span>
                                             <span className="font-bold text-gray-900">{previewData.proration.newPlanPrice.toFixed(2)} EGP</span>
                                         </div>
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">Billing Cycle Allocation</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.billingCycleAllocation')}</span>
                                             <span className="font-bold text-gray-900">
-                                                {previewData.proration.usedDays} days used / {previewData.proration.remainingDays} days remaining
+                                                {t('checkoutModal.daysUsedRemaining', { used: previewData.proration.usedDays, remaining: previewData.proration.remainingDays })}
                                             </span>
                                         </div>
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">Consumed Value</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.consumedValue')}</span>
                                             <span className="font-bold text-rose-600">+{previewData.proration.currentPlanUsage.toFixed(2)} EGP</span>
                                         </div>
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">Unused Credit Applied</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.unusedCreditApplied')}</span>
                                             <span className="font-bold text-emerald-600">-{previewData.proration.unusedCredit.toFixed(2)} EGP</span>
                                         </div>
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">Remaining New Plan Cost</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.remainingNewPlanCost')}</span>
                                             <span className="font-bold text-gray-900">+{previewData.proration.remainingNewPlanCost.toFixed(2)} EGP</span>
                                         </div>
                                         <div className="flex justify-between items-center py-4 border-t border-dashed border-gray-200 mt-4">
-                                            <span className="text-base font-black text-gray-900">Due Today</span>
+                                            <span className="text-base font-black text-gray-900">{t('checkoutModal.dueToday')}</span>
                                             <span className="text-2xl font-black text-primary">{previewData.proration.amountToPay.toFixed(2)} EGP</span>
                                         </div>
                                     </div>
                                     <div className="text-[11px] text-muted-foreground font-bold bg-muted p-4 rounded-xl leading-relaxed border">
-                                        * You will be billed the full price of <strong className="text-gray-900">{previewData.proration.nextRenewalPrice.toFixed(0)} EGP</strong> on <strong className="text-gray-900">{new Date(previewData.proration.currentExpiryDate).toLocaleDateString()}</strong> upon subscription renewal.
+                                        {t.rich('checkoutModal.renewalFootnote', {
+                                            price: previewData.proration.nextRenewalPrice.toFixed(0),
+                                            date: new Date(previewData.proration.currentExpiryDate).toLocaleDateString(),
+                                            strong: (chunks) => <strong className="text-gray-900">{chunks}</strong>
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -381,30 +390,28 @@ export default function PlansPage() {
                                         <div className="flex gap-3">
                                             <AlertCircle className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
                                             <div className="space-y-2">
-                                                <p className="font-black text-rose-900 text-base">Irreversible Action Warning</p>
+                                                <p className="font-black text-rose-900 text-base">{t('checkoutModal.downgradeWarningTitle')}</p>
                                                 <p className="text-xs text-rose-800 font-bold leading-relaxed">
-                                                    You are about to downgrade your subscription.
-                                                    Your current subscription benefits will be removed immediately.
-                                                    Any unused value remaining in your current subscription will be forfeited.
-                                                    {previewData.isCycleChange
-                                                        ? " Since you're also changing your billing cycle, your renewal date will be reset to a new cycle starting today."
-                                                        : " Your subscription renewal date will remain unchanged."}
-                                                    This action cannot be undone.
+                                                    {t('checkoutModal.downgradeWarningBody', {
+                                                        cycleNote: previewData.isCycleChange
+                                                            ? t('checkoutModal.downgradeCycleChangedNote')
+                                                            : t('checkoutModal.downgradeCycleUnchangedNote')
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="space-y-3 font-medium text-sm">
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">Cost Due Today</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.costDueToday')}</span>
                                             <span className="font-black text-emerald-600">0.00 EGP</span>
                                         </div>
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">Renewal Date</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.renewalDate')}</span>
                                             <span className="font-bold text-gray-900">{new Date(previewData.currentExpiryDate).toLocaleDateString()}</span>
                                         </div>
                                         <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                            <span className="text-muted-foreground">Future Renewal Price</span>
+                                            <span className="text-muted-foreground">{t('checkoutModal.futureRenewalPrice')}</span>
                                             <span className="font-bold text-gray-900">{previewData.nextRenewalPrice.toFixed(0)} EGP</span>
                                         </div>
                                     </div>
@@ -413,7 +420,7 @@ export default function PlansPage() {
 
                             {!previewLoading && !previewData && !pendingCheckoutPlanId && (
                                 <div className="py-6 text-center text-sm font-semibold text-muted-foreground">
-                                    No details available.
+                                    {t('checkoutModal.noDetailsAvailable')}
                                 </div>
                             )}
                         </DialogDescription>
@@ -440,7 +447,7 @@ export default function PlansPage() {
                              disabled={subscribeMutation.isPending || previewLoading}
                         >
                             {subscribeMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ShieldCheck className="w-5 h-5 mr-2" />}
-                            {previewData?.isDowngrade ? "Confirm Downgrade" : t('confirmAndPay')}
+                            {previewData?.isDowngrade ? t('checkoutModal.confirmDowngradeButton') : t('confirmAndPay')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
