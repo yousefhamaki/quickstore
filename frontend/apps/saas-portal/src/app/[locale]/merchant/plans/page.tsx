@@ -22,7 +22,13 @@ export default function PlansPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [pendingCheckoutPlanId, setPendingCheckoutPlanId] = useState<string | null>(null);
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    // Honors a ?billingCycle= param from the public pricing page's own
+    // monthly/yearly toggle (see (marketing)/pricing/page.tsx) — read once,
+    // lazily, since the autoSubscribe effect below strips all query params
+    // via router.replace() right after reading them.
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(
+        () => (searchParams.get('billingCycle') === 'yearly' ? 'yearly' : 'monthly')
+    );
 
     const [previewData, setPreviewData] = useState<any>(null);
     const [previewLoading, setPreviewLoading] = useState<boolean>(false);

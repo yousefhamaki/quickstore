@@ -5,6 +5,14 @@
         "titleHighlight": "عملك",
         "subtitle": "لا توجد رسوم خفية. لا توجد عقود معقدة. قم بتوسيع نطاق عملك في مصر بأسعار متوقعة."
     },
+    "billingToggle": {
+        "monthly": "شهرياً",
+        "yearly": "سنوياً",
+        "savePercent": "وفر {percent}%",
+        "monthlyPeriod": "شهرياً",
+        "yearlyPeriod": "سنوياً",
+        "equivalentPerMonth": "(أي ما يعادل {amount} ج.م/شهرياً)"
+    },
     "plans": {
         "starter": {
             "name": "البداية",

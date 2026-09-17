@@ -5,6 +5,14 @@
         "titleHighlight": "Growth",
         "subtitle": "No hidden fees. No complicated contracts. Scale your business in Egypt with predictable pricing."
     },
+    "billingToggle": {
+        "monthly": "Monthly",
+        "yearly": "Annual",
+        "savePercent": "Save {percent}%",
+        "monthlyPeriod": "Monthly",
+        "yearlyPeriod": "Per year",
+        "equivalentPerMonth": "(equiv. {amount} EGP/mo)"
+    },
     "plans": {
         "starter": {
             "name": "Starter",

@@ -44,6 +44,11 @@ export default function PricingPage() {
     const [plans, setPlans] = useState<Plan[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // Same 20% yearly discount used everywhere else in billing (see
+    // backend's SubscriptionRenewalService.computeCyclePrice and the
+    // merchant-side /merchant/plans page this hands off to) — there is no
+    // separate stored yearly price, it's always monthly price * 12 * 0.8.
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -81,9 +86,39 @@ export default function PricingPage() {
                         </span>
                     </h1>
 
-                    <p className="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
+                    <p className="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-8 font-medium leading-relaxed">
                         {t('hero.subtitle')}
                     </p>
+
+                    {/* Billing Cycle Toggle — mirrors /merchant/plans's toggle
+                        (same wording, same 20% yearly discount) so a shopper
+                        sees the yearly price and savings before they even
+                        sign up, not only after landing in the dashboard. */}
+                    <div className="flex justify-center items-center mb-4">
+                        <div className="relative flex items-center p-1 bg-gray-100 rounded-2xl border border-gray-200 shadow-inner">
+                            <button
+                                onClick={() => setBillingCycle('monthly')}
+                                className={`relative z-10 px-8 py-3 text-sm font-black rounded-xl transition duration-300 ${billingCycle === 'monthly'
+                                    ? 'bg-white text-gray-900 shadow-md scale-105'
+                                    : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                            >
+                                {t('billingToggle.monthly')}
+                            </button>
+                            <button
+                                onClick={() => setBillingCycle('yearly')}
+                                className={`relative z-10 px-8 py-3 text-sm font-black rounded-xl transition duration-300 flex items-center gap-2 ${billingCycle === 'yearly'
+                                    ? 'bg-white text-gray-900 shadow-md scale-105'
+                                    : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                            >
+                                {t('billingToggle.yearly')}
+                                <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-emerald-500 text-white ${billingCycle === 'yearly' ? 'animate-bounce' : ''}`}>
+                                    {t('billingToggle.savePercent', { percent: 20 })}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -161,12 +196,27 @@ export default function PricingPage() {
                                     }
                                 ];
 
+                                // Yearly price = monthly * 12 * 0.8 (the same 20%
+                                // discount computed everywhere else in billing —
+                                // there's no separately-stored yearly price).
+                                const isFree = plan.price === 0;
+                                const yearlyTotal = plan.price * 12 * 0.8;
+                                const displayPrice = isFree ? 0 : (billingCycle === 'yearly' ? Math.round(yearlyTotal) : plan.price);
+                                const period = isFree
+                                    ? "Forever"
+                                    : (billingCycle === 'yearly' ? t('billingToggle.yearlyPeriod') : t('billingToggle.monthlyPeriod'));
+                                const note = (!isFree && billingCycle === 'yearly')
+                                    ? t('billingToggle.equivalentPerMonth', { amount: Math.round(yearlyTotal / 12) })
+                                    : undefined;
+                                const redirectTarget = `/merchant/plans?autoSubscribe=${plan._id}&billingCycle=${billingCycle}`;
+
                                 return (
                                     <PricingCard
                                         key={plan._id}
                                         name={locale === 'ar' ? plan.name_ar : plan.name_en}
-                                        price={`${plan.currency} ${plan.price}`}
-                                        period={plan.price === 0 ? "Forever" : (locale === 'ar' ? "شهرياً" : "Monthly")}
+                                        price={`${plan.currency} ${displayPrice}`}
+                                        period={period}
+                                        note={note}
                                         description={locale === 'ar' ? plan.description_ar : plan.description_en}
                                         buttonText={plan.price === 0 ? (locale === 'ar' ? 'ابدأ مجاناً' : 'Start for Free') : (locale === 'ar' ? 'ابدأ الآن' : 'Get Started')}
                                         features={featureItems}
@@ -179,9 +229,9 @@ export default function PricingPage() {
                                             // The previous version pointed at a hardcoded, nonexistent
                                             // http://localhost:3001, so every click failed outright.
                                             if (user) {
-                                                router.push(`/merchant/plans?autoSubscribe=${plan._id}`);
+                                                router.push(redirectTarget);
                                             } else {
-                                                router.push(`/auth/register?redirect=${encodeURIComponent('/merchant/plans?autoSubscribe=' + plan._id)}`);
+                                                router.push(`/auth/register?redirect=${encodeURIComponent(redirectTarget)}`);
                                             }
                                         }}
                                     />
@@ -244,9 +294,9 @@ export default function PricingPage() {
  }
  
  function PricingCard({
-     name, price, period, description, buttonText, features, popular, color, onSelect
+     name, price, period, note, description, buttonText, features, popular, color, onSelect
  }: {
-     name: string, price: string, period: string, description: string, buttonText: string, features: { text: string; unlocked: boolean }[], popular?: boolean, color: 'gray' | 'blue' | 'purple', onSelect: () => void
+     name: string, price: string, period: string, note?: string, description: string, buttonText: string, features: { text: string; unlocked: boolean }[], popular?: boolean, color: 'gray' | 'blue' | 'purple', onSelect: () => void
  }) {
      const isPopular = popular;
  
@@ -261,10 +311,11 @@ export default function PricingPage() {
  
              <div className="mb-8">
                  <h3 className="text-lg font-black text-gray-400 uppercase tracking-widest mb-4">{name}</h3>
-                 <div className="flex items-baseline gap-1 mb-2">
+                 <div className="flex items-baseline gap-1 mb-1">
                      <span className="text-4xl font-black text-gray-900">{price}</span>
                      <span className="text-gray-500 font-bold">/{period}</span>
                  </div>
+                 {note && <p className="text-xs text-emerald-600 font-bold mb-2">{note}</p>}
                  <p className="text-gray-600 font-medium h-12 overflow-hidden">{description}</p>
              </div>
  

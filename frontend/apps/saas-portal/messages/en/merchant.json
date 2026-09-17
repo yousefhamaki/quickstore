@@ -132,7 +132,7 @@
         "confirmDowngradeTitle": "Confirm Subscription Downgrade",
         "confirmDowngradeWarning": "Warning: You are currently on the <highlight>{current}</highlight>. Proceeding will immediately replace your active subscription with the <highlight>{new}</highlight> and deduct <highlight>{price} {currency}</highlight> from your wallet. Do you want to proceed?",
         "monthly": "Monthly",
-        "yearly": "Yearly",
+        "yearly": "Annual",
         "savePercent": "Save {percent}%",
         "yearlyPeriod": "EGP/yr",
         "monthlyPeriod": "EGP/mo",
