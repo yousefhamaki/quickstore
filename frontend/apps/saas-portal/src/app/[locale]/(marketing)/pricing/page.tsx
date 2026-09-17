@@ -103,7 +103,7 @@ export default function PricingPage() {
                             </Button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-8 items-start ${plans.length >= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
                             {plans.map((plan) => {
                                 const resolvedMaxStores = plan.maxStores || plan.storeLimit || 1;
                                 const storeFeature = locale === 'ar'
@@ -173,11 +173,15 @@ export default function PricingPage() {
                                         popular={plan.name_en === 'Professional'}
                                         color={plan.type === 'free' ? 'gray' : (plan.name_en === 'Professional' ? 'blue' : 'purple')}
                                         onSelect={() => {
-                                            const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
+                                            // /merchant/plans and /auth/register are routes within THIS
+                                            // same app (saas-portal), not a separate service — there is
+                                            // no "dashboard" app running on another port to redirect to.
+                                            // The previous version pointed at a hardcoded, nonexistent
+                                            // http://localhost:3001, so every click failed outright.
                                             if (user) {
-                                                window.location.href = `${dashboardUrl}/merchant/plans?autoSubscribe=${plan._id}`;
+                                                router.push(`/merchant/plans?autoSubscribe=${plan._id}`);
                                             } else {
-                                                window.location.href = `${dashboardUrl}/auth/register?redirect=${encodeURIComponent('/merchant/plans?autoSubscribe=' + plan._id)}`;
+                                                router.push(`/auth/register?redirect=${encodeURIComponent('/merchant/plans?autoSubscribe=' + plan._id)}`);
                                             }
                                         }}
                                     />
@@ -215,8 +219,18 @@ export default function PricingPage() {
                      </p>
                      <Button
                          onClick={() => {
-                             const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001');
-                             window.location.href = user ? (user.role === 'super_admin' ? `${dashboardUrl}/admin` : `${dashboardUrl}/merchant`) : `${dashboardUrl}/auth/register`;
+                             if (user?.role === 'super_admin') {
+                                 // The admin dashboard is a genuinely separate app on its own
+                                 // port/host — but nothing else in this codebase currently
+                                 // defines a real URL for it (no env var, no other working
+                                 // reference anywhere), and a super_admin landing on the public
+                                 // pricing page is not a real user journey worth guessing at.
+                                 // Falling back to the merchant area rather than a link to
+                                 // nowhere.
+                                 router.push('/merchant');
+                                 return;
+                             }
+                             router.push(user ? '/merchant' : '/auth/register');
                          }}
                          size="lg"
                          className="h-16 px-12 text-xl rounded-full bg-white text-blue-600 hover:bg-gray-100 font-bold transition hover:scale-105"
