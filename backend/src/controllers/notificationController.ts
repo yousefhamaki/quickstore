@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import Notification from '../models/Notification';
+import DeviceToken from '../models/DeviceToken';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 // @desc    Paginated list of this merchant's notifications, plus their unread count
@@ -69,6 +70,56 @@ export const markAllNotificationsRead = async (req: AuthRequest, res: Response) 
         res.json({ message: 'All notifications marked as read.' });
     } catch (error) {
         console.error('[NotificationController] markAllNotificationsRead failed:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Register (or re-register) this device for push notifications —
+//          called by the mobile-merchant app right after a successful
+//          login. Upserts on expoPushToken so re-registering the same
+//          device (e.g. re-opening the app) just refreshes ownership/lastSeenAt
+//          instead of accumulating duplicate rows.
+// @route   POST /api/notifications/register-device
+// @access  Private
+export const registerDevice = async (req: AuthRequest, res: Response) => {
+    const { expoPushToken, platform } = req.body;
+
+    if (!expoPushToken || typeof expoPushToken !== 'string') {
+        return res.status(400).json({ message: 'expoPushToken is required.' });
+    }
+    if (platform !== 'ios' && platform !== 'android') {
+        return res.status(400).json({ message: "platform must be 'ios' or 'android'." });
+    }
+
+    try {
+        await DeviceToken.findOneAndUpdate(
+            { expoPushToken },
+            { $set: { userId: req.user._id, platform, lastSeenAt: new Date() } },
+            { upsert: true, setDefaultsOnInsert: true }
+        );
+        res.json({ message: 'Device registered.' });
+    } catch (error) {
+        console.error('[NotificationController] registerDevice failed:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Unregister this device (called on logout, so a signed-out device
+//          stops receiving pushes for the account it just left).
+// @route   POST /api/notifications/unregister-device
+// @access  Private
+export const unregisterDevice = async (req: AuthRequest, res: Response) => {
+    const { expoPushToken } = req.body;
+
+    if (!expoPushToken || typeof expoPushToken !== 'string') {
+        return res.status(400).json({ message: 'expoPushToken is required.' });
+    }
+
+    try {
+        await DeviceToken.deleteOne({ expoPushToken, userId: req.user._id });
+        res.json({ message: 'Device unregistered.' });
+    } catch (error) {
+        console.error('[NotificationController] unregisterDevice failed:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

@@ -3,7 +3,9 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User';
 import Subscription from '../models/Subscription';
-import { createSessionAndToken } from '../services/sessionService';
+import { createSessionAndToken, issueRefreshToken, hashRefreshToken } from '../services/sessionService';
+import { generateToken } from '../utils/auth';
+import Session from '../models/Session';
 import { recordLoginHistory, checkAndAlertNewDevice } from './securityController';
 import { generateEmailOtp } from '../utils/twoFactor';
 
@@ -165,7 +167,7 @@ export const loginUser = async (req: Request, res: Response) => {
             const sub = await Subscription.findOne({ userId: user._id }).populate('planId');
             const planName = (sub?.planId as any)?.name || 'Free';
 
-            const { token } = await createSessionAndToken(user, req);
+            const { token, refreshToken } = await createSessionAndToken(user, req);
             recordLoginHistory((user._id as any).toString(), true, req).catch(() => {});
             checkAndAlertNewDevice((user._id as any).toString(), user.email, req).catch(() => {});
 
@@ -179,6 +181,10 @@ export const loginUser = async (req: Request, res: Response) => {
                     name: planName
                 },
                 token,
+                // Additive — existing web clients ignore this. Mobile uses it
+                // to obtain a new access token via POST /api/auth/refresh
+                // once the 1-day access token expires.
+                refreshToken,
             });
         } else {
             if (user) {
@@ -236,12 +242,13 @@ export const verifyEmail = async (req: Request, res: Response) => {
             });
         }
 
-        const { token: sessionToken } = await createSessionAndToken(user, req);
+        const { token: sessionToken, refreshToken } = await createSessionAndToken(user, req);
         recordLoginHistory((user._id as any).toString(), true, req).catch(() => {});
 
         res.json({
             message: 'Email verified successfully',
             token: sessionToken,
+            refreshToken,
             user: {
                 _id: user._id,
                 name: user.name,
@@ -359,7 +366,7 @@ export const googleLogin = async (req: Request, res: Response) => {
         const activeSub = await Subscription.findOne({ userId: user._id }).populate('planId');
         const planName = (activeSub?.planId as any)?.name || 'Free';
 
-        const { token: sessionToken } = await createSessionAndToken(user, req);
+        const { token: sessionToken, refreshToken } = await createSessionAndToken(user, req);
         recordLoginHistory((user._id as any).toString(), true, req).catch(() => {});
         checkAndAlertNewDevice((user._id as any).toString(), user.email, req).catch(() => {});
 
@@ -373,6 +380,7 @@ export const googleLogin = async (req: Request, res: Response) => {
                 name: planName
             },
             token: sessionToken,
+            refreshToken,
         });
 
     } catch (error) {
@@ -478,6 +486,57 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
 
         res.status(200).json({ message: 'If your account exists and is unverified, a new link has been sent.' });
     } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Exchange a refresh token for a new access token, rotating it
+//          (single-use — the old refresh token stops working the instant a
+//          new one is issued, and reusing it fails loudly rather than
+//          silently succeeding). Public because by definition the caller's
+//          access token is expired or absent by the time this is called.
+// @route   POST /api/auth/refresh
+// @access  Public (requires a valid refresh token)
+export const refreshAccessToken = async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken || typeof refreshToken !== 'string') {
+        return res.status(400).json({ message: 'Refresh token is required.' });
+    }
+
+    try {
+        const refreshTokenHash = hashRefreshToken(refreshToken);
+        const session = await Session.findOne({ refreshTokenHash, revokedAt: null }).select(
+            '+refreshTokenHash +refreshTokenExpiresAt'
+        );
+
+        if (!session || !session.refreshTokenExpiresAt || session.refreshTokenExpiresAt.getTime() < Date.now()) {
+            return res.status(401).json({ message: 'Invalid or expired refresh token. Please log in again.' });
+        }
+
+        const user = await User.findById(session.userId);
+        if (!user || user.isBlocked) {
+            return res.status(401).json({ message: 'Invalid refresh token.' });
+        }
+
+        const sessionId = (session._id as any).toString();
+
+        // Rotate first — if anything below fails, the old refresh token is
+        // already dead rather than reusable, which is the safer failure mode.
+        const newRefreshToken = await issueRefreshToken(sessionId);
+
+        const newAccessToken = generateToken(
+            (user._id as any).toString(),
+            user.role,
+            user.isVerified,
+            user.authProvider,
+            user.email,
+            sessionId
+        );
+
+        res.json({ token: newAccessToken, refreshToken: newRefreshToken });
+    } catch (error) {
+        console.error('[AuthController] refreshAccessToken failed:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
