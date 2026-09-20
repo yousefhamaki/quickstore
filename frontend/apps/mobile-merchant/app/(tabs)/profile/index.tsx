@@ -1,17 +1,24 @@
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { GradientHeader } from '../../components/GradientHeader';
-import { GradientButton } from '../../components/GradientButton';
-import { Card } from '../../components/Card';
-import { HeroStat } from '../../components/HeroStat';
-import { LoadingState } from '../../components/LoadingState';
-import { ErrorState } from '../../components/EmptyState';
-import { colors, radius, spacing, typography } from '../../constants/theme';
-import { formatEGP } from '../../constants/theme';
-import { useAuth } from '../../lib/authContext';
-import { getBillingOverview } from '../../lib/services/billing';
-import { BillingOverview } from '../../lib/types';
+import { GradientHeader } from '../../../components/GradientHeader';
+import { GradientButton } from '../../../components/GradientButton';
+import { Card } from '../../../components/Card';
+import { PressableScale } from '../../../components/PressableScale';
+import { HeroStat } from '../../../components/HeroStat';
+import { LoadingState } from '../../../components/LoadingState';
+import { ErrorState } from '../../../components/EmptyState';
+import { colors, formatEGP, layout, motion, radius, spacing, typography } from '../../../constants/theme';
+import { useAuth } from '../../../lib/authContext';
+import { getBillingOverview } from '../../../lib/services/billing';
+import { BillingOverview } from '../../../lib/types';
+
+const MANAGE_ROWS: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string; href: '/(tabs)/profile/analytics' | '/(tabs)/profile/store-settings' | '/(tabs)/profile/coupons' }[] = [
+  { icon: 'bar-chart-outline', title: 'Analytics', subtitle: 'Revenue trends, top products & customers', href: '/(tabs)/profile/analytics' },
+  { icon: 'storefront-outline', title: 'Store settings', subtitle: 'Branding, contact info & shipping zones', href: '/(tabs)/profile/store-settings' },
+  { icon: 'pricetags-outline', title: 'Coupons', subtitle: 'Discount codes & promotions', href: '/(tabs)/profile/coupons' },
+];
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -47,10 +54,10 @@ export default function ProfileScreen() {
   const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <GradientHeader title="Profile & wallet" />
+    <View style={styles.screen}>
+      <GradientHeader title="Profile & settings" />
       <ScrollView contentContainerStyle={styles.content}>
-        <Card style={styles.profileCard}>
+        <Card style={styles.profileCard} delay={0}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
@@ -68,7 +75,7 @@ export default function ProfileScreen() {
           <>
             <HeroStat label="Wallet balance" value={formatEGP(billing?.wallet.balance || 0)} caption="Available for plan fees, order fees & top-ups" />
 
-            <Card>
+            <Card delay={motion.stagger}>
               <Text style={styles.sectionTitle}>Plan</Text>
               <Text style={styles.value}>{billing?.plan.name}</Text>
               <Text style={styles.muted}>
@@ -76,7 +83,7 @@ export default function ProfileScreen() {
               </Text>
             </Card>
 
-            <Card>
+            <Card delay={motion.stagger * 2}>
               <Text style={styles.sectionTitle}>Subscription</Text>
               <View style={styles.rowBetween}>
                 <Text style={styles.value}>{billing?.subscription.status}</Text>
@@ -86,7 +93,7 @@ export default function ProfileScreen() {
               </View>
             </Card>
 
-            <Card>
+            <Card delay={motion.stagger * 3}>
               <Text style={styles.sectionTitle}>Usage</Text>
               <View style={styles.usageRow}>
                 <Text style={styles.muted}>Stores</Text>
@@ -104,6 +111,22 @@ export default function ProfileScreen() {
           </>
         )}
 
+        <Text style={styles.sectionLabel}>Manage</Text>
+        {MANAGE_ROWS.map((row, idx) => (
+          <PressableScale key={row.href} onPress={() => router.push(row.href)}>
+            <Card style={styles.manageRow} delay={motion.stagger * (4 + idx)}>
+              <View style={styles.manageIconCircle}>
+                <Ionicons name={row.icon} size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.manageTitle}>{row.title}</Text>
+                <Text style={styles.manageSubtitle}>{row.subtitle}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+            </Card>
+          </PressableScale>
+        ))}
+
         <GradientButton title="Log out" onPress={handleLogout} loading={loggingOut} style={{ marginTop: spacing.sm }} />
       </ScrollView>
     </View>
@@ -111,9 +134,10 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: 'transparent' },
   content: {
     padding: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: layout.tabBarClearance,
     gap: spacing.md,
   },
   profileCard: {
@@ -147,6 +171,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginBottom: spacing.sm,
   },
+  sectionLabel: {
+    ...typography.label,
+    color: colors.textInverseFaint,
+    marginTop: spacing.xs,
+  },
   value: {
     ...typography.bodyBold,
     fontSize: 15,
@@ -160,5 +189,30 @@ const styles = StyleSheet.create({
   usageRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  manageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: 0,
+  },
+  manageIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manageTitle: {
+    ...typography.bodyBold,
+    fontSize: 15,
+    color: colors.text,
+  },
+  manageSubtitle: {
+    ...typography.body,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
 });

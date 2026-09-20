@@ -7,7 +7,7 @@ import { Card } from '../../components/Card';
 import { HeroStat } from '../../components/HeroStat';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/EmptyState';
-import { colors, formatEGP, radius, spacing, typography } from '../../constants/theme';
+import { colors, formatEGP, layout, motion, radius, spacing, typography } from '../../constants/theme';
 import { useAuth } from '../../lib/authContext';
 import { getAnalyticsOverview } from '../../lib/services/analytics';
 import { getBillingOverview } from '../../lib/services/billing';
@@ -55,14 +55,14 @@ export default function HomeScreen() {
   const firstName = user?.name?.trim().split(' ')[0];
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={styles.screen}>
       <GradientHeader
         title={firstName ? `Hi, ${firstName}` : 'Welcome back'}
         subtitle="Here's how your store is doing"
       />
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
       >
         {loading ? (
           <LoadingState label="Loading your dashboard…" />
@@ -77,15 +77,15 @@ export default function HomeScreen() {
             />
 
             <View style={styles.grid}>
-              <StatCard label="Orders" value={String(analytics?.totalOrders ?? 0)} icon="receipt-outline" />
-              <StatCard label="Low stock" value={String(analytics?.lowStockProducts ?? 0)} icon="alert-circle-outline" />
-              <StatCard label="Customers" value={String(analytics?.totalCustomers ?? 0)} icon="people-outline" />
-              <StatCard label="Unread alerts" value={String(unreadCount)} icon="notifications-outline" />
+              <StatCard label="Orders" value={String(analytics?.totalOrders ?? 0)} icon="receipt-outline" delay={motion.stagger} />
+              <StatCard label="Low stock" value={String(analytics?.lowStockProducts ?? 0)} icon="alert-circle-outline" delay={motion.stagger * 2} />
+              <StatCard label="Customers" value={String(analytics?.totalCustomers ?? 0)} icon="people-outline" delay={motion.stagger * 3} />
+              <StatCard label="Unread alerts" value={String(unreadCount)} icon="notifications-outline" delay={motion.stagger * 4} />
             </View>
 
             <Text style={styles.sectionLabel}>Finances</Text>
 
-            <Card>
+            <Card delay={motion.stagger * 5}>
               <View style={styles.rowBetween}>
                 <View>
                   <Text style={styles.cardTitle}>Gross profit</Text>
@@ -100,7 +100,7 @@ export default function HomeScreen() {
               </Text>
             </Card>
 
-            <Card style={{ marginTop: spacing.md }}>
+            <Card style={{ marginTop: spacing.md }} delay={motion.stagger * 6}>
               <Text style={styles.cardTitle}>Wallet</Text>
               <Text style={styles.bigNumber}>{formatEGP(billing?.wallet.balance || 0)}</Text>
               <View style={styles.divider} />
@@ -120,9 +120,9 @@ export default function HomeScreen() {
   );
 }
 
-function StatCard({ label, value, icon }: { label: string; value: string; icon: any }) {
+function StatCard({ label, value, icon, delay }: { label: string; value: string; icon: any; delay?: number }) {
   return (
-    <Card style={styles.statCard}>
+    <Card style={styles.statCard} delay={delay}>
       <View style={styles.statIconCircle}>
         <Ionicons name={icon} size={16} color={colors.primary} />
       </View>
@@ -133,9 +133,13 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   content: {
     padding: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: layout.tabBarClearance,
     gap: spacing.md,
   },
   grid: {

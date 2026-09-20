@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { colors } from '../../../constants/theme';
 
-export default function OrdersLayout() {
+export default function ProfileLayout() {
   return (
     <Stack
       screenOptions={{
@@ -12,7 +12,8 @@ export default function OrdersLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="[id]" options={{ title: 'Order details' }} />
+      <Stack.Screen name="analytics" options={{ title: 'Analytics' }} />
+      <Stack.Screen name="store-settings" options={{ title: 'Store settings' }} />
     </Stack>
   );
 }

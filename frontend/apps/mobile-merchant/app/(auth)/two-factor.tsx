@@ -40,7 +40,7 @@ export default function TwoFactorScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={styles.flex}>
       <GradientHeader
         title="Two-factor verification"
         subtitle={method === 'email' ? 'Enter the code sent to your email' : 'Enter the code from your authenticator app'}
@@ -72,9 +72,9 @@ export default function TwoFactorScreen() {
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   form: {
     padding: spacing.lg,
-    marginTop: -spacing.lg,
   },
   label: {
     ...typography.label,
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 20,
     letterSpacing: 4,
-    backgroundColor: '#FBFCFE',
+    backgroundColor: colors.glassFillStrong,
     color: colors.text,
   },
   error: {
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   },
   switchLink: {
     ...typography.bodyBold,
-    color: colors.primary,
+    color: colors.textInverse,
     textAlign: 'center',
     marginTop: spacing.lg,
   },

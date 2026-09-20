@@ -3,9 +3,10 @@ import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } fr
 import { useFocusEffect } from 'expo-router';
 import { GradientHeader } from '../../components/GradientHeader';
 import { Card } from '../../components/Card';
+import { PressableScale } from '../../components/PressableScale';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState, ErrorState } from '../../components/EmptyState';
-import { colors, radius, spacing, typography } from '../../constants/theme';
+import { colors, layout, motion, radius, spacing, typography } from '../../constants/theme';
 import {
   getNotifications,
   markAllNotificationsRead,
@@ -69,7 +70,7 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={styles.screen}>
       <GradientHeader title="Notifications" />
       <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllRow}>
         <Text style={styles.markAllText}>Mark all as read</Text>
@@ -84,13 +85,13 @@ export default function NotificationsScreen() {
           data={entries}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
           ListEmptyComponent={
             <EmptyState icon="notifications-outline" title="You're all caught up" message="New activity on your store will show up here." />
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => handlePress(item)}>
-              <Card style={[styles.card, !item.isRead && styles.cardUnread]}>
+          renderItem={({ item, index }) => (
+            <PressableScale onPress={() => handlePress(item)}>
+              <Card style={[styles.card, !item.isRead && styles.cardUnread]} delay={Math.min(index, 6) * motion.stagger}>
                 <View style={styles.row}>
                   {!item.isRead ? <View style={styles.dot} /> : null}
                   <Text style={styles.title}>{item.title}</Text>
@@ -98,7 +99,7 @@ export default function NotificationsScreen() {
                 <Text style={styles.message}>{item.message}</Text>
                 <Text style={styles.date}>{new Date(item.createdAt).toLocaleString()}</Text>
               </Card>
-            </TouchableOpacity>
+            </PressableScale>
           )}
         />
       )}
@@ -107,6 +108,7 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: 'transparent' },
   markAllRow: {
     alignItems: 'flex-end',
     paddingHorizontal: spacing.md,
@@ -114,12 +116,13 @@ const styles = StyleSheet.create({
   },
   markAllText: {
     ...typography.bodyBold,
-    color: colors.primary,
+    color: colors.textInverse,
     fontSize: 13,
   },
   listContent: {
     padding: spacing.md,
     paddingTop: 0,
+    paddingBottom: layout.tabBarClearance,
     gap: spacing.sm,
   },
   card: {
@@ -127,7 +130,6 @@ const styles = StyleSheet.create({
   },
   cardUnread: {
     borderColor: colors.primary,
-    backgroundColor: '#EFF6FF',
   },
   row: {
     flexDirection: 'row',

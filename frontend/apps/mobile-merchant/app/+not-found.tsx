@@ -22,15 +22,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   text: {
     fontSize: 16,
-    color: colors.text,
+    color: colors.textInverse,
   },
   link: {
     marginTop: spacing.md,
-    color: colors.primary,
-    fontWeight: '600',
+    color: colors.textInverse,
+    fontWeight: '700',
   },
 });

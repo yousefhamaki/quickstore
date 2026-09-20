@@ -1,10 +1,18 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Redirect, Tabs } from 'expo-router';
 import { useAuth } from '../../lib/authContext';
-import { colors } from '../../constants/theme';
+import { colors, layout, radius } from '../../constants/theme';
 import { useNotificationCount } from '../../lib/notificationCountContext';
 
+// Navigation structure (see report for the full rationale): the bottom bar
+// stays at the 5 highest-frequency destinations — Home, Orders, Products,
+// Notifications, Profile — rather than growing a tab per new feature.
+// Store Settings, Coupons and the analytics deep-dive all live one level
+// down, reachable from the Profile tab's "Store" hub (app/(tabs)/profile),
+// which is the standard "Profile & Settings" pattern for exactly this case.
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   // Shared across the whole (tabs) group (see lib/notificationCountContext.tsx)
@@ -21,8 +29,18 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: colors.textInverseFaint,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarStyle: styles.tabBar,
+        tabBarItemStyle: styles.tabItem,
+        tabBarBackground: () => (
+          <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
+        ),
+        // Bottom-tabs v7: a soft cross-fade between tabs instead of an
+        // instant hard cut — the "smooth tab-switch transition" ask.
+        animation: 'shift',
       }}
     >
       <Tabs.Screen
@@ -40,9 +58,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="products"
+        options={{
+          title: 'Products',
+          tabBarIcon: ({ color, size }) => <Ionicons name="cube" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Notifications',
+          title: 'Alerts',
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarIcon: ({ color, size }) => <Ionicons name="notifications" color={color} size={size} />,
         }}
@@ -57,3 +82,24 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: layout.tabBarBottomOffset,
+    height: layout.tabBarHeight,
+    borderRadius: radius.xl,
+    borderTopWidth: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    overflow: 'hidden',
+    elevation: 0,
+    paddingHorizontal: 4,
+  },
+  tabItem: {
+    paddingVertical: 8,
+  },
+});

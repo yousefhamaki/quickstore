@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,9 +9,10 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { GradientButton } from '../../components/GradientButton';
-import { colors, radius, shadow, spacing, typography } from '../../constants/theme';
+import { Card } from '../../components/Card';
+import { colors, glowShadow, radius, spacing, typography } from '../../constants/theme';
 import { useAuth } from '../../lib/authContext';
 import * as authService from '../../lib/services/auth';
 import { LoginSuccess } from '../../lib/types';
@@ -23,6 +24,19 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(18);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) });
+    translateY.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.cubic) });
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -50,105 +64,91 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <LinearGradient
-          colors={[colors.gradientStart, colors.gradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.brandBlock}
-        >
-          <View style={styles.wordmarkBadge}>
+        <View style={styles.brandBlock}>
+          <View style={[styles.wordmarkBadge, glowShadow]}>
             <Text style={styles.wordmarkBadgeText}>B</Text>
           </View>
           <Text style={styles.wordmark}>Buildora</Text>
           <Text style={styles.tagline}>Build once. Sell everywhere.</Text>
-        </LinearGradient>
-
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Welcome back</Text>
-          <Text style={styles.formSubtitle}>Log in to manage your store on the go.</Text>
-
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@store.com"
-            placeholderTextColor={colors.textFaint}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="••••••••"
-            placeholderTextColor={colors.textFaint}
-            secureTextEntry
-            autoComplete="password"
-          />
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <GradientButton title="Log in" onPress={handleLogin} loading={loading} style={{ marginTop: spacing.lg }} />
         </View>
+
+        <Animated.View style={animatedStyle}>
+          <Card style={styles.formCard} delay={0}>
+            <Text style={styles.formTitle}>Welcome back</Text>
+            <Text style={styles.formSubtitle}>Log in to manage your store on the go.</Text>
+
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@store.com"
+              placeholderTextColor={colors.textFaint}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+            />
+
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textFaint}
+              secureTextEntry
+              autoComplete="password"
+            />
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <GradientButton title="Log in" onPress={handleLogin} loading={loading} style={{ marginTop: spacing.lg }} />
+          </Card>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   scroll: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
   brandBlock: {
-    paddingTop: 88,
-    paddingBottom: 56,
+    paddingTop: 72,
+    paddingBottom: 40,
     alignItems: 'center',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
   },
   wordmarkBadge: {
-    width: 56,
-    height: 56,
+    width: 60,
+    height: 60,
     borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
   },
   wordmarkBadgeText: {
     ...typography.display,
-    fontSize: 26,
+    fontSize: 28,
     color: '#FFFFFF',
   },
   wordmark: {
     ...typography.display,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   tagline: {
     ...typography.bodyLarge,
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.textInverseMuted,
     marginTop: spacing.xs,
   },
   formCard: {
     margin: spacing.lg,
-    marginTop: -spacing.xl,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadow,
+    marginTop: 0,
   },
   formTitle: {
     ...typography.h1,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
     fontSize: 16,
-    backgroundColor: '#FBFCFE',
+    backgroundColor: colors.glassFillStrong,
     color: colors.text,
   },
   error: {

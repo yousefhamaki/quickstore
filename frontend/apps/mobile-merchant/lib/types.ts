@@ -46,6 +46,13 @@ export interface OrderCustomer {
   phone?: string;
 }
 
+export interface OrderRefund {
+  amount: number;
+  reason: string;
+  refundedAt: string;
+  refundedBy?: string;
+}
+
 export interface Order {
   _id: string;
   orderNumber: string;
@@ -58,6 +65,8 @@ export interface Order {
   discount: number;
   total: number;
   status: OrderStatus;
+  // 'pending' | 'paid' | 'failed' | 'refunded' | 'partially_refunded' — kept
+  // as `string` since the backend doesn't expose a stricter enum type.
   paymentStatus: string;
   paymentMethod: string;
   shippingAddress: OrderAddress;
@@ -65,6 +74,8 @@ export interface Order {
   customerNote?: string;
   merchantNote?: string;
   timeline: { status: string; timestamp: string; note?: string }[];
+  refunds?: OrderRefund[];
+  refundedAmount?: number;
   createdAt: string;
 }
 
@@ -89,6 +100,44 @@ export interface AnalyticsOverview {
   lowStockProducts: number;
   totalVisitors: number;
   conversion: number;
+}
+
+export type AnalyticsPeriod = 'daily' | 'weekly' | 'monthly';
+
+export interface RevenuePoint {
+  _id: { year: number; month?: number; day?: number; week?: number };
+  revenue: number;
+  orders: number;
+}
+
+export interface TopProduct {
+  _id: string;
+  totalSold: number;
+  revenue: number;
+  cost: number;
+  productName: string;
+  productImage?: string;
+  profit: number;
+}
+
+export interface RecentOrderSummary {
+  _id: string;
+  orderNumber: string;
+  total: number;
+  status: OrderStatus;
+  paymentStatus: string;
+  createdAt: string;
+  customerId?: { _id: string; firstName?: string; lastName?: string; email?: string };
+}
+
+export interface CustomerGrowthPoint {
+  _id: { year: number; month: number };
+  count: number;
+}
+
+export interface CustomersAnalytics {
+  totalCustomers: number;
+  growth: CustomerGrowthPoint[];
 }
 
 export interface BillingOverview {
@@ -139,17 +188,165 @@ export interface NotificationsResponse {
   pagination: { page: number; limit: number; total: number; pages: number };
 }
 
+// ---------------------------------------------------------------------------
+// Products
+// ---------------------------------------------------------------------------
+
+export type ProductStatus = 'draft' | 'active' | 'archived';
+
+export interface ProductImage {
+  url: string;
+  publicId: string;
+  isMain?: boolean;
+}
+
+export interface ProductInventory {
+  quantity: number;
+  reserved?: number;
+  lowStockThreshold?: number;
+}
+
+export interface ProductFeature {
+  label: string;
+  value: string;
+}
+
+export interface ProductExtra {
+  _id?: string;
+  name: string;
+  description?: string;
+  price: number;
+}
+
 export interface Product {
   _id: string;
+  storeId: string;
   name: string;
-  images?: { url: string; isMain?: boolean }[];
+  slug?: string;
+  description?: string;
+  shortDescription?: string;
+  images: ProductImage[];
   price: number;
-  stock?: number;
-  status: string;
+  compareAtPrice?: number;
+  costPerItem?: number;
+  sku?: string;
+  barcode?: string;
+  trackInventory?: boolean;
+  inventory: ProductInventory;
+  category?: string;
+  categoryId?: string;
+  tags?: string[];
+  features?: ProductFeature[];
+  extras?: ProductExtra[];
+  ratingAverage?: number;
+  ratingCount?: number;
+  status: ProductStatus;
+  isActive?: boolean;
+  totalStock?: number;
+  totalReserved?: number;
+  totalAvailable?: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface ProductsResponse {
   products: Product[];
-  page: number;
-  pages: number;
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
+
+export interface UploadedImage {
+  url: string;
+  publicId: string;
+  isMain: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Store settings
+// ---------------------------------------------------------------------------
+
+export interface StoreBranding {
+  primaryColor: string;
+  secondaryColor: string;
+  fontFamily: string;
+  bannerImage?: { url: string; publicId: string };
+}
+
+export interface StoreContact {
+  email?: string;
+  phone?: string;
+  address?: string;
+  whatsapp?: string;
+  facebook?: string;
+  instagram?: string;
+}
+
+export interface ShippingZone {
+  name: string;
+  cities: string[];
+  rate: number;
+  freeShippingThreshold?: number;
+}
+
+export interface StoreShippingSettings {
+  enabled: boolean;
+  provider: 'local' | 'bosta' | 'aramex';
+  zones: ShippingZone[];
+}
+
+export interface StoreSettings {
+  currency: string;
+  language: string;
+  timezone: string;
+  shipping: StoreShippingSettings;
+  tax: { enabled: boolean; rate: number; includedInPrice: boolean };
+}
+
+export interface Store {
+  _id: string;
+  ownerId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  category?: string;
+  logo?: { url: string; publicId: string };
+  favicon?: { url: string; publicId: string };
+  status: 'draft' | 'live' | 'paused';
+  isPublished: boolean;
+  branding: StoreBranding;
+  contact: StoreContact;
+  domain: { type: 'subdomain' | 'custom'; subdomain: string; customDomain?: string; isVerified: boolean };
+  settings: StoreSettings;
+  stats?: { totalProducts: number; totalOrders: number; totalRevenue: number; totalCustomers: number };
+  createdAt?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Coupons
+// ---------------------------------------------------------------------------
+
+export type CouponType = 'percentage' | 'fixed' | 'free_shipping';
+
+export interface Coupon {
+  _id: string;
+  storeId: string;
+  code: string;
+  type: CouponType;
+  value: number;
+  maxUsage: number; // -1 = unlimited
+  usageCount: number;
+  minOrderAmount?: number;
+  expiresAt?: string;
+  isActive: boolean;
+  autoApply?: boolean;
+  createdAt: string;
+}
+
+export interface CouponListResponse {
+  success: boolean;
+  coupons: Coupon[];
+}
+
+export interface CouponResponse {
+  success: boolean;
+  coupon: Coupon;
 }

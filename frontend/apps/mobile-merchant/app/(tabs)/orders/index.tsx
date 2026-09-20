@@ -3,10 +3,11 @@ import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } fr
 import { useFocusEffect, useRouter } from 'expo-router';
 import { GradientHeader } from '../../../components/GradientHeader';
 import { Card } from '../../../components/Card';
+import { PressableScale } from '../../../components/PressableScale';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { LoadingState } from '../../../components/LoadingState';
 import { EmptyState, ErrorState } from '../../../components/EmptyState';
-import { colors, formatEGP, radius, spacing, typography } from '../../../constants/theme';
+import { colors, formatEGP, layout, motion, radius, spacing, typography } from '../../../constants/theme';
 import { getOrders } from '../../../lib/services/orders';
 import { Order, OrderStatus } from '../../../lib/types';
 
@@ -52,7 +53,7 @@ export default function OrdersListScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={styles.screen}>
       <GradientHeader title="Orders" />
 
       <View style={styles.filterRow}>
@@ -76,7 +77,7 @@ export default function OrdersListScreen() {
           data={orders}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
           ListEmptyComponent={
             <EmptyState
               icon="receipt-outline"
@@ -84,9 +85,9 @@ export default function OrdersListScreen() {
               message="Orders placed on your store will show up here."
             />
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => router.push(`/(tabs)/orders/${item._id}`)}>
-              <Card style={styles.orderCard}>
+          renderItem={({ item, index }) => (
+            <PressableScale onPress={() => router.push(`/(tabs)/orders/${item._id}`)}>
+              <Card style={styles.orderCard} delay={Math.min(index, 6) * motion.stagger}>
                 <View style={styles.orderRow}>
                   <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
                   <StatusBadge status={item.status} />
@@ -94,7 +95,7 @@ export default function OrdersListScreen() {
                 <Text style={styles.orderTotal}>{formatEGP(item.total)}</Text>
                 <Text style={styles.orderDate}>{new Date(item.createdAt).toLocaleDateString()}</Text>
               </Card>
-            </TouchableOpacity>
+            </PressableScale>
           )}
         />
       )}
@@ -103,6 +104,10 @@ export default function OrdersListScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -114,9 +119,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: radius.pill,
-    backgroundColor: colors.card,
+    backgroundColor: colors.glassFillSubtle,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glassBorder,
   },
   filterChipActive: {
     backgroundColor: colors.primary,
@@ -124,7 +129,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: colors.textInverseMuted,
     textTransform: 'none',
   },
   filterChipTextActive: {
@@ -133,6 +138,7 @@ const styles = StyleSheet.create({
   listContent: {
     padding: spacing.md,
     paddingTop: 0,
+    paddingBottom: layout.tabBarClearance,
   },
   orderCard: {
     marginBottom: spacing.sm,
