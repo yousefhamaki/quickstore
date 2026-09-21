@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from "react";
+import { use, useRef } from "react";
 import { useStore, useUpdateStore } from "@shared/lib/hooks/useStore";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
@@ -12,19 +12,48 @@ import { Input } from "@shared/components/ui/input";
 import { PasswordInput } from "@shared/components/ui/password-input";
 import { Label } from "@shared/components/ui/label";
 import { Switch } from "@shared/components/ui/switch";
+import { cn } from "@shared/lib/utils";
 import {
     Truck,
     Plus,
     Trash2,
     Save,
     Loader2,
-    MapPin
+    MapPin,
+    Settings,
+    CheckCircle2
 } from "lucide-react";
+
+// The exact mask placeholder the backend recognizes as "leave this secret
+// untouched" (see backend/src/utils/applyEncryptedCredentials.ts). Every
+// masked field on this page defaults to this string when a value is already
+// saved, and submitting it unchanged tells the backend to keep the existing
+// ciphertext rather than clobbering it.
+const MASKED_VALUE = '••••••••••••';
+
+type ShippingProviderId = 'local' | 'bosta' | 'aramex' | 'mylerz' | 'jt_express';
+
+// One entry per provider the grid renders. `accent` is that courier's real
+// brand color, used only as a tile accent/wordmark color (no logo artwork).
+const SHIPPING_PROVIDERS: {
+    id: ShippingProviderId;
+    name: string;
+    tagline: string;
+    accent: string;
+    hasCredentials: boolean;
+}[] = [
+    { id: 'local', name: 'Local Delivery', tagline: 'Your own fleet', accent: '#64748B', hasCredentials: false },
+    { id: 'bosta', name: 'Bosta', tagline: 'Waybills & live tracking', accent: '#E4312B', hasCredentials: true },
+    { id: 'aramex', name: 'Aramex', tagline: 'Global courier network', accent: '#C8102E', hasCredentials: true },
+    { id: 'mylerz', name: 'Mylerz', tagline: 'Last-mile delivery', accent: '#F4511E', hasCredentials: true },
+    { id: 'jt_express', name: 'J&T Express', tagline: 'Regional express courier', accent: '#E30613', hasCredentials: true },
+];
 
 export default function ShippingSettings({ params }: { params: Promise<{ storeId: string }> }) {
     const { storeId } = use(params);
     const { data: store, isLoading } = useStore(storeId);
     const updateMutation = useUpdateStore(storeId);
+    const credentialsPanelRef = useRef<HTMLDivElement>(null);
 
     const { register, control, handleSubmit, watch, setValue, formState: { errors, isDirty } } = useForm({
         values: store ? {
@@ -32,12 +61,31 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
                 enabled: store.settings?.shipping?.enabled || false,
                 provider: store.settings?.shipping?.provider || 'local',
                 credentials: {
-                    apiKey: store.settings?.shipping?.credentials?.apiKey ? '••••••••••••' : ''
+                    apiKey: store.settings?.shipping?.credentials?.apiKey ? MASKED_VALUE : '',
+                    accountNumber: store.settings?.shipping?.credentials?.accountNumber || '',
+                    accountEntity: store.settings?.shipping?.credentials?.accountEntity || '',
+                    accountCountryCode: store.settings?.shipping?.credentials?.accountCountryCode || '',
+                    username: store.settings?.shipping?.credentials?.username ? MASKED_VALUE : '',
+                    password: store.settings?.shipping?.credentials?.password ? MASKED_VALUE : '',
+                    accountPin: store.settings?.shipping?.credentials?.accountPin ? MASKED_VALUE : '',
+                    apiAccount: store.settings?.shipping?.credentials?.apiAccount || '',
+                    customerCode: store.settings?.shipping?.credentials?.customerCode || '',
+                    privateKey: store.settings?.shipping?.credentials?.privateKey ? MASKED_VALUE : '',
                 },
                 zones: store.settings?.shipping?.zones || []
             }
         } : undefined
     });
+
+    const selectedProvider = (watch("shipping.provider") || 'local') as ShippingProviderId;
+    const selectedProviderMeta = SHIPPING_PROVIDERS.find(p => p.id === selectedProvider);
+
+    const selectProvider = (id: ShippingProviderId) => {
+        setValue("shipping.provider", id, { shouldDirty: true });
+        // The grid selects AND opens that provider's form below it — scroll
+        // it into view so switching providers is never a silent no-op.
+        setTimeout(() => credentialsPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    };
 
     const { fields, append, remove } = useFieldArray({
         control,
@@ -89,30 +137,169 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
                             </h2>
                             <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
                                 <CardContent className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label>Provider</Label>
-                                            <select
-                                                {...register("shipping.provider")}
-                                                className="w-full h-10 px-3 rounded-xl border-2 bg-background font-medium text-sm outline-none"
-                                            >
-                                                <option value="local">Local Delivery / Own Fleet</option>
-                                                <option value="bosta">Bosta</option>
-                                                <option value="aramex" disabled>Aramex (Coming soon)</option>
-                                            </select>
-                                        </div>
-                                        
-                                        {watch("shipping.provider") === 'bosta' && (
-                                            <div className="space-y-2">
-                                                <Label>Bosta API Key</Label>
-                                                <PasswordInput
-                                                    {...register("shipping.credentials.apiKey")}
-                                                    placeholder={store?.settings?.shipping?.credentials?.apiKey ? "••••••••••••" : "Enter API Key"}
-                                                />
-                                                <p className="text-xs text-muted-foreground mt-1">Your key is AES-encrypted before saving. We never transmit it back to the browser in plaintext.</p>
-                                            </div>
-                                        )}
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                        {SHIPPING_PROVIDERS.map((p) => {
+                                            const isActive = selectedProvider === p.id;
+                                            return (
+                                                <div
+                                                    key={p.id}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => selectProvider(p.id)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectProvider(p.id); } }}
+                                                    className={cn(
+                                                        "relative cursor-pointer rounded-xl border-2 p-4 min-h-[104px] flex flex-col items-center justify-center gap-1.5 text-center transition",
+                                                        isActive ? "shadow-md" : "border-border bg-background hover:border-primary/30 hover:shadow-sm"
+                                                    )}
+                                                    style={isActive ? { borderColor: p.accent, backgroundColor: `${p.accent}12` } : undefined}
+                                                >
+                                                    {isActive && (
+                                                        <CheckCircle2
+                                                            className="absolute top-2 left-2 w-4 h-4"
+                                                            style={{ color: p.accent }}
+                                                        />
+                                                    )}
+                                                    {p.hasCredentials && (
+                                                        <Settings
+                                                            className="absolute top-2 right-2 w-3.5 h-3.5 text-muted-foreground/60"
+                                                            aria-hidden
+                                                        />
+                                                    )}
+                                                    {p.id === 'local' ? (
+                                                        <Truck className="w-6 h-6" style={{ color: isActive ? p.accent : undefined }} />
+                                                    ) : (
+                                                        <span
+                                                            className="font-black italic text-base tracking-tight leading-tight"
+                                                            style={{ color: p.accent }}
+                                                        >
+                                                            {p.name}
+                                                        </span>
+                                                    )}
+                                                    <p className="text-[10px] font-semibold text-muted-foreground leading-tight px-1">{p.tagline}</p>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
+
+                                    {selectedProviderMeta?.hasCredentials && (
+                                        <div ref={credentialsPanelRef} className="pt-6 mt-6 border-t animate-in slide-in-from-top-4 fade-in duration-300 space-y-4">
+                                            <h3 className="font-bold text-sm">{selectedProviderMeta.name} settings</h3>
+
+                                            {selectedProvider === 'bosta' && (
+                                                <div className="space-y-2 max-w-sm">
+                                                    <Label>Bosta API Key</Label>
+                                                    <PasswordInput
+                                                        {...register("shipping.credentials.apiKey")}
+                                                        placeholder={store?.settings?.shipping?.credentials?.apiKey ? MASKED_VALUE : "Enter API Key"}
+                                                    />
+                                                    <p className="text-xs text-muted-foreground mt-1">Your key is AES-encrypted before saving. We never transmit it back to the browser in plaintext.</p>
+                                                </div>
+                                            )}
+
+                                            {selectedProvider === 'aramex' && (
+                                                <div className="space-y-6">
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Connect your own existing Aramex account — get these details from your Aramex merchant dashboard.
+                                                        Your credentials are AES-encrypted before saving; we never transmit them back to the browser in plaintext.
+                                                    </p>
+                                                    <div className="space-y-3">
+                                                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Account</p>
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            <div className="space-y-2">
+                                                                <Label>Account Number</Label>
+                                                                <Input {...register("shipping.credentials.accountNumber")} placeholder="e.g. 123456" />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label>Account Entity</Label>
+                                                                <Input {...register("shipping.credentials.accountEntity")} placeholder="e.g. CAI" />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label>Account Country Code</Label>
+                                                                <Input {...register("shipping.credentials.accountCountryCode")} placeholder="e.g. EG" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Login</p>
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            <div className="space-y-2">
+                                                                <Label>Username</Label>
+                                                                <PasswordInput
+                                                                    {...register("shipping.credentials.username")}
+                                                                    placeholder={store?.settings?.shipping?.credentials?.username ? MASKED_VALUE : "Aramex account email/username"}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label>Password</Label>
+                                                                <PasswordInput
+                                                                    {...register("shipping.credentials.password")}
+                                                                    placeholder={store?.settings?.shipping?.credentials?.password ? MASKED_VALUE : "Enter password"}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label>Account PIN</Label>
+                                                                <PasswordInput
+                                                                    {...register("shipping.credentials.accountPin")}
+                                                                    placeholder={store?.settings?.shipping?.credentials?.accountPin ? MASKED_VALUE : "Enter PIN"}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedProvider === 'mylerz' && (
+                                                <div className="space-y-4">
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Connect your own existing Mylerz account — get these details from your Mylerz merchant dashboard.
+                                                        Your credentials are AES-encrypted before saving; we never transmit them back to the browser in plaintext.
+                                                    </p>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
+                                                        <div className="space-y-2">
+                                                            <Label>Username</Label>
+                                                            <PasswordInput
+                                                                {...register("shipping.credentials.username")}
+                                                                placeholder={store?.settings?.shipping?.credentials?.username ? MASKED_VALUE : "Mylerz account email/username"}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Password</Label>
+                                                            <PasswordInput
+                                                                {...register("shipping.credentials.password")}
+                                                                placeholder={store?.settings?.shipping?.credentials?.password ? MASKED_VALUE : "Enter password"}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedProvider === 'jt_express' && (
+                                                <div className="space-y-4">
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Connect your own existing J&amp;T Express account — get these details from your J&amp;T Express merchant dashboard.
+                                                        Your credentials are AES-encrypted before saving; we never transmit them back to the browser in plaintext.
+                                                    </p>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                        <div className="space-y-2">
+                                                            <Label>API Account</Label>
+                                                            <Input {...register("shipping.credentials.apiAccount")} placeholder="e.g. 640xxxxxxxxxxxx" />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Customer Code</Label>
+                                                            <Input {...register("shipping.credentials.customerCode")} placeholder="e.g. EGXXXXXXXX" />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Private Key</Label>
+                                                            <PasswordInput
+                                                                {...register("shipping.credentials.privateKey")}
+                                                                placeholder={store?.settings?.shipping?.credentials?.privateKey ? MASKED_VALUE : "Enter private key"}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>

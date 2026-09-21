@@ -197,11 +197,24 @@ export interface Store {
         };
         shipping: {
             enabled: boolean;
-            provider: 'local' | 'bosta' | 'aramex';
+            provider: 'local' | 'bosta' | 'aramex' | 'mylerz' | 'jt_express';
             credentials?: {
+                // Bosta
                 apiKey?: string;
+                // Legacy/shared secret slot — kept for backward compat with
+                // older saved records; no current provider's form writes it.
                 apiSecret?: string;
+                // Aramex
                 accountNumber?: string;
+                accountEntity?: string;
+                accountCountryCode?: string;
+                username?: string;
+                password?: string;
+                accountPin?: string;
+                // J&T Express
+                apiAccount?: string;
+                customerCode?: string;
+                privateKey?: string;
             };
             zones: any[];
         };

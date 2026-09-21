@@ -307,17 +307,29 @@ export interface ShippingZone {
 }
 
 export interface StoreShippingCredentials {
+  // Bosta
   apiKey?: string;
+  // Legacy/shared secret slot — kept for backward compat with older saved
+  // records; no current provider's form writes it.
   apiSecret?: string;
+  // Aramex
   accountNumber?: string;
+  accountEntity?: string;
+  accountCountryCode?: string;
+  username?: string;
+  password?: string;
+  accountPin?: string;
+  // J&T Express
+  apiAccount?: string;
+  customerCode?: string;
+  privateKey?: string;
 }
+
+export type ShippingProvider = 'local' | 'bosta' | 'aramex' | 'mylerz' | 'jt_express';
 
 export interface StoreShippingSettings {
   enabled: boolean;
-  // 'aramex' exists on the backend enum but has no working provider
-  // implementation yet (ShippingFactory.getProvider throws for it) — the
-  // mobile app only ever offers 'local' or 'bosta' as choices.
-  provider: 'local' | 'bosta' | 'aramex';
+  provider: ShippingProvider;
   credentials?: StoreShippingCredentials;
   zones: ShippingZone[];
 }
