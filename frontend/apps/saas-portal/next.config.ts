@@ -41,6 +41,19 @@ const nextConfig: NextConfig = {
   },
 
   transpilePackages: ['@quickstore/shared'],
+  // The mobile-merchant Expo app's static web/PWA export lives at
+  // public/mobile-app/ (see frontend/apps/mobile-merchant/scripts/
+  // postbuild-web-pwa.js) — a plain client-side-routed SPA. Real files in
+  // there (JS bundles, icons, manifest.json) are matched by Next's own
+  // public-folder serving first and never reach this rewrite; anything
+  // else under /mobile-app/* (an in-app route, or a refresh on one) falls
+  // back to its index.html so client-side routing keeps working.
+  async rewrites() {
+    return [
+      { source: '/mobile-app', destination: '/mobile-app/index.html' },
+      { source: '/mobile-app/:path*', destination: '/mobile-app/index.html' },
+    ];
+  },
   // Allow subdomain dev origins — wildcards are unreliable, list explicitly
   allowedDevOrigins: [
     'localhost:3000',

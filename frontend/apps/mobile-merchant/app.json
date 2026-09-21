@@ -31,6 +31,9 @@
       "bundler": "metro",
       "output": "single"
     },
+    "experiments": {
+      "baseUrl": "/mobile-app"
+    },
     "plugins": [
       "expo-router",
       [

@@ -63,6 +63,7 @@ export default function proxy(request: NextRequest) {
         pathname.startsWith('/api') ||
         pathname.startsWith('/static') ||
         pathname.startsWith('/public') ||
+        pathname.startsWith('/mobile-app') ||
         pathname === '/favicon.ico' ||
         (isManifestFile && isMainDomain) || // Only early-exit manifest on main domain
         (!isManifestFile && /\.(?:css|js|ico|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot|map)$/i.test(pathname))

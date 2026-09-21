@@ -1,0 +1,22 @@
+{
+  "name": "Buildora",
+  "short_name": "Buildora",
+  "description": "Manage your Buildora store on the go.",
+  "start_url": "/mobile-app/",
+  "display": "standalone",
+  "background_color": "#1E1B4B",
+  "theme_color": "#2563EB",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/mobile-app/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/mobile-app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
