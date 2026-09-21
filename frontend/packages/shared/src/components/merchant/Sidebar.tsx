@@ -2,7 +2,7 @@
 
 import React, { memo, useMemo, useState } from 'react';
 import { NavLink } from '@shared/components/NavLink';
-import Image from 'next/image';
+import { Logo } from '@shared/components/Logo';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@shared/context/AuthContext';
 import { LayoutDashboard, Settings, LayoutTemplate, Wallet, Zap, Store, Pencil } from 'lucide-react';
@@ -81,18 +81,8 @@ function Sidebar() {
         <aside className="w-64 bg-white border-r hidden md:flex flex-col h-full sticky top-0">
             <div className="p-6 border-b">
                 <div className="flex items-center justify-between">
-                    <NavLink href="/merchant" className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <div className="relative h-8 w-8 flex-shrink-0">
-                            <Image
-                                src="/new-logo.png"
-                                alt="Buildora Logo"
-                                width={32}
-                                height={32}
-                                className="object-contain"
-                                priority
-                            />
-                        </div>
-                        <h2 className="text-2xl font-black text-blue-600 tracking-tighter cursor-pointer">{tCommon('brand.name').toUpperCase()}</h2>
+                    <NavLink href="/merchant">
+                        <Logo size={32} label={tCommon('brand.name').toUpperCase()} wordmarkClassName="text-2xl font-black text-blue-600 tracking-tighter cursor-pointer" />
                     </NavLink>
                     <NotificationBell />
                 </div>

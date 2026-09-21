@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { NavLink } from '@shared/components/NavLink';
-import Image from 'next/image';
+import { Logo } from '@shared/components/Logo';
 import { Menu, X, Gift } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { useTranslations, useLocale } from 'next-intl';
@@ -45,19 +45,13 @@ export function Navbar() {
             <nav className="w-full glass border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-20">
-                        <NavLink href="/" className="flex items-center space-x-3 rtl:space-x-reverse group">
-                            <div className="relative h-10 w-10 flex-shrink-0">
-                                <Image
-                                    src="/new-logo.png"
-                                    alt="Buildora Logo"
-                                    width={50}
-                                    height={50}
-                                    className="object-contain group-hover:scale-110 transition-transform duration-300"
-                                    priority
-                                    style={{ background: 'transparent' }}
-                                />
-                            </div>
-                            <span className="text-2xl font-black tracking-tighter text-gray-900">{t('brand.name').toUpperCase()}</span>
+                        <NavLink href="/" className="group">
+                            <Logo
+                                size={40}
+                                label={t('brand.name').toUpperCase()}
+                                wordmarkClassName="text-2xl font-black tracking-tighter text-gray-900"
+                                className="group-hover:scale-105 transition-transform duration-300"
+                            />
                         </NavLink>
 
                         {/* Desktop Menu */}

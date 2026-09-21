@@ -240,7 +240,14 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
                                 {footerCopyright || `© ${new Date().getFullYear()} ${store.name}. ${t('allRightsReserved')}`}
                             </p>
                             <div className="flex justify-center gap-4 text-gray-500">
-                                <span className="text-[10px] font-black opacity-50">{t('poweredBy')}</span>
+                                <Link
+                                    href="https://quickstore.live"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] font-black opacity-50 hover:opacity-100 transition-opacity"
+                                >
+                                    {t('poweredBy')}
+                                </Link>
                             </div>
                         </div>
                     </div>

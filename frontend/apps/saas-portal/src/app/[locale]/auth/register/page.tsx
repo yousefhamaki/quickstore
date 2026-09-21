@@ -9,7 +9,7 @@ import { PasswordInput } from '@shared/components/ui/password-input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@shared/components/ui/card';
 import { Label } from '@shared/components/ui/label';
 import Link from 'next/link';
-import Image from 'next/image';
+import { Logo } from '@shared/components/Logo';
 import GoogleLoginButton from '@shared/components/auth/GoogleLoginButton';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -142,18 +142,13 @@ export default function RegisterPage() {
                 <LanguageSwitcher />
             </div>
 
-            <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse group mb-8">
-                <div className="relative h-12 w-12 flex-shrink-0">
-                    <Image
-                        src="/new-logo.png"
-                        alt="Buildora Logo"
-                        width={120}
-                        height={120}
-                        className="object-contain group-hover:scale-110 transition-transform duration-300"
-                        priority
-                    />
-                </div>
-                <span className="text-3xl font-black tracking-tighter text-gray-900">{commonT('brand.name').toUpperCase()}</span>
+            <Link href="/" className="group mb-8">
+                <Logo
+                    size={48}
+                    label={commonT('brand.name').toUpperCase()}
+                    wordmarkClassName="text-3xl font-black tracking-tighter text-gray-900"
+                    className="group-hover:scale-105 transition-transform duration-300"
+                />
             </Link>
 
             <Suspense fallback={

@@ -31,9 +31,12 @@ export default function StoreNotFound() {
             </div>
 
             <div className="mt-20">
-                <p className="text-[10px] font-black tracking-[0.2em] text-gray-300 uppercase">
+                <Link
+                    href="https://quickstore.live"
+                    className="text-[10px] font-black tracking-[0.2em] text-gray-300 uppercase hover:text-gray-500 transition-colors"
+                >
                     Powered by Buildora
-                </p>
+                </Link>
             </div>
 
             {/* Background decoration */}

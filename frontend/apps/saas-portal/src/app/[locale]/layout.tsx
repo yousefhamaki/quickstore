@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: "Buildora - Multi-Store E-commerce Platform",
   description: "Create and manage multiple online stores from one dashboard",
   icons: {
-    icon: "/new-logo.png",
+    icon: "/favicon-badge.svg",
     apple: "/apple-touch-icon.png",
   },
 };

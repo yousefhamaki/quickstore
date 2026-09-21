@@ -2,9 +2,9 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { NavLink } from '@shared/components/NavLink';
+import { Logo } from '@shared/components/Logo';
 
 export function Footer() {
     const t = useTranslations('common');
@@ -13,17 +13,8 @@ export function Footer() {
         <footer className="bg-gray-900 text-white py-20 mt-auto">
             <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12 border-b border-gray-800 pb-20 mb-10">
                 <div className="space-y-6 md:col-span-2">
-                    <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <div className="relative h-10 w-10 flex-shrink-0">
-                            <Image
-                                src="/new-logo.png"
-                                alt="Buildora Logo"
-                                width={50}
-                                height={50}
-                                className="object-contain"
-                            />
-                        </div>
-                        <span className="text-2xl font-black tracking-tighter">{t('brand.name').toUpperCase()}</span>
+                    <Link href="/">
+                        <Logo size={40} label={t('brand.name').toUpperCase()} wordmarkClassName="text-2xl font-black tracking-tighter text-white" />
                     </Link>
                     <p className="text-gray-400 max-w-md font-medium leading-relaxed">
                         Empowering the next generation of Egyptian entrepreneurs with professional, reliable, and accessible e-commerce technology.
