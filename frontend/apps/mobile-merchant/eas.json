@@ -10,11 +10,14 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.1.9:5000/api"
+        "EXPO_PUBLIC_API_URL": "https://quickstore-he8n.onrender.com/api"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://quickstore-he8n.onrender.com/api"
+      }
     }
   },
   "submit": {
