@@ -50,7 +50,7 @@ export function Navbar() {
                                 size={40}
                                 label={t('brand.name').toUpperCase()}
                                 wordmarkClassName="text-2xl font-black tracking-tighter text-gray-900"
-                                className="group-hover:scale-105 transition-transform duration-300"
+                                animated
                             />
                         </NavLink>
 

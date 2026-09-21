@@ -43,7 +43,9 @@ export default function proxy(request: NextRequest) {
         'www.quickstore.test',
         'api.quickstore.com',
         'buildora.live',
-        'www.buildora.live'
+        'www.buildora.live',
+        'buildaura.store',
+        'www.buildaura.store'
     ];
 
     const isMainDomain = mainDomains.includes(hostname) || hostname.endsWith('.vercel.app');
