@@ -3,6 +3,10 @@ import Order, { IOrder } from '../models/Order';
 import Store, { IStore } from '../models/Store';
 import Customer from '../models/Customer';
 import { ShippingFactory } from '../services/shipping/ShippingFactory';
+import { normalizeBostaState } from '../services/shipping/BostaShippingService';
+import { normalizeAramexState } from '../services/shipping/AramexShippingService';
+import { normalizeMylerzState } from '../services/shipping/MylerzShippingService';
+import { normalizeJTState } from '../services/shipping/JTExpressShippingService';
 import { AuthRequest, resolveStore } from '../middleware/authMiddleware';
 import { createNotification } from '../services/notificationService';
 import { sendOrderShippedEmail } from '../services/emailService';
@@ -99,6 +103,29 @@ export const trackShipment = async (req: AuthRequest, res: Response) => {
 
         const provider = ShippingFactory.getProvider(store);
         const liveStatus = await provider.trackShipment(order.trackingNumber);
+
+        // Persist what we just polled — otherwise this endpoint is
+        // display-only and shippingStatus never advances past
+        // 'ready_for_pickup' unless the merchant separately wires up Bosta's
+        // webhook (handleShippingWebhook) on Bosta's own dashboard to call
+        // back into us. Mirrors that webhook's exact status mapping so a
+        // merchant relying purely on manual "Track Shipment" taps sees the
+        // same progression a configured webhook would have produced.
+        const providerName = store.settings?.shipping?.provider;
+        const normalizeState = providerName === 'aramex' ? normalizeAramexState
+            : providerName === 'mylerz' ? normalizeMylerzState
+            : providerName === 'jt_express' ? normalizeJTState
+            : normalizeBostaState;
+        const normalizedStatus = normalizeState(liveStatus.status);
+        if (order.shippingStatus !== normalizedStatus) {
+            order.shippingStatus = normalizedStatus;
+            order.timeline.push({ status: `Shipping update: ${liveStatus.status}`, timestamp: new Date() });
+            if (normalizedStatus === 'delivered') {
+                order.status = 'delivered';
+            }
+            await order.save();
+        }
+
         res.json(liveStatus);
     } catch (error: any) {
         res.status(500).json({ message: error.message });

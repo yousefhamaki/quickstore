@@ -4,6 +4,20 @@ import { IStore } from '../../models/Store';
 import axios from 'axios';
 import crypto from 'crypto';
 
+export type BostaNormalizedStatus = 'in_transit' | 'delivered' | 'returned' | 'picked_up';
+
+// Bosta's raw `state` string (e.g. 'Package received', 'Delivered',
+// 'Returned', 'Picked up', 'Exception') collapsed onto Order.shippingStatus's
+// enum. Shared by the inbound webhook (webhookController.ts) and the
+// on-demand poll (shippingController.ts's trackShipment) so both persist the
+// exact same status for the exact same Bosta state.
+export function normalizeBostaState(state: string | undefined): BostaNormalizedStatus {
+    if (state === 'Delivered') return 'delivered';
+    if (state === 'Returned' || state === 'Exception') return 'returned';
+    if (state === 'Picked up') return 'picked_up';
+    return 'in_transit';
+}
+
 export class BostaShippingService implements IShippingProvider {
     private apiKey: string;
     // Bosta API v0/v2 endpoint sandbox/production handling is assumed environment-based

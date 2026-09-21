@@ -90,24 +90,22 @@ async function notifyCustomerStatusChanged(order: InstanceType<typeof Order>, st
 // @access  Private/Merchant
 export const getOrders = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = req.user._id;
-        const { storeId, status, search, pageNumber } = req.query;
+        const { status, search, pageNumber } = req.query;
 
-        let query: any = {};
-
-        if (storeId) {
-            // Verify store belongs to merchant
-            const store = await Store.findOne({ _id: storeId, ownerId: userId });
-            if (!store) {
-                return res.status(404).json({ message: 'Store not found or unauthorized' });
-            }
-            query.storeId = storeId;
-        } else {
-            // Get all stores owned by merchant
-            const stores = await Store.find({ ownerId: userId });
-            const storeIds = stores.map(store => store._id);
-            query.storeId = { $in: storeIds };
+        // Resolves req.query.storeId (what the web dashboard's per-store
+        // /dashboard/stores/[storeId]/orders page always sends) the same way
+        // as getOrderStats/getProducts/issuePartialRefund below — including
+        // the x-store-id header a caller without a storeId in the URL (the
+        // mobile app) relies on. This used to fall back to "every store this
+        // merchant owns" when neither was present, which silently mixed a
+        // multi-store merchant's orders together instead of surfacing that
+        // ambiguity; resolveStore's fallback ("the merchant's only store")
+        // matches every other order/product/analytics endpoint instead.
+        const store = await resolveStore(req);
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found or unauthorized' });
         }
+        const query: any = { storeId: store._id };
 
         const pageSize = 20;
         const page = Number(pageNumber) || 1;

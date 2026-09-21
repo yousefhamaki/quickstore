@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import Store from '../models/Store';
 import Order from '../models/Order';
 import { ShippingFactory } from '../services/shipping/ShippingFactory';
+import { normalizeBostaState } from '../services/shipping/BostaShippingService';
 import { PaymentFactory } from '../services/payment/PaymentFactory';
 import Transaction from '../models/Transaction';
 import crypto from 'crypto';
@@ -154,7 +155,7 @@ export const handlePaymobWebhook = async (req: Request, res: Response) => {
 
 /**
  * @desc    Universal Shipping Provider Webhooks
- * @route   POST /api/webhooks/shipping/:provider/:storeId
+ * @route   POST /api/shipping/webhook/:provider/:storeId
  */
 export const handleShippingWebhook = async (req: Request, res: Response) => {
     try {
@@ -175,10 +176,7 @@ export const handleShippingWebhook = async (req: Request, res: Response) => {
         const trackingNumber = req.body.trackingNumber || req.body.delivery?.trackingNumber;
         const state = req.body.state || req.body.delivery?.state;
         
-        let normalizedStatus: any = 'in_transit';
-        if (state === 'Delivered') normalizedStatus = 'delivered';
-        if (state === 'Returned' || state === 'Exception') normalizedStatus = 'returned';
-        if (state === 'Picked up') normalizedStatus = 'picked_up';
+        const normalizedStatus = normalizeBostaState(state);
 
         const order = await Order.findOneAndUpdate(
             { trackingNumber, storeId },

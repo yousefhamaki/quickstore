@@ -61,7 +61,7 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
         // is left alone so the merchant isn't logged out mid-action).
         await Session.updateMany(
             { userId: user._id, revokedAt: null, _id: { $ne: req.sessionId } },
-            { $set: { revokedAt: new Date() } }
+            { $set: { revokedAt: new Date() }, $unset: { refreshTokenHash: 1, refreshTokenExpiresAt: 1 } }
         );
 
         sendPasswordChangedEmail(user.email).catch((err) =>
@@ -112,7 +112,11 @@ export const getActiveSessions = async (req: AuthRequest, res: Response) => {
 export const logout = async (req: AuthRequest, res: Response) => {
     try {
         if (req.sessionId) {
-            await Session.findByIdAndUpdate(req.sessionId, { revokedAt: new Date() });
+            // Clearing refreshTokenHash (not just setting revokedAt) means a
+            // copied refresh token can't even be looked up any more — belt
+            // and suspenders alongside POST /api/auth/refresh's own
+            // revokedAt check.
+            await Session.findByIdAndUpdate(req.sessionId, { $set: { revokedAt: new Date() }, $unset: { refreshTokenHash: 1, refreshTokenExpiresAt: 1 } });
         }
         res.json({ message: 'Logged out.' });
     } catch (error) {
@@ -131,6 +135,8 @@ export const revokeSession = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Session not found.' });
         }
         session.revokedAt = new Date();
+        session.refreshTokenHash = undefined;
+        session.refreshTokenExpiresAt = undefined;
         await session.save();
         res.json({ message: 'Session signed out.' });
     } catch (error) {
@@ -146,7 +152,7 @@ export const revokeAllOtherSessions = async (req: AuthRequest, res: Response) =>
     try {
         const result = await Session.updateMany(
             { userId: req.user._id, revokedAt: null, _id: { $ne: req.sessionId } },
-            { $set: { revokedAt: new Date() } }
+            { $set: { revokedAt: new Date() }, $unset: { refreshTokenHash: 1, refreshTokenExpiresAt: 1 } }
         );
         res.json({ message: 'All other sessions have been signed out.', count: result.modifiedCount });
     } catch (error) {
@@ -470,7 +476,7 @@ export const verifyTwoFactorLogin = async (req: Request, res: Response) => {
         user.twoFactorLoginCodeExpiresAt = undefined;
         await user.save();
 
-        const { token } = await createSessionAndToken(user, req);
+        const { token, refreshToken } = await createSessionAndToken(user, req);
         await recordLoginHistory((user._id as any).toString(), true, req);
         checkAndAlertNewDevice((user._id as any).toString(), user.email, req).catch(() => {});
 
@@ -481,6 +487,7 @@ export const verifyTwoFactorLogin = async (req: Request, res: Response) => {
             role: user.role,
             isVerified: user.isVerified,
             token,
+            refreshToken,
             ...(usedBackupCode ? { usedBackupCode: true, backupCodesRemaining: user.backupCodeHashes?.length || 0 } : {}),
         });
     } catch (error) {

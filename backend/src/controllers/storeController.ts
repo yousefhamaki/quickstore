@@ -8,6 +8,8 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { IMPLEMENTED_PAYMENT_PROVIDERS } from '../constants/paymentProviders';
+import { IMPLEMENTED_SHIPPING_PROVIDERS, SHIPPING_SECRET_CREDENTIAL_FIELDS } from '../constants/shippingProviders';
+import { applyEncryptedCredentialField } from '../utils/applyEncryptedCredentials';
 import Subscription from '../models/Subscription';
 import { DomainVerificationService } from '../services/domain/DomainVerificationService';
 import EmailAccount from '../models/EmailAccount';
@@ -370,6 +372,17 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
                     message: `Payment provider '${requestedProvider}' is not yet available. Currently supported: ${IMPLEMENTED_PAYMENT_PROVIDERS.join(', ')}.`
                 });
             }
+            // Identical guard for shipping providers — see
+            // constants/shippingProviders.ts: 'aramex' has no real
+            // ShippingFactory case (and no service implementation at all),
+            // so it must be rejected here instead of saving fine and only
+            // failing later at runtime on the first shipping action.
+            const requestedShippingProvider = req.body.settings?.shipping?.provider;
+            if (requestedShippingProvider && !IMPLEMENTED_SHIPPING_PROVIDERS.includes(requestedShippingProvider)) {
+                return res.status(400).json({
+                    message: `Shipping provider '${requestedShippingProvider}' is not yet available. Currently supported: ${IMPLEMENTED_SHIPPING_PROVIDERS.join(', ')}.`
+                });
+            }
             const templates = req.body.settings?.emailNotifications?.templates;
             if (templates) {
                 for (const key of ['orderConfirmation', 'orderStatusChanged', 'marketing'] as const) {
@@ -381,6 +394,53 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
             }
 
             updateData.settings = req.body.settings;
+
+            // Carve-out: never trust client-sent payment/shipping credentials
+            // wholesale (see applyEncryptedCredentialField's doc-comment) —
+            // PaymentFactory/ShippingFactory both call decrypt() on
+            // credentials.apiKey/apiSecret at use time, which throws on
+            // anything not in encrypt()'s `iv:authTag:cipher` format. A
+            // freshly typed plaintext secret is encrypted here; the
+            // frontend's mask placeholder, an absent field, or an
+            // already-encrypted value carried over from another settings
+            // page's wholesale `...store.settings` spread are all left
+            // alone so re-saving other settings never double-encrypts or
+            // wipes a real credential. Explicitly blanking a field clears it.
+            if (req.body.settings.payment?.credentials !== undefined) {
+                const incoming = req.body.settings.payment.credentials;
+                const existing = store.settings?.payment?.credentials;
+                updateData.settings.payment = {
+                    ...req.body.settings.payment,
+                    credentials: {
+                        ...incoming,
+                        apiKey: applyEncryptedCredentialField(incoming.apiKey, existing?.apiKey),
+                        apiSecret: applyEncryptedCredentialField(incoming.apiSecret, existing?.apiSecret)
+                    }
+                };
+            }
+            if (req.body.settings.shipping?.credentials !== undefined) {
+                const incoming = req.body.settings.shipping.credentials;
+                const existing = store.settings?.shipping?.credentials;
+                // Generalized over every SECRET shipping credential field
+                // (Bosta's apiKey, Aramex's accountPin/username/password,
+                // Mylerz's username/password, J&T Express's privateKey —
+                // see SHIPPING_SECRET_CREDENTIAL_FIELDS's doc-comment).
+                // Non-secret account identifiers (accountNumber,
+                // accountEntity, accountCountryCode, apiAccount,
+                // customerCode) pass through unchanged from `incoming` via
+                // the spread below — they're never encrypted.
+                const encryptedFields: Record<string, string | undefined> = {};
+                for (const field of SHIPPING_SECRET_CREDENTIAL_FIELDS) {
+                    encryptedFields[field] = applyEncryptedCredentialField(incoming[field], existing?.[field]);
+                }
+                updateData.settings.shipping = {
+                    ...req.body.settings.shipping,
+                    credentials: {
+                        ...incoming,
+                        ...encryptedFields
+                    }
+                };
+            }
 
             // Carve-out: never trust a client-sent emailSender wholesale (see
             // applyEmailSenderUpdate's doc-comment) — encrypts a freshly

@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { IMPLEMENTED_PAYMENT_PROVIDERS } from '../constants/paymentProviders';
+import { IMPLEMENTED_SHIPPING_PROVIDERS } from '../constants/shippingProviders';
 
 export interface ICloudinaryImage {
     url: string;
@@ -70,11 +71,19 @@ export interface IShippingZone {
 
 export interface IShippingSettings {
     enabled: boolean;
-    provider: 'local' | 'bosta' | 'aramex';
+    provider: 'local' | 'bosta' | 'aramex' | 'mylerz' | 'jt_express';
     credentials?: {
-        apiKey?: string;
-        apiSecret?: string;
-        accountNumber?: string;
+        apiKey?: string;            // Bosta
+        apiSecret?: string;         // reserved/legacy, unused by new providers
+        accountNumber?: string;     // Aramex AccountNumber
+        accountPin?: string;        // Aramex AccountPin — SECRET, must be encrypted
+        accountEntity?: string;     // Aramex AccountEntity, e.g. "AMM" (test) / merchant's real entity code — not secret
+        accountCountryCode?: string;// Aramex AccountCountryCode, e.g. "JO" (test) / merchant's real country — not secret
+        username?: string;          // Aramex UserName, or Mylerz username — SECRET, must be encrypted
+        password?: string;          // Aramex Password, or Mylerz password — SECRET, must be encrypted
+        apiAccount?: string;        // J&T Express apiAccount — not secret (account identifier)
+        customerCode?: string;      // J&T Express customerCode — not secret (account identifier)
+        privateKey?: string;        // J&T Express privateKey — SECRET, must be encrypted
     };
     zones: IShippingZone[];
     // Merchant-configurable base/default shipping fee, applied to any order
@@ -502,11 +511,22 @@ const StoreSchema: Schema = new Schema(
 
             shipping: {
                 enabled: { type: Boolean, default: false },
-                provider: { type: String, enum: ['local', 'bosta', 'aramex'], default: 'local' },
+                // Schema-level enum kept in sync with
+                // constants/shippingProviders.ts's IMPLEMENTED_SHIPPING_PROVIDERS,
+                // the same defense-in-depth already used for payment.provider below.
+                provider: { type: String, enum: [...IMPLEMENTED_SHIPPING_PROVIDERS], default: 'local' },
                 credentials: {
                     apiKey: { type: String },
                     apiSecret: { type: String },
-                    accountNumber: { type: String }
+                    accountNumber: { type: String },
+                    accountPin: { type: String },
+                    accountEntity: { type: String },
+                    accountCountryCode: { type: String },
+                    username: { type: String },
+                    password: { type: String },
+                    apiAccount: { type: String },
+                    customerCode: { type: String },
+                    privateKey: { type: String }
                 },
                 zones: [{
                     name: { type: String },

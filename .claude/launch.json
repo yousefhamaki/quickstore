@@ -13,6 +13,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend/apps/admin-dashboard", "run", "dev"],
       "port": 3002
+    },
+    {
+      "name": "mobile-merchant-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend/apps/mobile-merchant", "run", "web"],
+      "port": 8081
     }
   ]
 }
