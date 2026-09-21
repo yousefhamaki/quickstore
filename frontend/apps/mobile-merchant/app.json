@@ -20,7 +20,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.buildora.merchant"
+      "package": "com.buildora.merchant",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -55,7 +58,12 @@
       ]
     ],
     "extra": {
-      "apiUrl": "http://localhost:5000/api"
-    }
+      "apiUrl": "http://localhost:5000/api",
+      "router": {},
+      "eas": {
+        "projectId": "91118569-c7b9-4951-b46b-8c3650c4bed5"
+      }
+    },
+    "owner": "yousefhamaki"
   }
 }
