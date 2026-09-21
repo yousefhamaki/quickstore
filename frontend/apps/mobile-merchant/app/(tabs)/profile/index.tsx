@@ -11,6 +11,7 @@ import { LoadingState } from '../../../components/LoadingState';
 import { ErrorState } from '../../../components/EmptyState';
 import { colors, formatEGP, layout, motion, radius, spacing, typography } from '../../../constants/theme';
 import { useAuth } from '../../../lib/authContext';
+import { useStore } from '../../../lib/storeContext';
 import { getBillingOverview } from '../../../lib/services/billing';
 import { BillingOverview } from '../../../lib/types';
 
@@ -23,6 +24,7 @@ const MANAGE_ROWS: { icon: keyof typeof Ionicons.glyphMap; title: string; subtit
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { store, stores } = useStore();
   const [billing, setBilling] = useState<BillingOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,9 +114,25 @@ export default function ProfileScreen() {
         )}
 
         <Text style={styles.sectionLabel}>Manage</Text>
+        {stores.length > 1 ? (
+          <PressableScale onPress={() => router.push('/select-store')}>
+            <Card style={styles.manageRow} delay={motion.stagger * 4}>
+              <View style={styles.manageIconCircle}>
+                <Ionicons name="swap-horizontal-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.manageTitle}>Switch store</Text>
+                <Text style={styles.manageSubtitle}>
+                  {store ? `Currently managing "${store.name}" · ${stores.length} stores` : `${stores.length} stores on this account`}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+            </Card>
+          </PressableScale>
+        ) : null}
         {MANAGE_ROWS.map((row, idx) => (
           <PressableScale key={row.href} onPress={() => router.push(row.href)}>
-            <Card style={styles.manageRow} delay={motion.stagger * (4 + idx)}>
+            <Card style={styles.manageRow} delay={motion.stagger * (5 + idx)}>
               <View style={styles.manageIconCircle}>
                 <Ionicons name={row.icon} size={20} color={colors.primary} />
               </View>

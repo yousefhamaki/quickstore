@@ -9,6 +9,7 @@ import { LoadingState } from '../../../components/LoadingState';
 import { EmptyState, ErrorState } from '../../../components/EmptyState';
 import { colors, formatEGP, layout, motion, radius, spacing, typography } from '../../../constants/theme';
 import { getOrders } from '../../../lib/services/orders';
+import { useStore } from '../../../lib/storeContext';
 import { Order, OrderStatus } from '../../../lib/types';
 
 const FILTERS: { label: string; value: OrderStatus | 'all' }[] = [
@@ -21,6 +22,7 @@ const FILTERS: { label: string; value: OrderStatus | 'all' }[] = [
 
 export default function OrdersListScreen() {
   const router = useRouter();
+  const { storeId } = useStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const [loading, setLoading] = useState(true);
@@ -41,10 +43,12 @@ export default function OrdersListScreen() {
   }, []);
 
   useFocusEffect(
+    // `storeId` re-triggers this the instant the merchant switches their
+    // active store, even if this screen was already focused when they did.
     useCallback(() => {
       setLoading(true);
       load(filter);
-    }, [filter, load])
+    }, [filter, load, storeId])
   );
 
   const onRefresh = () => {

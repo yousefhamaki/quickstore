@@ -175,6 +175,12 @@ export type NotificationType =
 export interface NotificationEntry {
   _id: string;
   type: NotificationType;
+  // Present on store-specific notifications (order/refund/review activity);
+  // absent on account-level ones (subscription, signup gift) — see backend
+  // models/Notification.ts. The list endpoint returns the raw id, not a
+  // populated store, so the app resolves it against its own store list
+  // (lib/storeContext.tsx) to show a name — see app/(tabs)/notifications.tsx.
+  storeId?: string;
   title: string;
   message: string;
   link?: string;

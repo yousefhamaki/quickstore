@@ -1,5 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { GradientHeader } from '../../components/GradientHeader';
 import { Card } from '../../components/Card';
@@ -14,9 +15,21 @@ import {
 } from '../../lib/services/notifications';
 import { NotificationEntry } from '../../lib/types';
 import { useNotificationCount } from '../../lib/notificationCountContext';
+import { useStore } from '../../lib/storeContext';
 
 export default function NotificationsScreen() {
   const { refresh: refreshUnreadCount } = useNotificationCount();
+  const { stores } = useStore();
+  // The notifications list intentionally spans every store the merchant owns
+  // (an order on Store B shouldn't be invisible just because Store A is
+  // active) — the list endpoint doesn't populate a store name, so resolve it
+  // client-side against the store list already in context.
+  const storeNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    stores.forEach((s) => map.set(s._id, s.name));
+    return map;
+  }, [stores]);
+  const hasMultipleStores = stores.length > 1;
   const [entries, setEntries] = useState<NotificationEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,18 +102,31 @@ export default function NotificationsScreen() {
           ListEmptyComponent={
             <EmptyState icon="notifications-outline" title="You're all caught up" message="New activity on your store will show up here." />
           }
-          renderItem={({ item, index }) => (
-            <PressableScale onPress={() => handlePress(item)}>
-              <Card style={[styles.card, !item.isRead && styles.cardUnread]} delay={Math.min(index, 6) * motion.stagger}>
-                <View style={styles.row}>
-                  {!item.isRead ? <View style={styles.dot} /> : null}
-                  <Text style={styles.title}>{item.title}</Text>
-                </View>
-                <Text style={styles.message}>{item.message}</Text>
-                <Text style={styles.date}>{new Date(item.createdAt).toLocaleString()}</Text>
-              </Card>
-            </PressableScale>
-          )}
+          renderItem={({ item, index }) => {
+            const storeName = item.storeId ? storeNameById.get(item.storeId) : undefined;
+            return (
+              <PressableScale onPress={() => handlePress(item)}>
+                <Card style={[styles.card, !item.isRead && styles.cardUnread]} delay={Math.min(index, 6) * motion.stagger}>
+                  <View style={styles.row}>
+                    {!item.isRead ? <View style={styles.dot} /> : null}
+                    <Text style={styles.title}>{item.title}</Text>
+                  </View>
+                  <Text style={styles.message}>{item.message}</Text>
+                  <View style={styles.metaRow}>
+                    <Text style={styles.date}>{new Date(item.createdAt).toLocaleString()}</Text>
+                    {hasMultipleStores && storeName ? (
+                      <View style={styles.storePill}>
+                        <Ionicons name="storefront-outline" size={11} color={colors.primary} />
+                        <Text style={styles.storePillText} numberOfLines={1}>
+                          {storeName}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </Card>
+              </PressableScale>
+            );
+          }}
         />
       )}
     </View>
@@ -158,6 +184,28 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontSize: 11,
     color: colors.textFaint,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: spacing.sm,
+  },
+  storePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '55%',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    backgroundColor: '#EFF6FF',
+  },
+  storePillText: {
+    ...typography.caption,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.primary,
+    textTransform: 'none',
   },
 });

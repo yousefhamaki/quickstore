@@ -7,6 +7,7 @@ import { LoadingState } from '../../../components/LoadingState';
 import { ErrorState } from '../../../components/EmptyState';
 import { colors, formatEGP, layout, motion, radius, spacing, typography } from '../../../constants/theme';
 import { getRevenueSeries, getTopProducts, getCustomerAnalytics } from '../../../lib/services/analytics';
+import { useStore } from '../../../lib/storeContext';
 import { AnalyticsPeriod, CustomersAnalytics, RevenuePoint, TopProduct } from '../../../lib/types';
 
 const PERIODS: { label: string; value: AnalyticsPeriod }[] = [
@@ -24,6 +25,7 @@ function pointLabel(point: RevenuePoint, period: AnalyticsPeriod): string {
 }
 
 export default function AnalyticsScreen() {
+  const { storeId } = useStore();
   const [period, setPeriod] = useState<AnalyticsPeriod>('daily');
   const [revenue, setRevenue] = useState<RevenuePoint[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
@@ -46,11 +48,13 @@ export default function AnalyticsScreen() {
   }, []);
 
   useFocusEffect(
+    // `storeId` re-triggers this the instant the merchant switches their
+    // active store, even if this screen was already focused when they did.
     useCallback(() => {
       setLoading(true);
       load(period);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [period])
+    }, [period, storeId])
   );
 
   const totalRevenue = revenue.reduce((sum, p) => sum + (p.revenue || 0), 0);

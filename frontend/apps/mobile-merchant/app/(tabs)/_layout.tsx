@@ -6,6 +6,8 @@ import { Redirect, Tabs } from 'expo-router';
 import { useAuth } from '../../lib/authContext';
 import { colors, layout, radius } from '../../constants/theme';
 import { useNotificationCount } from '../../lib/notificationCountContext';
+import { useStore } from '../../lib/storeContext';
+import { LoadingState } from '../../components/LoadingState';
 
 // Navigation structure (see report for the full rationale): the bottom bar
 // stays at the 5 highest-frequency destinations — Home, Orders, Products,
@@ -20,9 +22,22 @@ export default function TabsLayout() {
   // across sibling tab switches and would otherwise never notice a
   // mark-read/mark-all-read action taken inside the Notifications screen.
   const { unreadCount } = useNotificationCount();
+  const { initialized: storesInitialized, needsSelection } = useStore();
 
   if (!isLoading && !isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  // Wait for the merchant's store list before deciding whether to render the
+  // tabs or send them to the picker — `initialized` only flips once per
+  // session (not on every later refresh()), so this never flickers on a
+  // pull-to-refresh or a store-settings save elsewhere in the app.
+  if (isAuthenticated && !storesInitialized) {
+    return <LoadingState label="Loading your store…" />;
+  }
+
+  if (isAuthenticated && needsSelection) {
+    return <Redirect href="/select-store" />;
   }
 
   return (

@@ -69,6 +69,10 @@ export const statusColors: Record<string, { bg: string; text: string }> = {
   active: { bg: '#DCFCE7', text: '#166534' },
   draft: { bg: '#F1F5F9', text: '#475569' },
   archived: { bg: '#FEE2E2', text: '#991B1B' },
+  // Store.status values (distinct from order/product status above) — used by
+  // the store picker (app/select-store.tsx).
+  live: { bg: '#DCFCE7', text: '#166534' },
+  paused: { bg: '#FEF3C7', text: '#92400E' },
 };
 
 // A real spacing scale — every screen pulls from this instead of eyeballing

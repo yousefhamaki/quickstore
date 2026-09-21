@@ -12,12 +12,15 @@ const REFRESH_TOKEN_KEY = 'buildora_refresh_token';
 // one that matters for the real app.
 const isWeb = Platform.OS === 'web';
 
-async function getItem(key: string): Promise<string | null> {
+// Exported so other small pieces of per-device state (e.g. storeStorage.ts's
+// "last selected store" id) can follow the exact same SecureStore-with-a-web-
+// fallback convention instead of re-implementing the isWeb branching.
+export async function getItem(key: string): Promise<string | null> {
   if (isWeb) return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
   return SecureStore.getItemAsync(key);
 }
 
-async function setItem(key: string, value: string): Promise<void> {
+export async function setItem(key: string, value: string): Promise<void> {
   if (isWeb) {
     if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
     return;
@@ -25,7 +28,7 @@ async function setItem(key: string, value: string): Promise<void> {
   await SecureStore.setItemAsync(key, value);
 }
 
-async function deleteItem(key: string): Promise<void> {
+export async function deleteItem(key: string): Promise<void> {
   if (isWeb) {
     if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
     return;

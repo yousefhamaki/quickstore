@@ -17,10 +17,27 @@ const api = axios.create({
   timeout: 20000,
 });
 
+// The merchant's currently-active store (for multi-store accounts) — kept in
+// sync by storeContext.tsx whenever the selected store changes, rather than
+// every service function taking a storeId param. Most endpoints resolve
+// their store implicitly server-side (see backend authMiddleware.ts's
+// resolveStore), falling back to "the merchant's only store" when this
+// header is absent — fine for single-store accounts, but a multi-store
+// merchant needs this set so requests scope to the store they actually
+// picked instead of an arbitrary one of theirs.
+let activeStoreId: string | null = null;
+
+export function setActiveStoreId(storeId: string | null): void {
+  activeStoreId = storeId;
+}
+
 api.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (activeStoreId && config.headers && !config.headers['x-store-id']) {
+    config.headers['x-store-id'] = activeStoreId;
   }
   return config;
 });

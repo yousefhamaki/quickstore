@@ -1,22 +1,26 @@
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { GradientHeader } from '../../components/GradientHeader';
 import { Card } from '../../components/Card';
 import { HeroStat } from '../../components/HeroStat';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/EmptyState';
+import { PressableScale } from '../../components/PressableScale';
 import { colors, formatEGP, layout, motion, radius, spacing, typography } from '../../constants/theme';
 import { useAuth } from '../../lib/authContext';
 import { getAnalyticsOverview } from '../../lib/services/analytics';
 import { getBillingOverview } from '../../lib/services/billing';
 import { AnalyticsOverview, BillingOverview } from '../../lib/types';
 import { useNotificationCount } from '../../lib/notificationCountContext';
+import { useStore } from '../../lib/storeContext';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const { unreadCount, refresh: refreshUnreadCount } = useNotificationCount();
+  const { store, stores, storeId } = useStore();
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [billing, setBilling] = useState<BillingOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,9 +46,14 @@ export default function HomeScreen() {
   }, [refreshUnreadCount]);
 
   useFocusEffect(
+    // `storeId` is in the dependency array purely so this re-runs (and
+    // re-fetches) the moment the merchant switches their active store —
+    // useFocusEffect re-invokes its callback immediately whenever the
+    // callback's identity changes while the screen is already focused, not
+    // just on a fresh focus event.
     useCallback(() => {
       load();
-    }, [load])
+    }, [load, storeId])
   );
 
   const onRefresh = () => {
@@ -53,12 +62,23 @@ export default function HomeScreen() {
   };
 
   const firstName = user?.name?.trim().split(' ')[0];
+  const hasMultipleStores = stores.length > 1;
 
   return (
     <View style={styles.screen}>
       <GradientHeader
         title={firstName ? `Hi, ${firstName}` : 'Welcome back'}
-        subtitle="Here's how your store is doing"
+        subtitle={hasMultipleStores && store ? store.name : "Here's how your store is doing"}
+        right={
+          hasMultipleStores ? (
+            <PressableScale onPress={() => router.push('/select-store')}>
+              <View style={styles.storeSwitcher}>
+                <Ionicons name="storefront-outline" size={14} color="#FFFFFF" />
+                <Ionicons name="chevron-down" size={14} color="#FFFFFF" />
+              </View>
+            </PressableScale>
+          ) : undefined
+        }
       />
       <ScrollView
         contentContainerStyle={styles.content}
@@ -136,6 +156,17 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  storeSwitcher: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   content: {
     padding: spacing.md,
