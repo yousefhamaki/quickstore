@@ -32,9 +32,21 @@ export function normalizeAramexState(state: string | undefined): AramexNormalize
     return 'in_transit';
 }
 
-// Sandbox (test) endpoints — do NOT point these at production.
-const SHIPPING_ENDPOINT = 'https://ws.sbx.aramex.net/shippingapi.v2/shipping/service_1_0.svc';
-const TRACKING_ENDPOINT = 'https://ws.sbx.aramex.net/shippingapi.v2/tracking/service_1_0.svc';
+// ws.sbx.aramex.net (the sandbox hostname older SDKs/tutorials use) is
+// DNS-NXDOMAIN as of this writing — confirmed independently against two
+// resolvers, not a local network issue. Aramex's Shipping Services API
+// doesn't have a separate live sandbox environment for this legacy SOAP
+// surface; testing is account-based against production instead (this was
+// confirmed live: a request signed with Aramex's own long-published public
+// "testingapi@aramex.com" developer test account reached this exact
+// endpoint, was parsed and processed correctly, and came back with a
+// business-level auth error — ERR75 "Failed to login using Portal
+// Service" — rather than a connection or schema error, meaning that
+// specific shared test account has since been deactivated, not that this
+// endpoint or request shape is wrong). A real merchant's own Aramex
+// account credentials are required to actually create shipments here.
+const SHIPPING_ENDPOINT = 'https://ws.aramex.net/shippingapi.v2/shipping/service_1_0.svc';
+const TRACKING_ENDPOINT = 'https://ws.aramex.net/shippingapi.v2/tracking/service_1_0.svc';
 
 /**
  * Bulletproof WSDL directory path resolution for dev (ts-node/tsx) and prod
@@ -213,7 +225,12 @@ export class AramexShippingService implements IShippingProvider {
 
         const request = {
             ClientInfo: this.clientInfo,
-            Transaction: { Reference1: order.orderNumber },
+            // Aramex's WCF service deserializes Transaction strictly in
+            // declared field order and rejects the message outright if any
+            // of Reference2-5 are missing (confirmed live — omitting them
+            // throws a DeserializationFailed fault before ClientInfo is
+            // even checked), even though only Reference1 is meaningful here.
+            Transaction: { Reference1: order.orderNumber, Reference2: '', Reference3: '', Reference4: '', Reference5: '' },
             Shipments: { Shipment: [shipment] },
             LabelInfo: { ReportID: 9201, ReportType: 'URL' }
         };
@@ -257,7 +274,7 @@ export class AramexShippingService implements IShippingProvider {
 
         const request = {
             ClientInfo: this.clientInfo,
-            Transaction: { Reference1: trackingNumber },
+            Transaction: { Reference1: trackingNumber, Reference2: '', Reference3: '', Reference4: '', Reference5: '' },
             Shipments: { string: [trackingNumber] },
             GetLastTrackingUpdateOnly: false
         };
