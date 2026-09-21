@@ -15,9 +15,10 @@ import { useStore } from '../../../lib/storeContext';
 import { getBillingOverview } from '../../../lib/services/billing';
 import { BillingOverview } from '../../../lib/types';
 
-const MANAGE_ROWS: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string; href: '/(tabs)/profile/analytics' | '/(tabs)/profile/store-settings' | '/(tabs)/profile/coupons' }[] = [
+const MANAGE_ROWS: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string; href: '/(tabs)/profile/analytics' | '/(tabs)/profile/store-settings' | '/(tabs)/profile/coupons' | '/(tabs)/profile/shipping' }[] = [
   { icon: 'bar-chart-outline', title: 'Analytics', subtitle: 'Revenue trends, top products & customers', href: '/(tabs)/profile/analytics' },
   { icon: 'storefront-outline', title: 'Store settings', subtitle: 'Branding, contact info & shipping zones', href: '/(tabs)/profile/store-settings' },
+  { icon: 'car-outline', title: 'Shipping', subtitle: 'Connect Bosta & manage waybills', href: '/(tabs)/profile/shipping' },
   { icon: 'pricetags-outline', title: 'Coupons', subtitle: 'Discount codes & promotions', href: '/(tabs)/profile/coupons' },
 ];
 

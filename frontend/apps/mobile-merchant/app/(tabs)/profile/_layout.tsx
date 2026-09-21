@@ -14,6 +14,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="analytics" options={{ title: 'Analytics' }} />
       <Stack.Screen name="store-settings" options={{ title: 'Store settings' }} />
+      <Stack.Screen name="shipping" options={{ title: 'Shipping' }} />
     </Stack>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,18 +18,26 @@ import { StatusBadge } from '../../../components/StatusBadge';
 import { LoadingState } from '../../../components/LoadingState';
 import { ErrorState } from '../../../components/EmptyState';
 import { colors, formatEGP, layout, motion, radius, spacing, typography } from '../../../constants/theme';
+import { notify } from '../../../lib/alerts';
 import { getOrder, issueRefund, updateOrderStatus } from '../../../lib/services/orders';
+import { generateWaybill, setManualTracking, trackShipment } from '../../../lib/services/shipping';
+import { useStore } from '../../../lib/storeContext';
 import { Order, OrderStatus } from '../../../lib/types';
 
 const NEXT_STATUSES: OrderStatus[] = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { store } = useStore();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refundOpen, setRefundOpen] = useState(false);
+  const [trackingModalOpen, setTrackingModalOpen] = useState(false);
+  const [generatingWaybill, setGeneratingWaybill] = useState(false);
+  const [checkingTracking, setCheckingTracking] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<{ status: string; statusDate: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +66,33 @@ export default function OrderDetailScreen() {
       setError(err?.response?.data?.message || 'Failed to update status.');
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const handleGenerateWaybill = async () => {
+    if (!order) return;
+    setGeneratingWaybill(true);
+    try {
+      await generateWaybill(order._id);
+      await load();
+      notify('Waybill generated', 'The shipment was created and tracking info was saved to this order.');
+    } catch (err: any) {
+      notify('Could not generate waybill', err?.response?.data?.message || 'The shipping provider request failed.');
+    } finally {
+      setGeneratingWaybill(false);
+    }
+  };
+
+  const handleCheckTracking = async () => {
+    if (!order) return;
+    setCheckingTracking(true);
+    try {
+      const status = await trackShipment(order._id);
+      setLiveStatus(status);
+    } catch (err: any) {
+      notify('Could not refresh tracking', err?.response?.data?.message || 'Failed to reach the shipping provider.');
+    } finally {
+      setCheckingTracking(false);
     }
   };
 
@@ -142,6 +178,17 @@ export default function OrderDetailScreen() {
           </Text>
         </Card>
 
+        <ShippingCard
+          order={order}
+          isBosta={!!store?.settings?.shipping?.enabled && store?.settings?.shipping?.provider === 'bosta'}
+          liveStatus={liveStatus}
+          generatingWaybill={generatingWaybill}
+          checkingTracking={checkingTracking}
+          onGenerateWaybill={handleGenerateWaybill}
+          onCheckTracking={handleCheckTracking}
+          onEditTracking={() => setTrackingModalOpen(true)}
+        />
+
         <Card style={styles.section} delay={motion.stagger * 4}>
           <Text style={styles.sectionTitle}>Update status</Text>
           <View style={styles.statusGrid}>
@@ -207,7 +254,222 @@ export default function OrderDetailScreen() {
           setRefundOpen(false);
         }}
       />
+
+      <TrackingModal
+        visible={trackingModalOpen}
+        initialCarrier={order.shippingProvider || ''}
+        initialTrackingNumber={order.trackingNumber || ''}
+        initialTrackingUrl={order.trackingUrl || ''}
+        onClose={() => setTrackingModalOpen(false)}
+        onSubmit={async (carrierName, trackingNumber, trackingUrl) => {
+          await setManualTracking(order._id, carrierName, trackingNumber, trackingUrl);
+          await load();
+          setTrackingModalOpen(false);
+        }}
+      />
     </>
+  );
+}
+
+function ShippingCard({
+  order,
+  isBosta,
+  liveStatus,
+  generatingWaybill,
+  checkingTracking,
+  onGenerateWaybill,
+  onCheckTracking,
+  onEditTracking,
+}: {
+  order: Order;
+  isBosta: boolean;
+  liveStatus: { status: string; statusDate: string } | null;
+  generatingWaybill: boolean;
+  checkingTracking: boolean;
+  onGenerateWaybill: () => void;
+  onCheckTracking: () => void;
+  onEditTracking: () => void;
+}) {
+  const hasTracking = !!order.trackingNumber;
+
+  return (
+    <Card style={styles.section} delay={motion.stagger * 3.5}>
+      <Text style={styles.sectionTitle}>Shipping</Text>
+
+      {hasTracking ? (
+        <>
+          <View style={styles.itemRow}>
+            <Text style={styles.muted}>Carrier</Text>
+            <Text style={styles.value}>{order.shippingProvider || 'Unknown'}</Text>
+          </View>
+          <View style={styles.itemRow}>
+            <Text style={styles.muted}>Tracking number</Text>
+            <Text style={styles.value}>{order.trackingNumber}</Text>
+          </View>
+          {order.shippingStatus ? (
+            <View style={[styles.itemRow, { alignItems: 'center' }]}>
+              <Text style={styles.muted}>Status</Text>
+              <StatusBadge status={order.shippingStatus} />
+            </View>
+          ) : null}
+          {liveStatus ? (
+            <View style={styles.itemRow}>
+              <Text style={styles.muted}>Live status</Text>
+              <Text style={styles.value}>
+                {liveStatus.status} · {new Date(liveStatus.statusDate).toLocaleDateString()}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={styles.shippingActionsRow}>
+            {order.waybillUrl ? (
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => Linking.openURL(order.waybillUrl as string)}
+              >
+                <Text style={styles.secondaryButtonText}>View waybill</Text>
+              </TouchableOpacity>
+            ) : null}
+            {isBosta ? (
+              <TouchableOpacity style={styles.secondaryButton} onPress={onCheckTracking} disabled={checkingTracking}>
+                {checkingTracking ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={styles.secondaryButtonText}>Track shipment</Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.secondaryButton} onPress={onEditTracking}>
+                <Text style={styles.secondaryButtonText}>Edit tracking</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </>
+      ) : isBosta ? (
+        <>
+          <Text style={styles.muted}>No waybill has been generated for this order yet.</Text>
+          <GradientButton
+            title="Generate waybill"
+            onPress={onGenerateWaybill}
+            loading={generatingWaybill}
+            style={{ marginTop: spacing.md }}
+          />
+        </>
+      ) : (
+        <>
+          <Text style={styles.muted}>No tracking info yet. Add it once the order ships.</Text>
+          <TouchableOpacity style={[styles.secondaryButton, { marginTop: spacing.md }]} onPress={onEditTracking}>
+            <Text style={styles.secondaryButtonText}>Add tracking info</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </Card>
+  );
+}
+
+function TrackingModal({
+  visible,
+  initialCarrier,
+  initialTrackingNumber,
+  initialTrackingUrl,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  initialCarrier: string;
+  initialTrackingNumber: string;
+  initialTrackingUrl: string;
+  onClose: () => void;
+  onSubmit: (carrierName: string, trackingNumber: string, trackingUrl?: string) => Promise<void>;
+}) {
+  const [carrierName, setCarrierName] = useState(initialCarrier);
+  const [trackingNumber, setTrackingNumber] = useState(initialTrackingNumber);
+  const [trackingUrl, setTrackingUrl] = useState(initialTrackingUrl);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (visible) {
+      setCarrierName(initialCarrier);
+      setTrackingNumber(initialTrackingNumber);
+      setTrackingUrl(initialTrackingUrl);
+      setError(null);
+    }
+  }, [visible, initialCarrier, initialTrackingNumber, initialTrackingUrl]);
+
+  const handleSubmit = async () => {
+    if (!carrierName.trim()) {
+      setError('Carrier name is required.');
+      return;
+    }
+    if (!trackingNumber.trim()) {
+      setError('Tracking number is required.');
+      return;
+    }
+    if (trackingUrl.trim() && !/^https?:\/\//i.test(trackingUrl.trim())) {
+      setError('Tracking URL must start with http:// or https://');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit(carrierName.trim(), trackingNumber.trim(), trackingUrl.trim() || undefined);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to save tracking info.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={submitting ? undefined : onClose} />
+        <Card style={styles.modalCard} intensity={50}>
+          <Text style={styles.modalTitle}>Tracking info</Text>
+          <Text style={styles.muted}>Enter this order's carrier and tracking number.</Text>
+
+          <Text style={styles.label}>Carrier name</Text>
+          <TextInput
+            style={styles.input}
+            value={carrierName}
+            onChangeText={setCarrierName}
+            placeholder="e.g. Local courier"
+            placeholderTextColor={colors.textFaint}
+          />
+
+          <Text style={styles.label}>Tracking number</Text>
+          <TextInput
+            style={styles.input}
+            value={trackingNumber}
+            onChangeText={setTrackingNumber}
+            placeholder="e.g. TRK-12345"
+            placeholderTextColor={colors.textFaint}
+          />
+
+          <Text style={styles.label}>Tracking URL (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={trackingUrl}
+            onChangeText={setTrackingUrl}
+            placeholder="https://…"
+            placeholderTextColor={colors.textFaint}
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={submitting}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <GradientButton title="Save tracking" onPress={handleSubmit} loading={submitting} style={{ flex: 1 }} />
+          </View>
+        </Card>
+      </View>
+    </Modal>
   );
 }
 
@@ -355,6 +617,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginTop: spacing.sm,
+  },
+  shippingActionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  secondaryButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondaryButtonText: {
+    ...typography.bodyBold,
+    fontSize: 13,
+    color: colors.primary,
   },
   divider: {
     height: 1,
