@@ -60,6 +60,12 @@ export interface IShippingZone {
     cities: string[];
     rate: number;
     freeShippingThreshold: number;
+    // Primary match key going forward — one of EGYPTIAN_GOVERNORATES's
+    // `key` values (see constants/egyptianGovernorates.ts). Optional so
+    // zones a merchant already manually created (matched only by `cities`)
+    // keep working unchanged; a governorate-based zone added via the newer
+    // "Add Governorate" picker always sets this.
+    governorate?: string;
 }
 
 export interface IShippingSettings {
@@ -71,6 +77,10 @@ export interface IShippingSettings {
         accountNumber?: string;
     };
     zones: IShippingZone[];
+    // Merchant-configurable base/default shipping fee, applied to any order
+    // whose governorate/city doesn't match a specific zone below. Replaces
+    // the old hardcoded-50-EGP assumption in publicOrderController.ts.
+    standardRate: number;
 }
 
 export interface ITaxSettings {
@@ -502,8 +512,10 @@ const StoreSchema: Schema = new Schema(
                     name: { type: String },
                     cities: [{ type: String }],
                     rate: { type: Number },
-                    freeShippingThreshold: { type: Number }
-                }]
+                    freeShippingThreshold: { type: Number },
+                    governorate: { type: String }
+                }],
+                standardRate: { type: Number, default: 50 }
             },
 
             tax: {

@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useOfferEngine } from '@shared/hooks/useOfferEngine';
 import { imagePreset } from '@shared/lib/cloudinaryImage';
 import { OfferModal } from '@shared/components/offers/OfferModal';
@@ -20,6 +20,7 @@ import { useEffect, useRef } from 'react';
 import { useCustomerAuth } from '@shared/context/CustomerAuthContext';
 import { MapPin } from 'lucide-react';
 import type { CustomerAddress } from '@shared/services/customerAuthService';
+import { EGYPTIAN_GOVERNORATES } from '@shared/constants/egyptianGovernorates';
 
 const createCheckoutSchema = (t: any) => z.object({
     firstName: z.string().min(2, t('errors.required')),
@@ -28,6 +29,7 @@ const createCheckoutSchema = (t: any) => z.object({
     phone: z.string().min(10, t('errors.validation')),
     address: z.string().min(5, t('errors.required')),
     city: z.string().min(2, t('errors.required')),
+    governorate: z.string().min(1, t('errors.required')),
     zipCode: z.string().optional(),
 });
 
@@ -38,12 +40,14 @@ type CheckoutFormData = {
     phone: string;
     address: string;
     city: string;
+    governorate: string;
     zipCode?: string;
 };
 
 export default function CheckoutPage() {
     const t = useTranslations('store.checkout');
     const commonT = useTranslations('errors');
+    const locale = useLocale();
     const { subdomain } = useParams();
     const router = useRouter();
     const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart, addToCart } = useCart();
@@ -243,6 +247,13 @@ export default function CheckoutPage() {
             phone: customer.phone || defaultAddress?.phone || '',
             address: defaultAddress?.address || '',
             city: defaultAddress?.city || '',
+            // A saved address's `state` only reliably maps to one of our
+            // canonical governorate keys if it was itself saved through this
+            // same governorate selector — older/free-text values (or a
+            // state that was ever defaulted to city, see
+            // publicOrderController.ts) won't match any option, so fall
+            // back to blank rather than silently selecting the wrong thing.
+            governorate: EGYPTIAN_GOVERNORATES.some(g => g.key === defaultAddress?.state) ? (defaultAddress?.state as string) : '',
             zipCode: defaultAddress?.postalCode !== '00000' ? defaultAddress?.postalCode : '',
         });
     }, [customer, reset]);
@@ -251,6 +262,9 @@ export default function CheckoutPage() {
         setValue('address', addr.address, { shouldValidate: true });
         setValue('city', addr.city, { shouldValidate: true });
         setValue('phone', addr.phone, { shouldValidate: true });
+        if (EGYPTIAN_GOVERNORATES.some(g => g.key === addr.state)) {
+            setValue('governorate', addr.state, { shouldValidate: true });
+        }
         if (addr.postalCode && addr.postalCode !== '00000') setValue('zipCode', addr.postalCode);
     };
 
@@ -279,6 +293,12 @@ export default function CheckoutPage() {
                 shippingAddress: {
                     address: data.address,
                     city: data.city,
+                    // Canonical governorate key (see
+                    // @shared/constants/egyptianGovernorates) — matched
+                    // against store.settings.shipping.zones[].governorate
+                    // server-side to resolve the real shipping fee (see
+                    // publicOrderController.ts's resolveShippingFee).
+                    state: data.governorate,
                     zipCode: data.zipCode
                 },
                 paymentMethod: 'COD',
@@ -475,6 +495,22 @@ export default function CheckoutPage() {
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.city')}</label>
                                         <input {...register('city')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                         {errors.city && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.city.message}</p>}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.governorate')}</label>
+                                        <select
+                                            {...register('governorate')}
+                                            defaultValue=""
+                                            className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5 appearance-none"
+                                        >
+                                            <option value="" disabled>{t('form.governoratePlaceholder')}</option>
+                                            {EGYPTIAN_GOVERNORATES.map((g) => (
+                                                <option key={g.key} value={g.key}>
+                                                    {locale === 'ar' ? g.nameAr : g.nameEn}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {errors.governorate && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.governorate.message}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.zipCode')}</label>

@@ -19,6 +19,67 @@ import { sendNewOrderOwnerEmail } from '../services/emailService';
 import User from '../models/User';
 import { getStoreSalePrice } from '../utils/storeSale';
 import { isCouponEligible, computeCouponDiscount } from '../utils/couponPricing';
+import { resolveGovernorateKey } from '../constants/egyptianGovernorates';
+
+/**
+ * Single shared shipping-fee resolution used by BOTH the campaign
+ * (bundle/offer) and standard checkout paths below — previously these had
+ * diverged: only the campaign path ever consulted
+ * store.settings.shipping.zones at all, and even then its zone-matching
+ * fell back to whichever zone happened to be first in the array when
+ * nothing matched the customer's city. Standard (non-campaign) checkouts —
+ * the vast majority of real orders — ignored zones entirely and always
+ * charged a hardcoded 50 EGP.
+ *
+ * Resolution order:
+ *   1. An explicit campaign.shippingFee override (campaign checkouts only,
+ *      unchanged existing behavior — campaigns can still override
+ *      everything).
+ *   2. A zone whose `governorate` matches shippingAddress.state (primary,
+ *      canonical match going forward — case-insensitive, normalized
+ *      against EGYPTIAN_GOVERNORATES's keys/names).
+ *   3. A zone whose legacy `cities` list includes shippingAddress.city
+ *      (backward compatibility for zones a merchant manually created
+ *      before the governorate picker existed).
+ *   4. store.settings.shipping.standardRate — the merchant-configured
+ *      default — NOT an arbitrary zones[0].rate fallback.
+ */
+function resolveShippingFee(
+    store: any,
+    shippingAddress: { city?: string; state?: string } | undefined,
+    campaign?: any
+): number {
+    if (campaign && campaign.shippingFee !== undefined && campaign.shippingFee !== null) {
+        return campaign.shippingFee;
+    }
+
+    const standardRate = store?.settings?.shipping?.standardRate ?? 50;
+    const zones: any[] = store?.settings?.shipping?.zones || [];
+    if (zones.length === 0) {
+        return standardRate;
+    }
+
+    const rawState = shippingAddress?.state;
+    if (rawState) {
+        const normalizedState = resolveGovernorateKey(rawState) || rawState.toString().trim().toLowerCase();
+        const governorateZone = zones.find((z) =>
+            z.governorate && z.governorate.toString().trim().toLowerCase() === normalizedState
+        );
+        if (governorateZone) {
+            return governorateZone.rate;
+        }
+    }
+
+    const city = shippingAddress?.city;
+    if (city) {
+        const cityZone = zones.find((z) => Array.isArray(z.cities) && z.cities.includes(city));
+        if (cityZone) {
+            return cityZone.rate;
+        }
+    }
+
+    return standardRate;
+}
 
 // @desc    Create new order from storefront
 // @route   POST /api/public/orders
@@ -42,7 +103,7 @@ export const createPublicOrder = async (req: Request, res: Response) => {
         let resolvedSubtotal = 0;
         let resolvedUnitPrice = 0;
         let qty = 1;
-        let shippingFee = 50;
+        let shippingFee = 0;
         let campaignProductOriginalPrice = 0;
 
         // If campaignId is provided, perform campaign-specific lookup and validations
@@ -132,16 +193,11 @@ export const createPublicOrder = async (req: Request, res: Response) => {
 
 
 
-            // Resolve Shipping Fee Hierarchy
-            if (campaign.shippingFee !== undefined && campaign.shippingFee !== null) {
-                shippingFee = campaign.shippingFee;
-            } else {
-                const zones = store.settings?.shipping?.zones || [];
-                if (zones.length > 0) {
-                    const matchedZone = zones.find((z: any) => z.cities.includes(shippingAddress.city));
-                    shippingFee = matchedZone ? matchedZone.rate : zones[0].rate;
-                }
-            }
+            // Resolve Shipping Fee Hierarchy — shared with the standard
+            // checkout path below via resolveShippingFee() (see top of
+            // file). `store` here is the same store already loaded above
+            // for this campaign checkout.
+            shippingFee = resolveShippingFee(store, shippingAddress, campaign);
 
             // Calculate taxes
             const taxRate = store.settings?.tax?.enabled ? store.settings.tax.rate / 100 : 0;
@@ -213,7 +269,11 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                     phone: customerData.phone,
                     address: shippingAddress.address,
                     city: shippingAddress.city,
-                    state: shippingAddress.city, // Defaulting state to city for MVP
+                    // The checkout form now collects a real governorate
+                    // selector (see Task 4 doc-comment on the checkout page)
+                    // which populates `state`; fall back to city for older
+                    // clients that never sent one.
+                    state: shippingAddress.state || shippingAddress.city,
                     postalCode: shippingAddress.zipCode || '00000',
                     country: 'Egypt',
                     isDefault: true
@@ -336,7 +396,13 @@ export const createPublicOrder = async (req: Request, res: Response) => {
         // once the coupon discount is finalized below (see "PRICING
         // INTEGRITY FIX (continued)").
         let numericTotal = Number(totalAmount);
-        const resolvedShippingFee = campaignId ? shippingFee : 50;
+        // Standard (non-campaign) checkouts resolve their fee here, now
+        // that `activeStore` is available — same shared resolveShippingFee()
+        // used by the campaign branch above, so the two paths can never
+        // diverge again. No campaign object passed here: `campaign` is only
+        // ever set when campaignId is truthy, in which case shippingFee was
+        // already resolved above.
+        const resolvedShippingFee = campaignId ? shippingFee : resolveShippingFee(activeStore, shippingAddress);
         let finalDiscount = Number(discountAmount || 0);
 
         let session: mongoose.ClientSession | null = null;
@@ -480,7 +546,7 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                     phone: customerData.phone,
                     address: shippingAddress.address,
                     city: shippingAddress.city,
-                    state: shippingAddress.city,
+                    state: shippingAddress.state || shippingAddress.city,
                     postalCode: shippingAddress.zipCode || '00000',
                     country: 'Egypt'
                 },
@@ -489,7 +555,7 @@ export const createPublicOrder = async (req: Request, res: Response) => {
                     phone: customerData.phone,
                     address: shippingAddress.address,
                     city: shippingAddress.city,
-                    state: shippingAddress.city,
+                    state: shippingAddress.state || shippingAddress.city,
                     postalCode: shippingAddress.zipCode || '00000',
                     country: 'Egypt'
                 },

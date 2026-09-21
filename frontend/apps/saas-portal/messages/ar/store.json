@@ -59,6 +59,8 @@
             "phone": "رقم الهاتف",
             "address": "العنوان بالكامل",
             "city": "المدينة",
+            "governorate": "المحافظة",
+            "governoratePlaceholder": "اختر المحافظة",
             "zipCode": "الرمز البريدي (اختياري)"
         },
         "payment": {

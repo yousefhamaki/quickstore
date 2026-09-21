@@ -59,6 +59,8 @@
             "phone": "Phone Number",
             "address": "Full Address",
             "city": "City",
+            "governorate": "Governorate",
+            "governoratePlaceholder": "Select governorate",
             "zipCode": "Zip Code (Optional)"
         },
         "payment": {
