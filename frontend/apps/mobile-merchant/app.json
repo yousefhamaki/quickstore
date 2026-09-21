@@ -22,6 +22,7 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.buildora.merchant",
       "permissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -64,6 +65,12 @@
         "projectId": "91118569-c7b9-4951-b46b-8c3650c4bed5"
       }
     },
-    "owner": "yousefhamaki"
+    "owner": "yousefhamaki",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/91118569-c7b9-4951-b46b-8c3650c4bed5"
+    }
   }
 }
