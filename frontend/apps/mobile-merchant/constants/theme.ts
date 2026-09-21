@@ -73,6 +73,12 @@ export const statusColors: Record<string, { bg: string; text: string }> = {
   // the store picker (app/select-store.tsx).
   live: { bg: '#DCFCE7', text: '#166534' },
   paused: { bg: '#FEF3C7', text: '#92400E' },
+  // Order.shippingStatus values (courier fulfillment stage, distinct from the
+  // merchant-driven order `status` above) — see app/(tabs)/orders/[id].tsx.
+  ready_for_pickup: { bg: '#E0E7FF', text: '#3730A3' },
+  picked_up: { bg: '#CFFAFE', text: '#155E75' },
+  in_transit: { bg: '#CFFAFE', text: '#155E75' },
+  returned: { bg: '#FEE2E2', text: '#991B1B' },
 };
 
 // A real spacing scale — every screen pulls from this instead of eyeballing

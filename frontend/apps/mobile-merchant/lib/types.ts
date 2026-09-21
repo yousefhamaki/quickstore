@@ -53,6 +53,11 @@ export interface OrderRefund {
   refundedBy?: string;
 }
 
+// Mirrors backend models/Order.ts's shippingStatus enum — a courier's
+// (Bosta) own fulfillment stage, distinct from the merchant-driven `status`
+// (pending/confirmed/.../delivered) above.
+export type ShippingStatus = 'pending' | 'ready_for_pickup' | 'picked_up' | 'in_transit' | 'delivered' | 'returned';
+
 export interface Order {
   _id: string;
   orderNumber: string;
@@ -76,6 +81,14 @@ export interface Order {
   timeline: { status: string; timestamp: string; note?: string }[];
   refunds?: OrderRefund[];
   refundedAmount?: number;
+  // Set by POST /api/shipping/waybill/:orderId (Bosta) or
+  // PUT /api/shipping/orders/:orderId/tracking (manual/local) — see
+  // lib/services/shipping.ts.
+  shippingProvider?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  waybillUrl?: string;
+  shippingStatus?: ShippingStatus;
   createdAt: string;
 }
 
@@ -293,9 +306,19 @@ export interface ShippingZone {
   freeShippingThreshold?: number;
 }
 
+export interface StoreShippingCredentials {
+  apiKey?: string;
+  apiSecret?: string;
+  accountNumber?: string;
+}
+
 export interface StoreShippingSettings {
   enabled: boolean;
+  // 'aramex' exists on the backend enum but has no working provider
+  // implementation yet (ShippingFactory.getProvider throws for it) — the
+  // mobile app only ever offers 'local' or 'bosta' as choices.
   provider: 'local' | 'bosta' | 'aramex';
+  credentials?: StoreShippingCredentials;
   zones: ShippingZone[];
 }
 
