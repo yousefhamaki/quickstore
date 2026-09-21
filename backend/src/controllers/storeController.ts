@@ -8,7 +8,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { IMPLEMENTED_PAYMENT_PROVIDERS } from '../constants/paymentProviders';
-import { IMPLEMENTED_SHIPPING_PROVIDERS } from '../constants/shippingProviders';
+import { IMPLEMENTED_SHIPPING_PROVIDERS, SHIPPING_SECRET_CREDENTIAL_FIELDS } from '../constants/shippingProviders';
 import { applyEncryptedCredentialField } from '../utils/applyEncryptedCredentials';
 import Subscription from '../models/Subscription';
 import { DomainVerificationService } from '../services/domain/DomainVerificationService';
@@ -421,12 +421,23 @@ export const updateStore = async (req: AuthRequest, res: Response) => {
             if (req.body.settings.shipping?.credentials !== undefined) {
                 const incoming = req.body.settings.shipping.credentials;
                 const existing = store.settings?.shipping?.credentials;
+                // Generalized over every SECRET shipping credential field
+                // (Bosta's apiKey, Aramex's accountPin/username/password,
+                // Mylerz's username/password, J&T Express's privateKey —
+                // see SHIPPING_SECRET_CREDENTIAL_FIELDS's doc-comment).
+                // Non-secret account identifiers (accountNumber,
+                // accountEntity, accountCountryCode, apiAccount,
+                // customerCode) pass through unchanged from `incoming` via
+                // the spread below — they're never encrypted.
+                const encryptedFields: Record<string, string | undefined> = {};
+                for (const field of SHIPPING_SECRET_CREDENTIAL_FIELDS) {
+                    encryptedFields[field] = applyEncryptedCredentialField(incoming[field], existing?.[field]);
+                }
                 updateData.settings.shipping = {
                     ...req.body.settings.shipping,
                     credentials: {
                         ...incoming,
-                        apiKey: applyEncryptedCredentialField(incoming.apiKey, existing?.apiKey),
-                        apiSecret: applyEncryptedCredentialField(incoming.apiSecret, existing?.apiSecret)
+                        ...encryptedFields
                     }
                 };
             }

@@ -65,16 +65,19 @@ export interface IShippingZone {
 
 export interface IShippingSettings {
     enabled: boolean;
-    // 'aramex' is intentionally still part of this type (a pre-existing
-    // record could hold it) but is NOT actually usable: it exists today
-    // only as an unfinished skeleton — see constants/shippingProviders.ts
-    // for why, controllers/storeController.ts (rejects saving it) and
-    // services/shipping/ShippingFactory.ts (refuses to construct it).
-    provider: 'local' | 'bosta' | 'aramex';
+    provider: 'local' | 'bosta' | 'aramex' | 'mylerz' | 'jt_express';
     credentials?: {
-        apiKey?: string;
-        apiSecret?: string;
-        accountNumber?: string;
+        apiKey?: string;            // Bosta
+        apiSecret?: string;         // reserved/legacy, unused by new providers
+        accountNumber?: string;     // Aramex AccountNumber
+        accountPin?: string;        // Aramex AccountPin — SECRET, must be encrypted
+        accountEntity?: string;     // Aramex AccountEntity, e.g. "AMM" (test) / merchant's real entity code — not secret
+        accountCountryCode?: string;// Aramex AccountCountryCode, e.g. "JO" (test) / merchant's real country — not secret
+        username?: string;          // Aramex UserName, or Mylerz username — SECRET, must be encrypted
+        password?: string;          // Aramex Password, or Mylerz password — SECRET, must be encrypted
+        apiAccount?: string;        // J&T Express apiAccount — not secret (account identifier)
+        customerCode?: string;      // J&T Express customerCode — not secret (account identifier)
+        privateKey?: string;        // J&T Express privateKey — SECRET, must be encrypted
     };
     zones: IShippingZone[];
 }
@@ -498,17 +501,22 @@ const StoreSchema: Schema = new Schema(
 
             shipping: {
                 enabled: { type: Boolean, default: false },
-                // Schema-level enum intentionally narrower than the
-                // IShippingSettings TS type above (which still lists
-                // 'aramex' for a pre-existing record) — kept in sync with
-                // constants/shippingProviders.ts so 'aramex' can never be
-                // newly saved here, the same defense-in-depth already used
-                // for payment.provider below.
+                // Schema-level enum kept in sync with
+                // constants/shippingProviders.ts's IMPLEMENTED_SHIPPING_PROVIDERS,
+                // the same defense-in-depth already used for payment.provider below.
                 provider: { type: String, enum: [...IMPLEMENTED_SHIPPING_PROVIDERS], default: 'local' },
                 credentials: {
                     apiKey: { type: String },
                     apiSecret: { type: String },
-                    accountNumber: { type: String }
+                    accountNumber: { type: String },
+                    accountPin: { type: String },
+                    accountEntity: { type: String },
+                    accountCountryCode: { type: String },
+                    username: { type: String },
+                    password: { type: String },
+                    apiAccount: { type: String },
+                    customerCode: { type: String },
+                    privateKey: { type: String }
                 },
                 zones: [{
                     name: { type: String },
