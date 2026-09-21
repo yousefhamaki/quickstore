@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCart } from '@shared/context/CartContext';
-import { getPublicStore, validateCoupon, getAutoApplyCoupon } from '@shared/services/publicStoreService';
+import { getPublicStore, validateCoupon, getAutoApplyCoupon, getShippingFeeEstimate } from '@shared/services/publicStoreService';
 import { createOrder } from '@shared/services/publicOrderService';
 import { ShoppingCart, Truck, CreditCard, ChevronRight, Package, Trash2, CheckCircle2, Ticket, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -221,14 +221,35 @@ export default function CheckoutPage() {
         } else if (appliedCoupon.type === 'fixed') {
             return appliedCoupon.value;
         } else if (appliedCoupon.type === 'free_shipping') {
-            return 50; // Current shipping fee is hardcoded as 50
+            return shippingFee;
         }
         return 0;
     };
 
-    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CheckoutFormData>({
+    const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CheckoutFormData>({
         resolver: zodResolver(createCheckoutSchema(useTranslations())),
     });
+
+    // Live shipping-fee estimate, kept in sync with whichever governorate is
+    // currently selected — shares resolveShippingFee with the real charge
+    // server-side (see getShippingFeeEstimate/publicOrderController.ts) so
+    // this can never drift from what the customer is actually charged. Falls
+    // back to the store's standardRate (via the same endpoint, called with
+    // no governorate) before one is picked, rather than a stale guess.
+    const [shippingFee, setShippingFee] = useState(0);
+    const selectedGovernorate = watch('governorate');
+    useEffect(() => {
+        if (!storeId) return;
+        let cancelled = false;
+        getShippingFeeEstimate(storeId, selectedGovernorate || undefined)
+            .then((fee) => { if (!cancelled) setShippingFee(fee); })
+            .catch(() => {
+                // Leave the last known estimate on a transient failure —
+                // the server independently re-resolves the real charge at
+                // order-creation time regardless of what's displayed here.
+            });
+        return () => { cancelled = true; };
+    }, [storeId, selectedGovernorate]);
 
     // Logged-in customer prefill: check out faster by not retyping contact
     // info and a saved address every time. Guarded by a ref so it only
@@ -302,7 +323,11 @@ export default function CheckoutPage() {
                     zipCode: data.zipCode
                 },
                 paymentMethod: 'COD',
-                totalAmount: getCartTotal() + 50 - getDiscountAmount(),
+                // Display-only — the server independently recomputes the
+                // real shipping fee (and total) via resolveShippingFee at
+                // order-creation time, so a stale/tampered value here can
+                // never change what's actually charged.
+                totalAmount: getCartTotal() + shippingFee - getDiscountAmount(),
                 couponCode: appliedCoupon?.code,
                 discountAmount: getDiscountAmount()
             };
@@ -565,7 +590,7 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="flex justify-between text-sm font-medium">
                                     <span className="text-gray-400 uppercase tracking-widest">{t('shipping')}</span>
-                                    <span className="font-bold">EGP 50</span>
+                                    <span className="font-bold">EGP {shippingFee.toLocaleString()}</span>
                                 </div>
 
                                 {/* Coupon Section */}
@@ -612,7 +637,7 @@ export default function CheckoutPage() {
                                 <div className="h-px bg-gray-200" />
                                 <div className="flex justify-between items-center pt-2">
                                     <span className="text-lg font-black tracking-tighter uppercase">{t('total')}</span>
-                                    <span className="text-2xl font-black">EGP {(getCartTotal() + 50 - getDiscountAmount()).toLocaleString()}</span>
+                                    <span className="text-2xl font-black">EGP {(getCartTotal() + shippingFee - getDiscountAmount()).toLocaleString()}</span>
                                 </div>
                             </div>
 

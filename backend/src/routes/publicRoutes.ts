@@ -13,7 +13,8 @@ import {
 import {
     createPublicOrder,
     getPublicOrderDetails,
-    trackOrder
+    trackOrder,
+    getShippingFeeEstimate
 } from '../controllers/publicOrderController';
 import { getProductReviews, createReview } from '../controllers/reviewController';
 import { storefrontBillingContext, checkServiceAvailability } from '../middleware/billingMiddleware';
@@ -38,6 +39,7 @@ router.post('/stores/:storeId/visit', trackStoreVisit);
 router.get('/products/:productId', getProductDetails);
 router.get('/products/:productId/reviews', getProductReviews);
 router.post('/products/:productId/reviews', reviewLimiter, createReview);
+router.get('/stores/:storeId/shipping-fee', getShippingFeeEstimate);
 router.get('/stores/:storeId/coupons/validate', validateCoupon);
 router.get('/stores/:storeId/coupons/auto-apply', getAutoApplyCoupon);
 router.post('/stores/:storeId/newsletter/subscribe', subscribeNewsletter);

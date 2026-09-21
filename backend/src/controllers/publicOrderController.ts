@@ -81,6 +81,39 @@ export function resolveShippingFee(
     return standardRate;
 }
 
+// @desc    Live shipping-fee estimate for the checkout page's order summary
+//          — reads the store fresh (not the Redis-cached customization
+//          blob getStoreBySubdomain serves) so a merchant's just-saved
+//          standardRate/zone change is reflected immediately, and shares
+//          resolveShippingFee with the real order-creation charge so the
+//          number shown here always matches what actually gets charged.
+// @route   GET /api/public/stores/:storeId/shipping-fee?governorate=&city=
+// @access  Public
+export const getShippingFeeEstimate = async (req: Request, res: Response) => {
+    try {
+        const storeId = String(req.params.storeId);
+        const { governorate, city } = req.query;
+
+        if (!mongoose.Types.ObjectId.isValid(storeId)) {
+            return res.status(400).json({ message: 'Invalid store ID' });
+        }
+
+        const store = await Store.findById(storeId).select('settings.shipping').lean();
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        const fee = resolveShippingFee(store, {
+            state: typeof governorate === 'string' ? governorate : undefined,
+            city: typeof city === 'string' ? city : undefined,
+        });
+
+        res.json({ fee });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'Failed to estimate shipping fee' });
+    }
+};
+
 // @desc    Create new order from storefront
 // @route   POST /api/public/orders
 // @access  Public

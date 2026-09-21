@@ -25,6 +25,20 @@ export const trackVisit = async (storeId: string) => {
     return response.data;
 };
 
+/**
+ * Live shipping-fee estimate for the checkout page's order summary, shared
+ * with the real order-creation charge server-side (resolveShippingFee) so
+ * this number never drifts from what actually gets charged — see
+ * publicOrderController.ts's getShippingFeeEstimate.
+ */
+export const getShippingFeeEstimate = async (storeId: string, governorate?: string, city?: string): Promise<number> => {
+    const params = new URLSearchParams();
+    if (governorate) params.set('governorate', governorate);
+    if (city) params.set('city', city);
+    const response = await api.get<{ fee: number }>(`/public/stores/${storeId}/shipping-fee?${params.toString()}`);
+    return response.data.fee;
+};
+
 export const validateCoupon = async (storeId: string, code: string, subtotal: number, email?: string) => {
     const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
     const response = await api.get(`/public/stores/${storeId}/coupons/validate?code=${code}&subtotal=${subtotal}${emailParam}`);
