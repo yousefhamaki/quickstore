@@ -804,5 +804,92 @@
                 }
             }
         }
+    },
+    "shippingSettings": {
+        "title": "إعدادات الشحن",
+        "subtitle": "إدارة مناطق التوصيل والأسعار وحدود الشحن المجاني.",
+        "enableCard": {
+            "title": "تفعيل الشحن للمتجر",
+            "subtitle": "تفعيل حساب رسوم الشحن عند الدفع."
+        },
+        "standardRate": {
+            "heading": "رسوم الشحن الأساسية",
+            "label": "الرسوم الأساسية (جنيه)",
+            "hint": "تُطبّق على جميع المحافظات ما لم تحدد سعرًا خاصًا أدناه."
+        },
+        "provider": {
+            "heading": "شركة الشحن",
+            "settingsHeading": "إعدادات {name}",
+            "names": {
+                "local": "توصيل محلي",
+                "bosta": "Bosta",
+                "aramex": "Aramex",
+                "mylerz": "Mylerz",
+                "jt_express": "J&T Express"
+            },
+            "taglines": {
+                "local": "أسطول التوصيل الخاص بك",
+                "bosta": "بوليصات الشحن والتتبع المباشر",
+                "aramex": "شبكة شحن عالمية",
+                "mylerz": "توصيل الميل الأخير",
+                "jt_express": "شركة شحن سريع إقليمية"
+            },
+            "bosta": {
+                "apiKeyLabel": "مفتاح Bosta API",
+                "apiKeyPlaceholder": "أدخل مفتاح API",
+                "apiKeyHint": "يتم تشفير مفتاحك بتقنية AES قبل الحفظ. لا نرسله مطلقًا إلى المتصفح بشكل غير مشفر."
+            },
+            "aramex": {
+                "description": "اربط حساب Aramex الحالي الخاص بك — احصل على هذه البيانات من لوحة تحكم تاجر Aramex. يتم تشفير بياناتك بتقنية AES قبل الحفظ؛ ولا نرسلها مطلقًا إلى المتصفح بشكل غير مشفر.",
+                "accountSection": "الحساب",
+                "accountNumberLabel": "رقم الحساب",
+                "accountNumberPlaceholder": "مثال: 123456",
+                "accountEntityLabel": "كيان الحساب",
+                "accountEntityPlaceholder": "مثال: CAI",
+                "accountCountryCodeLabel": "رمز بلد الحساب",
+                "accountCountryCodePlaceholder": "مثال: EG",
+                "loginSection": "بيانات الدخول",
+                "usernameLabel": "اسم المستخدم",
+                "usernamePlaceholder": "البريد الإلكتروني/اسم المستخدم لحساب Aramex",
+                "passwordLabel": "كلمة المرور",
+                "passwordPlaceholder": "أدخل كلمة المرور",
+                "accountPinLabel": "الرقم السري للحساب",
+                "accountPinPlaceholder": "أدخل الرقم السري"
+            },
+            "mylerz": {
+                "description": "اربط حساب Mylerz الحالي الخاص بك — احصل على هذه البيانات من لوحة تحكم تاجر Mylerz. يتم تشفير بياناتك بتقنية AES قبل الحفظ؛ ولا نرسلها مطلقًا إلى المتصفح بشكل غير مشفر.",
+                "usernameLabel": "اسم المستخدم",
+                "usernamePlaceholder": "البريد الإلكتروني/اسم المستخدم لحساب Mylerz",
+                "passwordLabel": "كلمة المرور",
+                "passwordPlaceholder": "أدخل كلمة المرور"
+            },
+            "jtExpress": {
+                "description": "اربط حساب J&T Express الحالي الخاص بك — احصل على هذه البيانات من لوحة تحكم تاجر J&T Express. يتم تشفير بياناتك بتقنية AES قبل الحفظ؛ ولا نرسلها مطلقًا إلى المتصفح بشكل غير مشفر.",
+                "apiAccountLabel": "حساب API",
+                "apiAccountPlaceholder": "مثال: 640xxxxxxxxxxxx",
+                "customerCodeLabel": "رمز العميل",
+                "customerCodePlaceholder": "مثال: EGXXXXXXXX",
+                "privateKeyLabel": "المفتاح الخاص",
+                "privateKeyPlaceholder": "أدخل المفتاح الخاص"
+            }
+        },
+        "zones": {
+            "heading": "أسعار المحافظات",
+            "addGovernorate": "إضافة محافظة",
+            "addGovernoratePlaceholder": "اختر محافظة لإضافتها...",
+            "allAdded": "تمت إضافة جميع المحافظات.",
+            "empty": "لا توجد أسعار خاصة بمحافظات بعد.",
+            "emptyHint": "تُطبّق الرسوم الأساسية على جميع المحافظات حتى تضيف استثناءً هنا.",
+            "rateLabel": "السعر (جنيه)",
+            "remove": "إزالة",
+            "customZonesHeading": "مناطق مخصصة",
+            "customZonesHint": "مناطق قديمة يتم مطابقتها باسم المدينة بدلاً من المحافظة. تم الاحتفاظ بها للتوافق.",
+            "zoneNameLabel": "اسم المنطقة",
+            "zoneNamePlaceholder": "مثال: القاهرة والجيزة",
+            "freeOverLabel": "شحن مجاني فوق (جنيه)",
+            "noZonesTitle": "لا توجد مناطق شحن محددة.",
+            "noZonesSubtitle": "أضف مناطق لتحديد أماكن التوصيل وتكلفتها."
+        },
+        "save": "حفظ إعدادات الشحن"
     }
 }

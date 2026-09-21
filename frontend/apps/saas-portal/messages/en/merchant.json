@@ -804,5 +804,92 @@
                 }
             }
         }
+    },
+    "shippingSettings": {
+        "title": "Shipping Settings",
+        "subtitle": "Manage delivery zones, rates and free shipping thresholds.",
+        "enableCard": {
+            "title": "Enable Store Shipping",
+            "subtitle": "Turn on shipping calculations at checkout."
+        },
+        "standardRate": {
+            "heading": "Standard Shipping Fee",
+            "label": "Standard Fee (EGP)",
+            "hint": "Applied to all governorates unless you set a specific rate below."
+        },
+        "provider": {
+            "heading": "Shipping Provider",
+            "settingsHeading": "{name} settings",
+            "names": {
+                "local": "Local Delivery",
+                "bosta": "Bosta",
+                "aramex": "Aramex",
+                "mylerz": "Mylerz",
+                "jt_express": "J&T Express"
+            },
+            "taglines": {
+                "local": "Your own fleet",
+                "bosta": "Waybills & live tracking",
+                "aramex": "Global courier network",
+                "mylerz": "Last-mile delivery",
+                "jt_express": "Regional express courier"
+            },
+            "bosta": {
+                "apiKeyLabel": "Bosta API Key",
+                "apiKeyPlaceholder": "Enter API Key",
+                "apiKeyHint": "Your key is AES-encrypted before saving. We never transmit it back to the browser in plaintext."
+            },
+            "aramex": {
+                "description": "Connect your own existing Aramex account — get these details from your Aramex merchant dashboard. Your credentials are AES-encrypted before saving; we never transmit them back to the browser in plaintext.",
+                "accountSection": "Account",
+                "accountNumberLabel": "Account Number",
+                "accountNumberPlaceholder": "e.g. 123456",
+                "accountEntityLabel": "Account Entity",
+                "accountEntityPlaceholder": "e.g. CAI",
+                "accountCountryCodeLabel": "Account Country Code",
+                "accountCountryCodePlaceholder": "e.g. EG",
+                "loginSection": "Login",
+                "usernameLabel": "Username",
+                "usernamePlaceholder": "Aramex account email/username",
+                "passwordLabel": "Password",
+                "passwordPlaceholder": "Enter password",
+                "accountPinLabel": "Account PIN",
+                "accountPinPlaceholder": "Enter PIN"
+            },
+            "mylerz": {
+                "description": "Connect your own existing Mylerz account — get these details from your Mylerz merchant dashboard. Your credentials are AES-encrypted before saving; we never transmit them back to the browser in plaintext.",
+                "usernameLabel": "Username",
+                "usernamePlaceholder": "Mylerz account email/username",
+                "passwordLabel": "Password",
+                "passwordPlaceholder": "Enter password"
+            },
+            "jtExpress": {
+                "description": "Connect your own existing J&T Express account — get these details from your J&T Express merchant dashboard. Your credentials are AES-encrypted before saving; we never transmit them back to the browser in plaintext.",
+                "apiAccountLabel": "API Account",
+                "apiAccountPlaceholder": "e.g. 640xxxxxxxxxxxx",
+                "customerCodeLabel": "Customer Code",
+                "customerCodePlaceholder": "e.g. EGXXXXXXXX",
+                "privateKeyLabel": "Private Key",
+                "privateKeyPlaceholder": "Enter private key"
+            }
+        },
+        "zones": {
+            "heading": "Governorate Rates",
+            "addGovernorate": "Add Governorate",
+            "addGovernoratePlaceholder": "Select a governorate to add...",
+            "allAdded": "All governorates have been added.",
+            "empty": "No governorate-specific rates yet.",
+            "emptyHint": "Every governorate uses the standard fee above until you add an override here.",
+            "rateLabel": "Rate (EGP)",
+            "remove": "Remove",
+            "customZonesHeading": "Custom Zones",
+            "customZonesHint": "Legacy zones matched by city name instead of governorate. Kept for backward compatibility.",
+            "zoneNameLabel": "Zone Name",
+            "zoneNamePlaceholder": "e.g. Cairo & Giza",
+            "freeOverLabel": "Free Over (EGP)",
+            "noZonesTitle": "No shipping zones defined.",
+            "noZonesSubtitle": "Add zones to specify where you deliver and at what cost."
+        },
+        "save": "Save Shipping"
     }
 }

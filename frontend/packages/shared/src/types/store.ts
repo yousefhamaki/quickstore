@@ -217,6 +217,11 @@ export interface Store {
                 privateKey?: string;
             };
             zones: any[];
+            // Merchant-configurable base/default shipping fee — see
+            // backend/src/models/Store.ts's IShippingSettings.standardRate
+            // doc-comment. Applied to any order whose governorate/city
+            // doesn't match a specific zone.
+            standardRate?: number;
         };
         policies: {
             returnPolicy?: string;

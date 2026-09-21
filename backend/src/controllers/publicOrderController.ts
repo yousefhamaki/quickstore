@@ -44,7 +44,7 @@ import { resolveGovernorateKey } from '../constants/egyptianGovernorates';
  *   4. store.settings.shipping.standardRate — the merchant-configured
  *      default — NOT an arbitrary zones[0].rate fallback.
  */
-function resolveShippingFee(
+export function resolveShippingFee(
     store: any,
     shippingAddress: { city?: string; state?: string } | undefined,
     campaign?: any
