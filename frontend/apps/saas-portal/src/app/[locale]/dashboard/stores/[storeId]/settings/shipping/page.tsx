@@ -98,7 +98,7 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
                                             >
                                                 <option value="local">Local Delivery / Own Fleet</option>
                                                 <option value="bosta">Bosta</option>
-                                                <option value="aramex">Aramex</option>
+                                                <option value="aramex" disabled>Aramex (Coming soon)</option>
                                             </select>
                                         </div>
                                         

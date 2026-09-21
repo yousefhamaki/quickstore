@@ -154,7 +154,7 @@ export const handlePaymobWebhook = async (req: Request, res: Response) => {
 
 /**
  * @desc    Universal Shipping Provider Webhooks
- * @route   POST /api/webhooks/shipping/:provider/:storeId
+ * @route   POST /api/shipping/webhook/:provider/:storeId
  */
 export const handleShippingWebhook = async (req: Request, res: Response) => {
     try {
