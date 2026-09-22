@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest } from './authMiddleware';
+import { AuthRequest, findAccessibleStore } from './authMiddleware';
 import Subscription from '../models/Subscription';
 import Plan from '../models/SubscriptionPlan';
 import Wallet from '../models/Wallet';
@@ -13,8 +13,26 @@ import { canAccessFeature, FeatureKey } from '../config/planFeatures';
  */
 export const billingContext = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const userId = req.user._id;
         const storeId = req.body?.storeId || req.query?.storeId || req.params?.storeId;
+
+        // Billing/subscription/wallet belong to the STORE OWNER, not
+        // necessarily whoever is acting — a StoreStaff manager/staff member
+        // has no subscription or wallet of their own, but plan-gated
+        // features (requireFeature, below) must still be evaluated against
+        // the store's real plan, exactly as they would for the owner. Only
+        // resolve billing via the store's owner once findAccessibleStore
+        // confirms the acting user actually has access to it — otherwise
+        // this would let anyone probe an unrelated store's plan tier by
+        // passing its id as storeId before the controller's own ownership
+        // check ever runs. For a direct owner this resolves to their own
+        // _id anyway, so existing behavior is unchanged.
+        let userId = req.user._id;
+        if (storeId && mongoose.Types.ObjectId.isValid(storeId)) {
+            const access = await findAccessibleStore(req.user._id, storeId);
+            if (access) {
+                userId = access.store.ownerId;
+            }
+        }
 
         let sub = null;
 

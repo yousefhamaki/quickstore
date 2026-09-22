@@ -1,6 +1,6 @@
 import express from 'express';
 import { setupStore, submitSubscription, getMyStore } from '../controllers/merchantController';
-import { protect, authorize, requireOwnedStore } from '../middleware/authMiddleware';
+import { protect, authorize, requireOwnedStore, requireStoreRole } from '../middleware/authMiddleware';
 import { upload } from '../config/cloudinary';
 
 import { checkVerification } from '../middleware/verificationMiddleware';
@@ -16,6 +16,10 @@ router.get('/store', protect, authorize('merchant'), getMyStore);
 // the form — and BEFORE the controller, which used to trust req.body.storeId
 // directly with no ownership check at all (a merchant could submit a
 // payment receipt against another merchant's store).
-router.post('/subscribe', protect, authorize('merchant'), upload.single('receipt'), requireOwnedStore, submitSubscription);
+// Billing/subscription submission is owner-only (resolveStore now also
+// matches active staff members — requireStoreRole restricts to 'owner' on
+// top of that resolution, same as requireOwnedStore did before staff
+// existed).
+router.post('/subscribe', protect, authorize('merchant'), upload.single('receipt'), requireOwnedStore, requireStoreRole(['owner']), submitSubscription);
 
 export default router;

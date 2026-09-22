@@ -15,6 +15,11 @@ export interface AuthRequest extends Request {
     subscription?: any;
     store?: any;
     sessionId?: string;
+    // Set by resolveStore/requireOwnedStore/requireStoreRole whenever a store
+    // was resolved: 'owner' for the direct Store.ownerId match, or the
+    // matching StoreStaff.role ('manager' | 'staff') when access came from a
+    // staff membership instead. Absent if no store was resolved.
+    storeRole?: 'owner' | 'manager' | 'staff';
 }
 
 // Session.lastActiveAt is a nice-to-have for the Active Sessions UI, not a
@@ -92,11 +97,46 @@ export const authorize = (...roles: string[]) => {
 };
 
 import Store from '../models/Store';
+import StoreStaff from '../models/StoreStaff';
 import mongoose from 'mongoose';
 
 /**
+ * Core access decision for "can this user touch this store, and as what
+ * role?" — the ONE place that answers that question. Everything else
+ * (resolveStore, requireOwnedStore, requireStoreRole, and any controller
+ * that wants staff-awareness without going through the header/query/body
+ * lookup resolveStore does) should call this rather than re-deriving the
+ * ownerId-or-staff logic itself.
+ *
+ * Returns null if the user has no access at all. Otherwise the resolved
+ * store plus 'owner' (direct Store.ownerId match) or the StoreStaff role
+ * ('manager' | 'staff') for an active staff membership.
+ */
+export const findAccessibleStore = async (
+    userId: any,
+    storeId: any
+): Promise<{ store: any; role: 'owner' | 'manager' | 'staff' } | null> => {
+    if (!storeId || !mongoose.Types.ObjectId.isValid(storeId as string)) return null;
+
+    const owned = await Store.findOne({ _id: storeId, ownerId: userId });
+    if (owned) return { store: owned, role: 'owner' };
+
+    const staff = await StoreStaff.findOne({ storeId, userId, status: 'active' });
+    if (!staff) return null;
+
+    const staffStore = await Store.findById(storeId);
+    if (!staffStore) return null;
+
+    return { store: staffStore, role: staff.role };
+};
+
+/**
  * Resolves the active store context from headers, queries, bodies, or parameters.
- * Asserts ownership by matching against the logged-in merchant.
+ * Asserts access by matching against the logged-in merchant — either as the
+ * direct owner, or (see findAccessibleStore above) as an active staff member
+ * of that store. Also sets `req.storeRole` to whichever it resolved to, so
+ * callers that need to gate specific actions (billing, staff management,
+ * analytics, ...) beyond "some access" can check it.
  */
 export const resolveStore = async (req: AuthRequest): Promise<any> => {
     if (!req.user) return null;
@@ -106,31 +146,44 @@ export const resolveStore = async (req: AuthRequest): Promise<any> => {
     // than crashing every no-explicit-storeId GET route with a TypeError.
     const storeId = req.headers['x-store-id'] || req.query.storeId || req.body?.storeId || req.params.storeId;
 
-    let store = null;
+    let access: { store: any; role: 'owner' | 'manager' | 'staff' } | null = null;
     if (storeId && mongoose.Types.ObjectId.isValid(storeId as string)) {
-        store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
+        access = await findAccessibleStore(req.user._id, storeId as string);
     }
 
-    // Backward-compatible fallback for single-store accounts
-    if (!store) {
-        store = await Store.findOne({ ownerId: req.user._id });
+    if (!access) {
+        // Backward-compatible fallback for single-store accounts
+        const ownedStore = await Store.findOne({ ownerId: req.user._id });
+        if (ownedStore) {
+            access = { store: ownedStore, role: 'owner' };
+        } else {
+            // Same fallback, extended to a staff member who belongs to
+            // exactly one store and didn't pass a storeId explicitly.
+            const memberships = await StoreStaff.find({ userId: req.user._id, status: 'active' });
+            if (memberships.length === 1) {
+                const staffStore = await Store.findById(memberships[0].storeId);
+                if (staffStore) access = { store: staffStore, role: memberships[0].role };
+            }
+        }
     }
 
-    return store;
+    if (!access) return null;
+    req.storeRole = access.role;
+    return access.store;
 };
 
 /**
  * Express middleware form of `resolveStore`: resolves the store the same
  * way, attaches it as `req.store`, and rejects the request outright if no
- * owned store could be resolved at all (no store id supplied/matched AND no
- * fallback single store for this account) — instead of leaving it to each
+ * accessible store could be resolved at all (no store id supplied/matched AND
+ * no fallback single store for this account) — instead of leaving it to each
  * handler to remember to call `resolveStore` and check the result itself.
  *
  * Use this on any merchant-facing route that accepts a storeId (header,
- * query, body, or param) and must not trust it without an ownership check.
- * It does not help with resources looked up by their OWN id (e.g. a coupon
- * or campaign id) rather than a storeId — those still need a targeted
- * "load the child, then check its storeId" check in the handler.
+ * query, body, or param) and must not trust it without an ownership/staff
+ * check. It does not help with resources looked up by their OWN id (e.g. a
+ * coupon or campaign id) rather than a storeId — those still need a
+ * targeted "load the child, then check its storeId" check in the handler.
  */
 export const requireOwnedStore = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -144,4 +197,33 @@ export const requireOwnedStore = async (req: AuthRequest, res: Response, next: N
         console.error('[AuthMiddleware] requireOwnedStore failed:', error);
         res.status(500).json({ message: 'Failed to resolve store context' });
     }
+};
+
+/**
+ * Gate for the handful of actions staff (and sometimes managers) must NOT be
+ * able to perform even though they can resolve the store — billing/plan
+ * changes, store deletion, and staff management itself are 'owner'-only;
+ * analytics/marketing are 'owner'/'manager' only. Resolves the store the
+ * same way requireOwnedStore does (reusing req.store/req.storeRole if a
+ * prior middleware already set them) and 403s if the resolved role isn't in
+ * `roles`.
+ */
+export const requireStoreRole = (roles: Array<'owner' | 'manager' | 'staff'>) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const store = req.store && req.storeRole ? req.store : await resolveStore(req);
+            if (!store) {
+                return res.status(403).json({ message: 'Store not found or not accessible by this account.' });
+            }
+            req.store = store;
+            const role = req.storeRole || 'owner';
+            if (!roles.includes(role)) {
+                return res.status(403).json({ message: `Your role on this store ('${role}') does not permit this action.` });
+            }
+            next();
+        } catch (error) {
+            console.error('[AuthMiddleware] requireStoreRole failed:', error);
+            res.status(500).json({ message: 'Failed to resolve store context' });
+        }
+    };
 };

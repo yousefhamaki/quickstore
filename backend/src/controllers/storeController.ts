@@ -4,7 +4,7 @@ import User from '../models/User';
 import Product from '../models/Product';
 import Order from '../models/Order';
 import Customer from '../models/Customer';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, findAccessibleStore } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { IMPLEMENTED_PAYMENT_PROVIDERS } from '../constants/paymentProviders';
@@ -131,7 +131,17 @@ export const getStores = async (req: AuthRequest, res: Response) => {
 
 export const getStore = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = new mongoose.Types.ObjectId(req.user._id);
+        // Readable by the owner AND any active staff member (manager or
+        // staff) — the dashboard shell (frontend useStore hook) fetches this
+        // for every merchant-facing page, so a staff/manager account must be
+        // able to load it even though the aggregation below still matches on
+        // the real ownerId (a staff member's store IS owned by someone else).
+        const access = await findAccessibleStore(req.user._id, req.params.id);
+        if (!access) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        const userId = access.store.ownerId;
         const storeId = new mongoose.Types.ObjectId(req.params.id as string);
 
         const storeWithStats = await Store.aggregate([
@@ -278,7 +288,10 @@ export const getStore = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Store not found' });
         }
 
-        res.json(storeWithStats[0]);
+        // Lets the frontend hide owner-only UI (billing, staff management,
+        // store deletion, ...) for a manager/staff account without having to
+        // guess — the backend is still the real enforcement either way.
+        res.json({ ...storeWithStats[0], currentUserRole: access.role });
     } catch (error) {
         console.error('Get Store Error:', error);
         res.status(500).json({ message: 'Server Error', error });
@@ -347,14 +360,17 @@ export const createStore = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const updateStore = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({
-            _id: req.params.id,
-            ownerId: req.user._id
-        });
-
-        if (!store) {
+        // Store settings (payment, shipping, policies, branding, ...) are
+        // "everyday operations" a manager should be able to edit same as the
+        // owner — but not a 'staff' member (see StoreStaff's role doc-comment).
+        const access = await findAccessibleStore(req.user._id, req.params.id);
+        if (!access) {
             return res.status(404).json({ message: 'Store not found' });
         }
+        if (access.role === 'staff') {
+            return res.status(403).json({ message: 'Staff members cannot change store settings.' });
+        }
+        const store = access.store;
 
         // Whitelist updates to prevent mass assignment of status, plans, isVerified, or subdomains
         const updateData: any = {};

@@ -167,6 +167,12 @@ export interface Store {
     _id: string;
     merchant: string;
     name: string;
+    // Set by the backend (storeController.getStore) based on who's asking —
+    // 'owner' for the direct owner, or the StoreStaff role ('manager' |
+    // 'staff') for a teammate. Used only to hide owner-only UI (billing,
+    // staff management, store deletion); the backend re-checks every action
+    // itself regardless of what the frontend shows.
+    currentUserRole?: 'owner' | 'manager' | 'staff';
     description?: string;
     category?: string;
     status: StoreStatus;
