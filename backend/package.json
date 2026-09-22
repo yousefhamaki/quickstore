@@ -10,6 +10,7 @@
     "migrate:wallet-ledger": "tsx src/scripts/migrateWalletLedgerUnify.ts",
     "billing:renew-sweep": "tsx src/scripts/runSubscriptionRenewalSweepOnce.ts",
     "marketing:drip-sweep": "tsx src/scripts/runMarketingDripSweepOnce.ts",
+    "abandoned-cart:sweep": "tsx src/scripts/runAbandonedCartSweepOnce.ts",
     "migrate:categories": "tsx src/scripts/migrateCategoriesFromFreeText.ts"
   },
   "keywords": [],

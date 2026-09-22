@@ -41,9 +41,11 @@ import { CampaignQuotaService } from './services/CampaignQuotaService';
 import './workers/adminWorker';
 import './workers/billingWorker';
 import './workers/marketingWorker';
+import './workers/abandonedCartWorker';
 import { startAnalyticsCron } from './jobs/analyticsCron';
 import { scheduleSubscriptionRenewalSweep } from './queues/billingQueue';
 import { scheduleMarketingDripSweep } from './queues/marketingQueue';
+import { scheduleAbandonedCartSweep } from './queues/abandonedCartQueue';
 import { reconnectAllOnBoot } from './services/whatsapp/connectionManager';
 
 import helmet from 'helmet';
@@ -128,6 +130,10 @@ if (process.env.NODE_ENV !== 'test') {
             // Schedule the recurring merchant onboarding/activation drip sweep (BullMQ)
             scheduleMarketingDripSweep().catch(err =>
                 console.error('[Server] Failed to schedule marketing drip sweep:', err)
+            );
+            // Schedule the recurring abandoned-cart recovery sweep (BullMQ)
+            scheduleAbandonedCartSweep().catch(err =>
+                console.error('[Server] Failed to schedule abandoned-cart recovery sweep:', err)
             );
             // Resume every store's WhatsApp connection that was live before
             // this restart — required because ts-node-dev --respawn (and

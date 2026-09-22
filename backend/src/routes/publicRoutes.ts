@@ -18,6 +18,7 @@ import {
 } from '../controllers/publicOrderController';
 import { getProductReviews, createReview } from '../controllers/reviewController';
 import { handleKashierCallback } from '../controllers/webhookController';
+import { captureAbandonedCart, getAbandonedCartByToken } from '../controllers/abandonedCartController';
 import { storefrontBillingContext, checkServiceAvailability } from '../middleware/billingMiddleware';
 
 const router = express.Router();
@@ -33,6 +34,17 @@ const reviewLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// The checkout page calls this on email blur + on cart changes — generous
+// enough for legitimate typing/editing, still a guard against abuse since
+// it's an unauthenticated write.
+const abandonedCartCaptureLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 30,
+    message: { message: 'Too many requests, please try again in a minute.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 router.get('/stores/:subdomain', getStoreBySubdomain);
 router.get('/stores/:storeId/products', getStoreProducts);
 router.get('/stores/:storeId/categories', getStoreCategories);
@@ -44,6 +56,8 @@ router.get('/stores/:storeId/shipping-fee', getShippingFeeEstimate);
 router.get('/stores/:storeId/coupons/validate', validateCoupon);
 router.get('/stores/:storeId/coupons/auto-apply', getAutoApplyCoupon);
 router.post('/stores/:storeId/newsletter/subscribe', subscribeNewsletter);
+router.post('/stores/:storeId/abandoned-cart', abandonedCartCaptureLimiter, captureAbandonedCart);
+router.get('/stores/:storeId/abandoned-cart/:token', getAbandonedCartByToken);
 
 router.post('/orders', storefrontBillingContext, checkServiceAvailability, createPublicOrder);
 router.get('/orders/track/:orderNumber', trackOrder);

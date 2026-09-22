@@ -1,0 +1,44 @@
+{{#> layout
+    title=(concat "You left something at " storeName)
+    accentColor="#d97706"
+    logoUrl="https://www.quickstore.live/logo.png"
+    logoFallbackUrl="https://placehold.co/180x48/d97706/ffffff?text=Buildora"
+    brandingName="{{storeName}}"
+    showFooterPoweredBy=true
+    footerText="You received this email because you started a checkout at {{storeName}} and left before it was complete."
+}}
+    <h1 class="title">You left something in your cart 🛒</h1>
+    <p class="description">
+        Good news — your cart at <strong>{{storeName}}</strong> is still saved. Complete your order before it's gone.
+    </p>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th class="items-th">Item</th>
+                <th class="items-th items-th-center">Qty</th>
+                <th class="items-th items-th-right">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each items}}
+            <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #4a5568;">{{name}}</td>
+                <td style="padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #4a5568; text-align: center;">{{quantity}}</td>
+                <td style="padding: 12px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #1a202c; text-align: right; font-weight: 600;">{{formatCurrency price ../currency}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+
+    <div class="total-container">
+        <div class="total-row">
+            <div class="total-col label">Cart Total</div>
+            <div class="total-col value" style="color: #d97706;">{{formatCurrency totalAmount currency}}</div>
+        </div>
+    </div>
+
+    <div class="btn-container" style="margin-top: 32px;">
+        <a href="{{recoveryUrl}}" target="_blank" class="btn" style="background-color: #d97706; box-shadow: 0 10px 15px -3px rgba(217, 119, 6, 0.3);">Complete Your Order</a>
+    </div>
+{{/layout}}
