@@ -359,6 +359,28 @@ export interface Store {
   settings: StoreSettings;
   stats?: { totalProducts: number; totalOrders: number; totalRevenue: number; totalCustomers: number };
   createdAt?: string;
+  // Set by GET /api/stores (list) — 'owner' for a store this account owns,
+  // or the StoreStaff role ('manager'|'staff') for one they were invited to
+  // help manage. Absent on older cached responses; treat as 'owner' if
+  // missing (mirrors frontend/packages/shared/src/types/store.ts).
+  myRole?: 'owner' | 'manager' | 'staff';
+}
+
+// ---------------------------------------------------------------------------
+// Staff / team
+// ---------------------------------------------------------------------------
+
+export type StoreStaffRole = 'manager' | 'staff';
+export type StoreStaffStatus = 'pending' | 'active' | 'removed';
+
+export interface StoreStaffMember {
+  _id: string;
+  email: string;
+  role: StoreStaffRole;
+  status: StoreStaffStatus;
+  invitedAt: string;
+  acceptedAt?: string;
+  user: { _id: string; name: string; email: string } | null;
 }
 
 // ---------------------------------------------------------------------------
