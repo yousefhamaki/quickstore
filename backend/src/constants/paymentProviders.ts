@@ -10,6 +10,12 @@
  * see models/Store.ts (schema enum), controllers/storeController.ts
  * (rejects saving them), and services/payment/PaymentFactory.ts (refuses to
  * construct them even if a record somehow already holds one).
+ *
+ * 'kashier' is a real, live integration (Kashier's Hosted Payment Page +
+ * HMAC-SHA256 order hash + a verified redirect-callback signature check —
+ * see services/payment/KashierPaymentService.ts and
+ * controllers/webhookController.ts's handleKashierCallback), the same bar as
+ * 'paymob'.
  */
-export const IMPLEMENTED_PAYMENT_PROVIDERS = ['manual', 'paymob'] as const;
+export const IMPLEMENTED_PAYMENT_PROVIDERS = ['manual', 'paymob', 'kashier'] as const;
 export type ImplementedPaymentProvider = typeof IMPLEMENTED_PAYMENT_PROVIDERS[number];

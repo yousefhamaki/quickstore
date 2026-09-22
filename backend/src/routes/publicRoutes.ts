@@ -17,6 +17,7 @@ import {
     getShippingFeeEstimate
 } from '../controllers/publicOrderController';
 import { getProductReviews, createReview } from '../controllers/reviewController';
+import { handleKashierCallback } from '../controllers/webhookController';
 import { storefrontBillingContext, checkServiceAvailability } from '../middleware/billingMiddleware';
 
 const router = express.Router();
@@ -47,5 +48,13 @@ router.post('/stores/:storeId/newsletter/subscribe', subscribeNewsletter);
 router.post('/orders', storefrontBillingContext, checkServiceAvailability, createPublicOrder);
 router.get('/orders/track/:orderNumber', trackOrder);
 router.get('/orders/:orderId', getPublicOrderDetails);
+
+// Public — Kashier can't send our merchant JWT, so this is authenticated
+// instead by Kashier's own redirect signature (handleKashierCallback checks
+// it via PaymentFactory.getProvider(store).validateWebhookPayload(...)),
+// the same pattern as /api/shipping/webhook/:provider/:storeId and
+// /api/billing/webhook/paymob. This is the exact URL
+// KashierPaymentService.initializePayment builds as `merchantRedirect`.
+router.get('/payments/kashier/callback/:storeId', handleKashierCallback);
 
 export default router;

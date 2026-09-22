@@ -24,7 +24,8 @@ import {
     CheckCircle2,
     Smartphone,
     Globe,
-    Layers
+    Layers,
+    Coins
 } from "lucide-react";
 import { Switch } from "@shared/components/ui/switch";
 import { cn } from "@shared/lib/utils";
@@ -43,6 +44,7 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
                     apiSecret: store.settings?.payment?.credentials?.apiSecret ? '••••••••••••' : '',
                     publicKey: store.settings?.payment?.credentials?.publicKey || '',
                     iframeId: store.settings?.payment?.credentials?.iframeId || '',
+                    merchantId: store.settings?.payment?.credentials?.merchantId || '',
                 },
                 methods: store.settings?.payment?.methods || [],
                 instapayNumber: store.settings?.payment?.instapayNumber || "",
@@ -99,6 +101,7 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
                             {[
                                 { id: 'manual', name: 'Offline Settings', icon: Building, color: 'border-slate-300 bg-slate-50', text: 'text-slate-600', available: true },
                                 { id: 'paymob', name: 'Paymob', icon: Layers, color: 'border-blue-400 bg-blue-50/50', text: 'text-blue-500', available: true },
+                                { id: 'kashier', name: 'Kashier', icon: Coins, color: 'border-emerald-400 bg-emerald-50/50', text: 'text-emerald-600', available: true },
                                 { id: 'stripe', name: 'Stripe', icon: Globe, color: 'border-indigo-400 bg-indigo-50/50', text: 'text-indigo-500', available: false },
                                 { id: 'paypal', name: 'PayPal', icon: Smartphone, color: 'border-cyan-400 bg-cyan-50/50', text: 'text-cyan-600', available: false },
                                 { id: 'fawry', name: 'Fawry', icon: Wallet, color: 'border-yellow-400 bg-yellow-50/50', text: 'text-yellow-600', available: false }
@@ -149,6 +152,20 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
                                     <Input placeholder="e.g. 892301" {...register("payment.credentials.iframeId")} />
                                 </div>
                                 <p className="text-[11px] font-medium text-muted-foreground md:col-span-2">All gateway keys are securely encrypted in our databases using AES-GCM algorithms before saving.</p>
+                            </div>
+                        )}
+
+                        {watch("payment.provider") === 'kashier' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-4 fade-in duration-300 pt-6 border-t border-primary/10 mt-6">
+                                <div className="space-y-2">
+                                    <Label>Merchant ID</Label>
+                                    <Input placeholder="e.g. MID-91-106" {...register("payment.credentials.merchantId")} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Payment API Key</Label>
+                                    <PasswordInput placeholder={store?.settings?.payment?.credentials?.apiKey ? "••••••••••••" : "Enter Payment API Key"} {...register("payment.credentials.apiKey")} />
+                                </div>
+                                <p className="text-[11px] font-medium text-muted-foreground md:col-span-2">Both values are on your Kashier dashboard under Store Settings → API Keys. The Payment API Key is securely encrypted in our databases using AES-GCM before saving.</p>
                             </div>
                         )}
 
