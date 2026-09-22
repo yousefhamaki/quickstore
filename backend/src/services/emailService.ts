@@ -23,6 +23,28 @@ const getResendClient = () => {
     return resendInstance;
 };
 
+/**
+ * Resend's SDK does NOT throw for an API-level rejection (domain not
+ * verified, recipient blocked by a sandbox/test-mode restriction, quota
+ * exceeded, etc.) — it resolves normally with `{ data: null, error: {...} }`.
+ * Every call site below used to do `return await getResendClient().emails
+ * .send(...)` directly and never looked at `.error`, so a rejected send
+ * looked identical to a successful one to every caller: no thrown
+ * exception, no log line, nothing — the surrounding try/catch never fired,
+ * and e.g. staffController.inviteStaff's fire-and-forget
+ * `.catch(err => console.error(...))` had nothing to catch. This wrapper is
+ * the one place that actually looks at `.error` and turns it into a thrown
+ * Error, so the existing try/catch in every function below (which already
+ * logs and rethrows) starts doing its job for this failure mode too.
+ */
+async function sendViaResend(payload: Parameters<Resend['emails']['send']>[0]) {
+    const response = await getResendClient().emails.send(payload);
+    if (response.error) {
+        throw new Error(response.error.message || 'Resend rejected the email send');
+    }
+    return response;
+}
+
 const DEFAULT_FROM = 'Buildora <no-reply@quickstore.live>';
 
 // Register Handlebars helper functions
@@ -108,7 +130,7 @@ export const sendBuyerVerificationEmail = async (
             verificationLink
         });
 
-        const response = await getResendClient().emails.send({
+        const response = await sendViaResend({
             from: DEFAULT_FROM,
             to: buyerEmail,
             subject: `Verify your account - ${storeName}`,
@@ -118,6 +140,40 @@ export const sendBuyerVerificationEmail = async (
         return response;
     } catch (error) {
         console.error('[EmailService] Error sending buyer verification email:', error);
+        throw error;
+    }
+};
+
+/**
+ * Sends a store-staff invite email — the same raw-token-in-URL pattern as
+ * sendBuyerVerificationEmail, used by staffController.inviteStaff.
+ */
+export const sendStaffInviteEmail = async (
+    inviteeEmail: string,
+    storeName: string,
+    inviterName: string,
+    role: string,
+    acceptUrl: string
+) => {
+    try {
+        console.log(`[EmailService] Sending staff invite email to ${inviteeEmail} for store: ${storeName}`);
+
+        const html = renderTemplate('staff_invite.html', {
+            storeName,
+            inviterName,
+            role,
+            acceptUrl
+        });
+
+        const response = await sendViaResend({
+            from: DEFAULT_FROM,
+            to: inviteeEmail,
+            subject: `You've been invited to join ${storeName} on Buildora`,
+            html
+        });
+        return response;
+    } catch (error) {
+        console.error('[EmailService] Error sending staff invite email:', error);
         throw error;
     }
 };
@@ -138,7 +194,7 @@ export const sendMerchantWelcomeEmail = async (
             dashboardLink
         });
 
-        const response = await getResendClient().emails.send({
+        const response = await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: 'Welcome to Buildora!',
@@ -190,7 +246,7 @@ export const sendInvoiceEmail = async (
             items: invoiceDetails.items
         });
 
-        const response = await getResendClient().emails.send({
+        const response = await sendViaResend({
             from: DEFAULT_FROM,
             to: buyerEmail,
             subject: `Invoice for your order at ${storeName}`,
@@ -222,7 +278,7 @@ export const sendSubscriptionExpiryWarning = async (
             renewLink
         });
 
-        const response = await getResendClient().emails.send({
+        const response = await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: 'Action Required: Your Buildora subscription is expiring soon',
@@ -302,6 +358,50 @@ export const sendOrderShippedEmail = async (
     }
 };
 
+export interface AbandonedCartRecoveryItem {
+    name: string;
+    quantity: number;
+    price: number;
+    image?: string;
+}
+
+/**
+ * Sends the abandoned-cart recovery reminder — fired once by the recovery
+ * sweep (see services/AbandonedCartRecoveryService.ts) for a cart that's sat
+ * `pending` past the sweep's age window. Routed through the store's own
+ * sender when configured, like the other store-to-customer transactional
+ * emails above (order shipped, password reset), since this is a
+ * customer-facing nudge from the store, not Buildora itself.
+ */
+export const sendAbandonedCartRecoveryEmail = async (
+    store: Pick<IStore, 'name' | 'settings'>,
+    email: string,
+    recoveryUrl: string,
+    items: AbandonedCartRecoveryItem[],
+    totalAmount: number,
+    currency: string = 'EGP'
+) => {
+    try {
+        const html = renderTemplate('abandoned_cart_recovery.html', {
+            storeName: store.name,
+            recoveryUrl,
+            items,
+            totalAmount: typeof totalAmount === 'number' ? totalAmount.toFixed(2) : totalAmount,
+            currency,
+        });
+        const result = await sendStoreEmail(store, {
+            to: email,
+            subject: `You left something behind at ${store.name}`,
+            html
+        });
+        if (!result.ok) throw new Error(result.error || 'Failed to send abandoned cart recovery email');
+        return result;
+    } catch (error) {
+        console.error('[EmailService] Error sending abandoned cart recovery email:', error);
+        throw error;
+    }
+};
+
 /**
  * Sends the automatically-issued post-purchase personal voucher — fired
  * once by orderController.updateOrderStatus the first time an order
@@ -350,7 +450,7 @@ export const sendPostPurchaseVoucherEmail = async (
 export const sendTwoFactorCodeEmail = async (email: string, code: string) => {
     try {
         const html = renderTemplate('two_factor_code.html', { code });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: email,
             subject: `${code} is your Buildora verification code`,
@@ -369,7 +469,7 @@ export const sendTwoFactorCodeEmail = async (email: string, code: string) => {
 export const sendNewDeviceLoginEmail = async (email: string, deviceLabel: string, ip: string, time: string) => {
     try {
         const html = renderTemplate('new_device_login.html', { deviceLabel, ip: ip || 'Unknown', time });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: email,
             subject: 'New sign-in to your Buildora account',
@@ -388,7 +488,7 @@ export const sendNewDeviceLoginEmail = async (email: string, deviceLabel: string
 export const sendPasswordChangedEmail = async (email: string) => {
     try {
         const html = renderTemplate('password_changed.html', {});
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: email,
             subject: 'Your Buildora password was changed',
@@ -488,7 +588,7 @@ export const sendLowEmailBalanceAlert = async (merchantEmail: string, storeName:
             subject: `Low email credits on ${storeName}`,
             bodyHtml,
         });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: `Low email credits on ${storeName}`,
@@ -524,7 +624,7 @@ export const sendZeroBalanceSkippedEmailAlert = async (
             subject: `Action needed: customer email not sent (${storeName})`,
             bodyHtml,
         });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: `Action needed: customer email not sent (${storeName})`,
@@ -561,7 +661,7 @@ export const sendWhatsAppZeroBalanceAlert = async (
             subject: `Action needed: customer WhatsApp message not sent (${storeName})`,
             bodyHtml,
         });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: `Action needed: customer WhatsApp message not sent (${storeName})`,
@@ -603,7 +703,7 @@ export const sendSignupGiftEmail = async (
             dashboardLink
         });
 
-        const response = await getResendClient().emails.send({
+        const response = await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: `You just got ${amount} ${currency} on Buildora!`,
@@ -636,7 +736,7 @@ export const sendSupportTicketEmail = async (
             ticketId
         });
 
-        const response = await getResendClient().emails.send({
+        const response = await sendViaResend({
             from: DEFAULT_FROM,
             to: email,
             subject: `Support Ticket Received: ${ticketId}`,
@@ -706,7 +806,7 @@ export const sendNewOrderOwnerEmail = async (params: {
             orderLink,
         });
 
-        const response = await getResendClient().emails.send({
+        const response = await sendViaResend({
             from: DEFAULT_FROM,
             to: ownerEmail,
             subject: `New order #${orderNumber} on ${storeName}`,
@@ -755,7 +855,7 @@ export const sendMerchantDripCreateStoreEmail = async (
             dashboardLink,
             unsubscribeLink: buildMarketingUnsubscribeLink(userId),
         });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: "Let's get your store live on Buildora",
@@ -783,7 +883,7 @@ export const sendMerchantDripAddFirstProductEmail = async (
             dashboardLink,
             unsubscribeLink: buildMarketingUnsubscribeLink(userId),
         });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: 'Add your first product and start selling',
@@ -813,7 +913,7 @@ export const sendMerchantDripPublishStoreEmail = async (
             dashboardLink,
             unsubscribeLink: buildMarketingUnsubscribeLink(userId),
         });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: `${storeName} is ready — go live today`,
@@ -843,7 +943,7 @@ export const sendMerchantDripUpgradePlanEmail = async (
             plansLink,
             unsubscribeLink: buildMarketingUnsubscribeLink(userId),
         });
-        return await getResendClient().emails.send({
+        return await sendViaResend({
             from: DEFAULT_FROM,
             to: merchantEmail,
             subject: `${storeName} is live! See what Pro unlocks`,

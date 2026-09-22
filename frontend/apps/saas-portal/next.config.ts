@@ -41,6 +41,19 @@ const nextConfig: NextConfig = {
   },
 
   transpilePackages: ['@quickstore/shared'],
+  // The mobile-merchant Expo app's static web/PWA export lives at
+  // public/mobile-app/ (see frontend/apps/mobile-merchant/scripts/
+  // postbuild-web-pwa.js) — a plain client-side-routed SPA. Real files in
+  // there (JS bundles, icons, manifest.json) are matched by Next's own
+  // public-folder serving first and never reach this rewrite; anything
+  // else under /mobile-app/* (an in-app route, or a refresh on one) falls
+  // back to its index.html so client-side routing keeps working.
+  async rewrites() {
+    return [
+      { source: '/mobile-app', destination: '/mobile-app/index.html' },
+      { source: '/mobile-app/:path*', destination: '/mobile-app/index.html' },
+    ];
+  },
   // Allow subdomain dev origins — wildcards are unreliable, list explicitly
   allowedDevOrigins: [
     'localhost:3000',
@@ -62,7 +75,7 @@ const nextConfig: NextConfig = {
       "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com",
       "img-src 'self' blob: data: https://lh3.googleusercontent.com https://images.simplycodes.com https://res.cloudinary.com",
       "font-src 'self' https://fonts.gstatic.com https://images.simplycodes.com",
-      "connect-src 'self' http://localhost:5000 https://vercel.live https://*.vercel.live https://images.simplycodes.com https://*.onrender.com https://*.buildora.live https://*.buildora.com",
+      "connect-src 'self' http://localhost:5000 http://localhost:5501 https://vercel.live https://*.vercel.live https://images.simplycodes.com https://*.onrender.com https://*.buildora.live https://*.buildora.com",
       "frame-src 'self' https://accounts.google.com https://vercel.live",
       "worker-src 'self' blob:",
       "object-src 'none'",

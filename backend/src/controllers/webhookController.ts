@@ -200,6 +200,77 @@ export const handleShippingWebhook = async (req: Request, res: Response) => {
 };
 
 /**
+ * @desc    Kashier Hosted Payment Page redirect callback — Kashier sends the
+ *          shopper's browser back here (GET, query params) after checkout,
+ *          not a server-to-server POST like Paymob's webhook above. The
+ *          signature MUST be verified before the order is ever marked paid
+ *          (see KashierPaymentService.validateWebhookPayload's doc-comment
+ *          for the exact algorithm). This is the URL KashierPaymentService
+ *          builds as `merchantRedirect` when initializing a payment.
+ * @route   GET /api/public/payments/kashier/callback/:storeId
+ */
+export const handleKashierCallback = async (req: Request, res: Response) => {
+    const { storeId } = req.params;
+    const merchantOrderId = (req.query.merchantOrderId as string) || '';
+
+    try {
+        const store = await Store.findById(storeId);
+        if (!store) {
+            return res.status(404).send('Store missing');
+        }
+
+        // Same host-resolution pattern as shippingController.ts/
+        // customerAuthController.ts: prefer a verified custom domain,
+        // otherwise the platform subdomain.
+        const storeDomainBase = process.env.STORE_DOMAIN_BASE || 'quickstore.live';
+        const storeHost = (store.domain?.customDomain && store.domain.isVerified)
+            ? store.domain.customDomain
+            : `${store.domain?.subdomain}.${storeDomainBase}`;
+        const redirectBase = `https://${storeHost}/track-order`;
+
+        let paymentProvider;
+        try {
+            paymentProvider = PaymentFactory.getProvider(store);
+        } catch (e: any) {
+            console.error(`[Kashier Callback] Unable to construct payment provider for store ${storeId}:`, e.message);
+            return res.redirect(302, `${redirectBase}?orderNumber=${encodeURIComponent(merchantOrderId)}&paymentStatus=error`);
+        }
+
+        const signature = req.query.signature as string;
+        const validSignature = !!signature && paymentProvider.validateWebhookPayload(req.query, signature);
+
+        if (!validSignature) {
+            console.error(`[Kashier Callback] Invalid/missing signature rejected for store ${storeId}, order ${merchantOrderId}`);
+            return res.redirect(302, `${redirectBase}?orderNumber=${encodeURIComponent(merchantOrderId)}&paymentStatus=invalid_signature`);
+        }
+
+        const paymentStatus = ((req.query.paymentStatus as string) || '').toUpperCase();
+        const isSuccess = paymentStatus === 'SUCCESS';
+        // Kashier's own transaction reference for this payment — distinct
+        // from `merchantOrderId` (our order number) and from the `orderId`
+        // query param KashierPaymentService sent on the way OUT (which was
+        // also our order number); on the way back `orderId` is Kashier's id.
+        const kashierTransactionId = (req.query.transactionId as string) || (req.query.orderId as string) || undefined;
+
+        if (merchantOrderId) {
+            await Order.findOneAndUpdate(
+                { orderNumber: merchantOrderId, storeId },
+                {
+                    paymentStatus: isSuccess ? 'paid' : 'failed',
+                    ...(kashierTransactionId ? { transactionId: kashierTransactionId } : {}),
+                    $push: { timeline: { status: `Payment gateway update (Kashier): ${isSuccess ? 'paid' : 'failed'}`, timestamp: new Date() } }
+                }
+            );
+        }
+
+        return res.redirect(302, `${redirectBase}?orderNumber=${encodeURIComponent(merchantOrderId)}&paymentStatus=${isSuccess ? 'success' : 'failed'}`);
+    } catch (error) {
+        console.error('[Kashier Callback] Error:', error);
+        return res.status(500).send('Error processing Kashier callback');
+    }
+};
+
+/**
  * @desc    Universal Payment Provider Webhooks
  * @route   POST /api/webhooks/payments/:provider/:storeId
  */

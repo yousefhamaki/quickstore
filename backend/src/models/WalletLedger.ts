@@ -31,7 +31,14 @@ export interface IWalletLedger extends Document {
 const WalletLedgerSchema = new Schema({
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     type: { type: String, enum: ['credit', 'debit'], required: true },
-    amount: { type: Number, required: true, min: 0.01 },
+    // min 0 (not 0.01) specifically to allow a single deliberate exception:
+    // services/platformConfigService.ts's markSignupGiftNotApplicable writes
+    // a reason:'gift', amount:0 row to mark an account (created via staff
+    // invite, not an independent signup) as ineligible for the real signup
+    // gift, reusing this model's own {userId, reason:'gift'} uniqueness
+    // guard below instead of adding a new field elsewhere. Every other
+    // writer still writes a real positive amount.
+    amount: { type: Number, required: true, min: 0 },
     reason: { type: String, required: true, index: true },
     note: { type: String },
     referenceId: { type: Schema.Types.ObjectId },

@@ -40,12 +40,20 @@ export interface IPaymentSettings {
     // those integrations are unfinished skeletons (see
     // constants/paymentProviders.ts) and must not be selectable until they
     // have real checkout + webhook-signature implementations.
-    provider?: 'manual' | 'paymob';
+    provider?: 'manual' | 'paymob' | 'kashier';
     credentials?: {
         apiKey?: string;
         apiSecret?: string;
         publicKey?: string;
         iframeId?: string;
+        // Kashier's merchant id (e.g. "MID-91-106"), from the merchant's own
+        // Kashier dashboard. Not a secret — used as a plain account
+        // identifier in both the HPP checkout URL and the HMAC order hash —
+        // so it is never passed through applyEncryptedCredentialField, same
+        // treatment as shipping's accountNumber/accountEntity. Kashier's
+        // Payment API key reuses the shared `apiKey` field above (it is
+        // already part of the secret-encryption path).
+        merchantId?: string;
     };
     bankDetails?: {
         bankName: string;
@@ -498,7 +506,8 @@ const StoreSchema: Schema = new Schema(
                     apiKey: { type: String },
                     apiSecret: { type: String },
                     publicKey: { type: String },
-                    iframeId: { type: String }
+                    iframeId: { type: String },
+                    merchantId: { type: String }
                 },
                 bankDetails: {
                     bankName: { type: String },

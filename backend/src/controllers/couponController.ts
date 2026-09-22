@@ -1,7 +1,12 @@
 import { Response } from 'express';
 import Coupon from '../models/Coupon';
-import Store from '../models/Store';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, findAccessibleStore } from '../middleware/authMiddleware';
+
+// Coupons are a manager-level "everyday operation" — same access as the
+// owner, but NOT a plain 'staff' member (see StoreStaff's role doc-comment).
+function canManageCoupons(role: 'owner' | 'manager' | 'staff'): boolean {
+    return role === 'owner' || role === 'manager';
+}
 
 // @desc    Get all coupons for a store
 // @route   GET /api/coupons?storeId=...
@@ -13,8 +18,8 @@ export const getCoupons = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ success: false, message: 'storeId is required' });
         }
 
-        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
-        if (!store) {
+        const access = await findAccessibleStore(req.user._id, storeId as string);
+        if (!access || !canManageCoupons(access.role)) {
             return res.status(404).json({ success: false, message: 'Store not found or unauthorized' });
         }
 
@@ -32,8 +37,8 @@ export const createCoupon = async (req: AuthRequest, res: Response) => {
     try {
         const { storeId, code, type, value, maxUsage, expiresAt, minOrderAmount, autoApply } = req.body;
 
-        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
-        if (!store) {
+        const access = await findAccessibleStore(req.user._id, storeId);
+        if (!access || !canManageCoupons(access.role)) {
             return res.status(404).json({ success: false, message: 'Store not found or unauthorized' });
         }
 
@@ -72,8 +77,8 @@ export const updateCoupon = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ success: false, message: 'Coupon not found' });
         }
 
-        const store = await Store.findOne({ _id: coupon.storeId, ownerId: req.user._id });
-        if (!store) {
+        const access = await findAccessibleStore(req.user._id, coupon.storeId as any);
+        if (!access || !canManageCoupons(access.role)) {
             return res.status(401).json({ success: false, message: 'Unauthorized' });
         }
 
@@ -108,8 +113,8 @@ export const deleteCoupon = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ success: false, message: 'Coupon not found' });
         }
 
-        const store = await Store.findOne({ _id: coupon.storeId, ownerId: req.user._id });
-        if (!store) {
+        const access = await findAccessibleStore(req.user._id, coupon.storeId as any);
+        if (!access || !canManageCoupons(access.role)) {
             return res.status(401).json({ success: false, message: 'Unauthorized' });
         }
 

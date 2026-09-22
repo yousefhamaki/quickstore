@@ -167,6 +167,12 @@ export interface Store {
     _id: string;
     merchant: string;
     name: string;
+    // Set by the backend (storeController.getStore) based on who's asking —
+    // 'owner' for the direct owner, or the StoreStaff role ('manager' |
+    // 'staff') for a teammate. Used only to hide owner-only UI (billing,
+    // staff management, store deletion); the backend re-checks every action
+    // itself regardless of what the frontend shows.
+    currentUserRole?: 'owner' | 'manager' | 'staff';
     description?: string;
     category?: string;
     status: StoreStatus;
@@ -185,6 +191,9 @@ export interface Store {
                 apiSecret?: string;
                 publicKey?: string;
                 iframeId?: string;
+                // Kashier's merchant id (e.g. "MID-91-106") — plain account
+                // identifier, not a secret, so it's never masked like apiKey.
+                merchantId?: string;
             };
             methods: string[];
             bankDetails?: {
@@ -255,6 +264,13 @@ export interface Store {
     stats: StoreStats;
     createdAt: string;
     updatedAt: string;
+    // Set by GET /api/stores (list) — same idea as currentUserRole above
+    // (the field storeController.getStore/the store dashboard sidebar
+    // already use), but for the list endpoint: 'owner' for a store this
+    // user owns, or the StoreStaff role ('manager' | 'staff') for a store
+    // they were invited to help manage. Absent on older cached responses;
+    // treat as 'owner' if missing.
+    myRole?: 'owner' | 'manager' | 'staff';
 }
 
 export interface CreateStoreData {

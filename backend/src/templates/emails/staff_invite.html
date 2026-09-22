@@ -1,0 +1,24 @@
+{{#> layout
+    title="You've been invited to a Buildora store"
+    accentColor="#3182ce"
+    logoUrl="https://www.quickstore.live/email-logo.png"
+    logoFallbackUrl="https://placehold.co/180x48/3182ce/ffffff?text=Buildora"
+    brandingName="Buildora"
+    showFooterPoweredBy=false
+    footerText="You received this email because someone invited this address to join their store's team on Buildora."
+}}
+    <h1 class="title">You're invited to join {{storeName}}</h1>
+    <p class="description">
+        <strong>{{inviterName}}</strong> has invited you to help manage <strong>{{storeName}}</strong> on Buildora as a <strong>{{role}}</strong>.
+    </p>
+    <div class="btn-container">
+        <a href="{{acceptUrl}}" target="_blank" class="btn" style="background-color: #3182ce; box-shadow: 0 10px 15px -3px rgba(49, 130, 206, 0.3);">Accept Invitation</a>
+    </div>
+    <p class="description" style="font-size: 14px; color: #718096; margin-bottom: 0;">
+        If the button doesn't work, copy and paste this link in your browser:<br>
+        <a href="{{acceptUrl}}" target="_blank" style="color: #3182ce; text-decoration: none; word-break: break-all;">{{acceptUrl}}</a>
+    </p>
+    <p class="description" style="font-size: 13px; color: #a0aec0; margin-top: 20px;">
+        This invitation expires in 7 days. If you weren't expecting this, you can safely ignore this email.
+    </p>
+{{/layout}}

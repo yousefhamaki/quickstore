@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, findAccessibleStore } from '../middleware/authMiddleware';
 import OfferCampaign from '../models/OfferCampaign';
 import OfferImpression from '../models/OfferImpression';
 import Order from '../models/Order';
@@ -11,6 +11,14 @@ import { evaluateOffers, CartItem } from '../services/offerEvaluationService';
 import { processOrderFee } from './billingController';
 import { redisClient } from '../config/redis';
 import { clearStoreProductCaches } from './productController';
+
+// Offer campaigns are manager-level (same as the owner) but NOT accessible
+// to a plain 'staff' member — see StoreStaff's role doc-comment.
+async function requireOfferManageAccess(userId: any, storeId: any) {
+    const access = await findAccessibleStore(userId, storeId);
+    if (!access || access.role === 'staff') return null;
+    return access.store;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ── PUBLIC STOREFRONT ENDPOINTS ───────────────────────────────────────────────
@@ -646,8 +654,8 @@ export const getCampaigns = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ success: false, message: 'storeId is required.' });
         }
 
-        // Ownership check — ensures merchant can only access their own store's campaigns
-        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
+        // Access check — ensures merchant/manager can only access their own store's campaigns
+        const store = await requireOfferManageAccess(req.user._id, storeId);
         if (!store) {
             return res.status(404).json({ success: false, message: 'Store not found or unauthorized.' });
         }
@@ -706,7 +714,7 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ success: false, message: 'Missing required campaign fields.' });
         }
 
-        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
+        const store = await requireOfferManageAccess(req.user._id, storeId);
         if (!store) {
             return res.status(404).json({ success: false, message: 'Store not found or unauthorized.' });
         }
@@ -772,8 +780,8 @@ export const updateCampaign = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ success: false, message: 'Campaign not found.' });
         }
 
-        // Ownership check via storeId → ownerId
-        const store = await Store.findOne({ _id: campaign.storeId, ownerId: req.user._id });
+        // Access check via storeId
+        const store = await requireOfferManageAccess(req.user._id, campaign.storeId);
         if (!store) {
             return res.status(403).json({ success: false, message: 'Unauthorized.' });
         }
@@ -819,7 +827,7 @@ export const deleteCampaign = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ success: false, message: 'Campaign not found.' });
         }
 
-        const store = await Store.findOne({ _id: campaign.storeId, ownerId: req.user._id });
+        const store = await requireOfferManageAccess(req.user._id, campaign.storeId);
         if (!store) {
             return res.status(403).json({ success: false, message: 'Unauthorized.' });
         }
@@ -873,7 +881,7 @@ export const getCampaignAnalytics = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ success: false, message: 'Campaign not found or unauthorized.' });
         }
 
-        const store = await Store.findOne({ _id: storeId as string, ownerId: req.user._id });
+        const store = await requireOfferManageAccess(req.user._id, storeId as string);
         if (!store) {
             return res.status(403).json({ success: false, message: 'Unauthorized.' });
         }

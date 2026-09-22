@@ -1,8 +1,15 @@
 import { Response } from 'express';
-import Store from '../models/Store';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, findAccessibleStore } from '../middleware/authMiddleware';
 import { redisClient } from '../config/redis';
 import { PLAN_MAPPING, PLAN_NAMES } from '../config/planFeatures';
+
+// Marketing settings are manager-level (same as the owner) but NOT
+// accessible to a plain 'staff' member — see StoreStaff's role doc-comment.
+async function requireMarketingAccess(userId: any, storeId: any) {
+    const access = await findAccessibleStore(userId, storeId);
+    if (!access || access.role === 'staff') return null;
+    return access.store;
+}
 
 // Helper for Zero Cache-Miss Redis update
 const overwriteStoreCache = async (store: any) => {
@@ -36,7 +43,7 @@ export const updatePixels = async (req: AuthRequest, res: Response) => {
     try {
         const { storeId, facebookPixelId, googleAnalyticsId, tiktokPixelId, snapchatPixelId } = req.body;
 
-        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
+        const store = await requireMarketingAccess(req.user._id, storeId);
         if (!store) {
             return res.status(404).json({ success: false, message: 'Store not found or unauthorized' });
         }
@@ -69,7 +76,7 @@ export const updateSEO = async (req: AuthRequest, res: Response) => {
     try {
         const { storeId, seoTitle, seoDescription } = req.body;
 
-        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
+        const store = await requireMarketingAccess(req.user._id, storeId);
         if (!store) {
             return res.status(404).json({ success: false, message: 'Store not found or unauthorized' });
         }
@@ -99,7 +106,7 @@ export const updateSEO = async (req: AuthRequest, res: Response) => {
 export const getMarketingSettings = async (req: AuthRequest, res: Response) => {
     try {
         const { storeId } = req.query;
-        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
+        const store = await requireMarketingAccess(req.user._id, storeId as string);
 
         if (!store) {
             return res.status(404).json({ success: false, message: 'Store not found' });
@@ -118,7 +125,7 @@ export const updateSocialSharing = async (req: AuthRequest, res: Response) => {
     try {
         const { storeId, enabled, platforms, defaultMessage } = req.body;
 
-        const store = await Store.findOne({ _id: storeId, ownerId: req.user._id });
+        const store = await requireMarketingAccess(req.user._id, storeId);
         if (!store) {
             return res.status(404).json({ success: false, message: 'Store not found or unauthorized' });
         }

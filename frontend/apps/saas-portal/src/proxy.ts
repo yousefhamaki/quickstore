@@ -63,6 +63,7 @@ export default function proxy(request: NextRequest) {
         pathname.startsWith('/api') ||
         pathname.startsWith('/static') ||
         pathname.startsWith('/public') ||
+        pathname.startsWith('/mobile-app') ||
         pathname === '/favicon.ico' ||
         (isManifestFile && isMainDomain) || // Only early-exit manifest on main domain
         (!isManifestFile && /\.(?:css|js|ico|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot|map)$/i.test(pathname))
@@ -99,10 +100,18 @@ export default function proxy(request: NextRequest) {
         pathAfterLocale.startsWith('/auth/verification-required') ||
         pathAfterLocale.startsWith('/verify-email');
 
+    // The staff accept-invite page must work for someone with NO account and
+    // NO token yet (that's the whole point — the invite link itself is what
+    // proves their identity, see staffController.acceptInvite). Without this
+    // exception it matched isMerchantPath below and got redirected to
+    // /auth/login before ever rendering, same class of oversight
+    // isVerificationPath already exists to prevent for email verification.
+    const isStaffAcceptPath = pathAfterLocale.startsWith('/merchant/staff/accept');
+
     // Redirect unauthenticated users to login.
     // CRITICAL: store paths must NEVER trigger this — a storefront visitor
     // isn't a merchant and has no token, and never should be redirected.
-    if ((isMerchantPath || isDashboardPath || isAdminPath) && !isStorePath && !token) {
+    if ((isMerchantPath || isDashboardPath || isAdminPath) && !isStorePath && !token && !isStaffAcceptPath) {
         return NextResponse.redirect(new URL(`/${locale}/auth/login`, request.url));
     }
 
@@ -112,7 +121,7 @@ export default function proxy(request: NextRequest) {
     }
 
     // Block unverified merchants from protected routes until they verify their email.
-    if (token && (isMerchantPath || isDashboardPath) && !isStorePath && !isVerificationPath) {
+    if (token && (isMerchantPath || isDashboardPath) && !isStorePath && !isVerificationPath && !isStaffAcceptPath) {
         const payload = decodeJwtPayload(token);
         const isVerified = payload?.isVerified === true;
 

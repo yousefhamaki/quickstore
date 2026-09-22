@@ -134,6 +134,41 @@ export async function grantSignupGiftIfEligible(userId: string): Promise<SignupG
  * notification and welcome-gift email when (and only when) a gift was
  * actually granted just now — never on a disabled promo or a repeat call.
  */
+/**
+ * Marks a user as permanently ineligible for the signup gift, WITHOUT
+ * touching authController.loginUser or teaching it anything about
+ * StoreStaff. Used by staffController.acceptInvite when it creates a
+ * brand-new User purely to accept a staff invite: that account didn't sign
+ * up to launch its own store, so loginUser's unconditional
+ * grantSignupGiftAndNotify call on this user's very next login must not
+ * silently hand them the real gift.
+ *
+ * Reuses grantSignupGiftIfEligible's own idempotency mechanism instead of
+ * adding a new field anywhere: it writes the SAME reason:'gift' WalletLedger
+ * row that mechanism's partial unique index on {userId, reason:'gift'}
+ * guards against duplicating — just with amount 0 and a note explaining why,
+ * instead of a real credit (see WalletLedger.ts's amount min:0 comment).
+ * Once this row exists, any later grantSignupGiftIfEligible call for this
+ * user hits the duplicate-key path and no-ops, exactly like a normal
+ * "already granted" repeat call.
+ */
+export async function markSignupGiftNotApplicable(userId: string): Promise<void> {
+    let wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+        wallet = await Wallet.create({ userId, balance: 0, currency: 'EGP' });
+    }
+
+    await WalletLedger.create({
+        userId,
+        type: 'credit',
+        amount: 0,
+        reason: WALLET_LEDGER_REASONS.SIGNUP_GIFT,
+        note: 'Not applicable — account created via staff invite, not an independent signup.',
+        referenceId: wallet._id,
+        balanceAfter: wallet.balance,
+    });
+}
+
 export async function grantSignupGiftAndNotify(userId: string, email: string, name: string): Promise<SignupGiftGrantResult> {
     const result = await grantSignupGiftIfEligible(userId);
 

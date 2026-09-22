@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import { parse as parseCsv } from 'csv-parse/sync';
+import { stringify as stringifyCsv } from 'csv-stringify/sync';
 import Product from '../models/Product';
 import Store from '../models/Store';
 import User from '../models/User';
@@ -536,6 +538,327 @@ export const bulkUpdateStatus = async (req: AuthRequest, res: Response) => {
         await clearStoreProductCaches(store._id.toString());
 
         res.json({ message: `${productIds.length} products updated successfully` });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+// ---------------------------------------------------------------------------
+// CSV bulk import / export
+//
+// Scope (deliberate): only the "simple"/flat product fields round-trip
+// through CSV — name, slug, description, shortDescription, price,
+// compareAtPrice, costPerItem, sku, barcode, trackInventory, inventory
+// quantity/lowStockThreshold, category (by name), status, tags
+// (semicolon-separated), seo title/description. Variants, options, extras,
+// features and images are genuinely hard to flatten into a CSV row and are
+// out of scope for v1 — a mature "basic bulk tool" vs. "advanced editor"
+// split, same as many established platforms. `imageUrls` is exported as a
+// read-only reference column only; import never touches a product's images
+// even if that column is present in the uploaded file.
+// ---------------------------------------------------------------------------
+
+const CSV_COLUMNS = [
+    'name',
+    'slug',
+    'description',
+    'shortDescription',
+    'price',
+    'compareAtPrice',
+    'costPerItem',
+    'sku',
+    'barcode',
+    'trackInventory',
+    'inventoryQuantity',
+    'lowStockThreshold',
+    'category',
+    'status',
+    'tags',
+    'seoTitle',
+    'seoDescription',
+    'imageUrls',
+] as const;
+
+const VALID_STATUSES = ['draft', 'active', 'archived'];
+
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// @desc    Export all of a store's products as a CSV file
+// @route   GET /api/products/export?storeId=...
+// @access  Private/Merchant
+export const exportProducts = async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await resolveStore(req);
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found or unauthorized' });
+        }
+
+        const products = await Product.find({ storeId: store._id }).sort({ createdAt: 1 }).lean();
+
+        const rows = products.map((p: any) => ({
+            name: p.name || '',
+            slug: p.slug || '',
+            description: p.description || '',
+            shortDescription: p.shortDescription || '',
+            price: p.price ?? '',
+            compareAtPrice: p.compareAtPrice ?? '',
+            costPerItem: p.costPerItem ?? '',
+            sku: p.sku || '',
+            barcode: p.barcode || '',
+            trackInventory: p.trackInventory ? 'true' : 'false',
+            inventoryQuantity: p.inventory?.quantity ?? 0,
+            lowStockThreshold: p.inventory?.lowStockThreshold ?? 5,
+            category: p.category || '',
+            status: p.status || 'active',
+            tags: Array.isArray(p.tags) ? p.tags.join(';') : '',
+            seoTitle: p.seo?.title || '',
+            seoDescription: p.seo?.description || '',
+            imageUrls: Array.isArray(p.images) ? p.images.map((img: any) => img.url).join(';') : '',
+        }));
+
+        const csv = stringifyCsv(rows, { header: true, columns: CSV_COLUMNS as unknown as string[] });
+
+        const date = new Date().toISOString().slice(0, 10);
+        const filename = `products-${store.slug || store._id}-${date}.csv`;
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.status(200).send(csv);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+/** Thrown for a per-row validation problem — its message is what gets reported back to the merchant for that row. */
+class RowError extends Error {}
+
+function parseOptionalNonNegativeNumber(raw: string | undefined, field: string): number | undefined {
+    if (raw === undefined || raw === null || raw.trim() === '') return undefined;
+    const num = Number(raw.trim());
+    if (!Number.isFinite(num)) throw new RowError(`${field} must be a number`);
+    if (num < 0) throw new RowError(`${field} must be a non-negative number`);
+    return num;
+}
+
+function parseOptionalNonNegativeInt(raw: string | undefined, field: string): number | undefined {
+    const num = parseOptionalNonNegativeNumber(raw, field);
+    if (num === undefined) return undefined;
+    if (!Number.isInteger(num)) throw new RowError(`${field} must be a whole number`);
+    return num;
+}
+
+function parseOptionalBoolean(raw: string | undefined, field: string): boolean | undefined {
+    if (raw === undefined || raw === null || raw.trim() === '') return undefined;
+    const v = raw.trim().toLowerCase();
+    if (['true', '1', 'yes'].includes(v)) return true;
+    if (['false', '0', 'no'].includes(v)) return false;
+    throw new RowError(`${field} must be true or false`);
+}
+
+function parseOptionalStatus(raw: string | undefined): string | undefined {
+    if (raw === undefined || raw === null || raw.trim() === '') return undefined;
+    const v = raw.trim().toLowerCase();
+    if (!VALID_STATUSES.includes(v)) {
+        throw new RowError(`status must be one of ${VALID_STATUSES.join(', ')}`);
+    }
+    return v;
+}
+
+function parseTags(raw: string | undefined): string[] | undefined {
+    if (raw === undefined || raw === null || raw.trim() === '') return undefined;
+    return raw.split(';').map(t => t.trim()).filter(Boolean);
+}
+
+async function resolveCategoryByName(name: string, storeId: any): Promise<{ _id: any; name: string }> {
+    const trimmed = name.trim();
+    const categoryDoc = await Category.findOne({
+        storeId,
+        name: { $regex: `^${escapeRegExp(trimmed)}$`, $options: 'i' },
+    });
+    if (!categoryDoc) {
+        throw new RowError(`category "${trimmed}" not found`);
+    }
+    return { _id: categoryDoc._id, name: categoryDoc.name };
+}
+
+/** Common per-column parsing/validation shared by the create and update paths. Throws RowError on bad data. */
+async function parseRow(row: Record<string, string>, storeId: any) {
+    const name = (row.name || '').trim();
+    const slug = (row.slug || '').trim();
+    const description = (row.description || '').trim();
+    const shortDescription = (row.shortDescription || '').trim();
+    const price = parseOptionalNonNegativeNumber(row.price, 'price');
+    const compareAtPrice = parseOptionalNonNegativeNumber(row.compareAtPrice, 'compareAtPrice');
+    const costPerItem = parseOptionalNonNegativeNumber(row.costPerItem, 'costPerItem');
+    const sku = (row.sku || '').trim();
+    const barcode = (row.barcode || '').trim();
+    const trackInventory = parseOptionalBoolean(row.trackInventory, 'trackInventory');
+    const inventoryQuantity = parseOptionalNonNegativeInt(row.inventoryQuantity, 'inventoryQuantity');
+    const lowStockThreshold = parseOptionalNonNegativeInt(row.lowStockThreshold, 'lowStockThreshold');
+    const status = parseOptionalStatus(row.status);
+    const tags = parseTags(row.tags);
+    const seoTitle = (row.seoTitle || '').trim();
+    const seoDescription = (row.seoDescription || '').trim();
+
+    let category: { _id: any; name: string } | undefined;
+    if ((row.category || '').trim()) {
+        category = await resolveCategoryByName(row.category, storeId);
+    }
+
+    return {
+        name, slug, description, shortDescription, price, compareAtPrice, costPerItem,
+        sku, barcode, trackInventory, inventoryQuantity, lowStockThreshold, status, tags,
+        seoTitle, seoDescription, category,
+    };
+}
+
+async function generateUniqueSlug(baseName: string, providedSlug: string, storeId: any): Promise<string> {
+    let slug = providedSlug || baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    if (!slug) slug = `product-${Date.now()}`;
+    let uniqueSlug = slug;
+    let counter = 1;
+    while (await Product.findOne({ storeId, slug: uniqueSlug })) {
+        uniqueSlug = `${slug}-${counter}`;
+        counter++;
+    }
+    return uniqueSlug;
+}
+
+// @desc    Bulk import products from a CSV file (create or update-by-sku)
+// @route   POST /api/products/import
+// @access  Private/Merchant
+export const importProducts = async (req: AuthRequest, res: Response) => {
+    try {
+        const store = await resolveStore(req);
+        if (!store) {
+            return res.status(404).json({ message: 'Store not found or unauthorized' });
+        }
+
+        const file = (req as any).file as Express.Multer.File | undefined;
+        if (!file) {
+            return res.status(400).json({ message: 'A CSV file is required (field name "file")' });
+        }
+
+        let records: Record<string, string>[];
+        try {
+            records = parseCsv(file.buffer.toString('utf-8'), {
+                columns: true,
+                skip_empty_lines: true,
+                trim: true,
+            });
+        } catch (parseError: any) {
+            return res.status(400).json({ message: `Failed to parse CSV: ${parseError.message}` });
+        }
+
+        const results: { row: number; status: 'created' | 'updated' | 'error'; message: string }[] = [];
+        let created = 0, updated = 0, errors = 0;
+
+        // Each row is processed independently — one bad row is recorded as an
+        // error and does not abort or roll back the rows around it.
+        for (let i = 0; i < records.length; i++) {
+            const rowNumber = i + 2; // +1 for 0-index, +1 for the header row
+            const row = records[i];
+            try {
+                const sku = (row.sku || '').trim();
+                const existing = sku ? await Product.findOne({ storeId: store._id, sku }) : null;
+
+                if (existing) {
+                    const parsed = await parseRow(row, store._id);
+                    const set: Record<string, any> = {};
+
+                    if (parsed.name) set.name = parsed.name;
+                    if (parsed.description) set.description = parsed.description;
+                    if (parsed.shortDescription) set.shortDescription = parsed.shortDescription;
+                    if (parsed.price !== undefined) set.price = parsed.price;
+                    if (parsed.compareAtPrice !== undefined) set.compareAtPrice = parsed.compareAtPrice;
+                    if (parsed.costPerItem !== undefined) set.costPerItem = parsed.costPerItem;
+                    if (parsed.barcode) set.barcode = parsed.barcode;
+                    if (parsed.trackInventory !== undefined) set.trackInventory = parsed.trackInventory;
+                    if (parsed.inventoryQuantity !== undefined) set['inventory.quantity'] = parsed.inventoryQuantity;
+                    if (parsed.lowStockThreshold !== undefined) set['inventory.lowStockThreshold'] = parsed.lowStockThreshold;
+                    if (parsed.status !== undefined) set.status = parsed.status;
+                    if (parsed.tags !== undefined) set.tags = parsed.tags;
+                    if (parsed.seoTitle) set['seo.title'] = parsed.seoTitle;
+                    if (parsed.seoDescription) set['seo.description'] = parsed.seoDescription;
+                    if (parsed.category) {
+                        set.categoryId = parsed.category._id;
+                        set.category = parsed.category.name;
+                    }
+                    if (parsed.slug && parsed.slug !== existing.slug) {
+                        const conflict = await Product.findOne({ storeId: store._id, slug: parsed.slug, _id: { $ne: existing._id } });
+                        if (conflict) throw new RowError(`slug "${parsed.slug}" is already used by another product`);
+                        set.slug = parsed.slug;
+                    }
+                    // imageUrls is intentionally never read here — import never
+                    // creates/removes images, even if the column is present.
+
+                    await Product.findByIdAndUpdate(existing._id, { $set: set }, { runValidators: true });
+
+                    try { await redisClient.del(`product:${existing._id}`); } catch { /* best-effort */ }
+
+                    updated++;
+                    results.push({ row: rowNumber, status: 'updated', message: `updated (sku ${sku})` });
+                } else {
+                    const parsed = await parseRow(row, store._id);
+                    if (!parsed.name) throw new RowError('name is required');
+                    if (parsed.price === undefined) throw new RowError('price is required and must be a non-negative number');
+
+                    const uniqueSlug = await generateUniqueSlug(parsed.name, parsed.slug, store._id);
+
+                    const fields: Record<string, any> = {
+                        storeId: store._id,
+                        name: parsed.name,
+                        slug: uniqueSlug,
+                        price: parsed.price,
+                    };
+                    if (parsed.description) fields.description = parsed.description;
+                    if (parsed.shortDescription) fields.shortDescription = parsed.shortDescription;
+                    if (parsed.compareAtPrice !== undefined) fields.compareAtPrice = parsed.compareAtPrice;
+                    if (parsed.costPerItem !== undefined) fields.costPerItem = parsed.costPerItem;
+                    if (sku) fields.sku = sku;
+                    if (parsed.barcode) fields.barcode = parsed.barcode;
+                    if (parsed.trackInventory !== undefined) fields.trackInventory = parsed.trackInventory;
+                    if (parsed.inventoryQuantity !== undefined || parsed.lowStockThreshold !== undefined) {
+                        fields.inventory = {};
+                        if (parsed.inventoryQuantity !== undefined) fields.inventory.quantity = parsed.inventoryQuantity;
+                        if (parsed.lowStockThreshold !== undefined) fields.inventory.lowStockThreshold = parsed.lowStockThreshold;
+                    }
+                    if (parsed.category) {
+                        fields.categoryId = parsed.category._id;
+                        fields.category = parsed.category.name;
+                    }
+                    if (parsed.status !== undefined) fields.status = parsed.status;
+                    if (parsed.tags !== undefined) fields.tags = parsed.tags;
+                    if (parsed.seoTitle || parsed.seoDescription) {
+                        fields.seo = {};
+                        if (parsed.seoTitle) fields.seo.title = parsed.seoTitle;
+                        if (parsed.seoDescription) fields.seo.description = parsed.seoDescription;
+                    }
+
+                    const productDoc = await Product.create(fields);
+                    created++;
+                    results.push({
+                        row: rowNumber,
+                        status: 'created',
+                        message: `created "${productDoc.name}"${sku ? ` (sku ${sku})` : ''}`,
+                    });
+                }
+            } catch (rowError: any) {
+                errors++;
+                results.push({ row: rowNumber, status: 'error', message: `error — ${rowError.message || 'unknown error'}` });
+            }
+        }
+
+        if (created > 0 || updated > 0) {
+            await clearStoreProductCaches(store._id.toString());
+        }
+
+        res.json({
+            summary: { total: records.length, created, updated, errors },
+            results,
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
     }

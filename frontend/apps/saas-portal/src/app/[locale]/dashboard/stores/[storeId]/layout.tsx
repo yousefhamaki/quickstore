@@ -28,7 +28,8 @@ import {
     Star,
     HandCoins,
     Mail,
-    MessageCircle
+    MessageCircle,
+    UsersRound
 } from "lucide-react";
 import { NavLink, useSafeNavigation } from "@shared/components/NavLink";
 import { SetupProgressBanner } from "@shared/components/dashboard/SetupProgressBanner";
@@ -68,6 +69,17 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
 
     if (!mounted) return null;
 
+    // Store settings (payment, shipping, policies, ...) are manager-level —
+    // a plain 'staff' member can't save any of them (backend 403s), so don't
+    // show a nav full of pages that only end in an error for that role.
+    // Same reasoning for analytics/marketing/offers below (also
+    // manager-and-up, see the backend's requireStoreRole(['owner','manager'])
+    // gate on analytics and the in-controller checks on marketing/offers).
+    const currentUserRole = store?.currentUserRole || 'owner';
+    const isOwner = currentUserRole === 'owner';
+    const canManageSettings = currentUserRole !== 'staff';
+    const isManagerOrAbove = currentUserRole !== 'staff';
+
     const navigation = [
         { name: t('items.dashboard'), href: `/dashboard/stores/${storeId}`, icon: LayoutDashboard },
         { name: t('items.products'), href: `/dashboard/stores/${storeId}/products`, icon: Package },
@@ -76,12 +88,14 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
         { name: 'Refund Requests', href: `/dashboard/stores/${storeId}/refund-requests`, icon: HandCoins },
         { name: t('items.customers'), href: `/dashboard/stores/${storeId}/customers`, icon: Users },
         { name: 'Reviews', href: `/dashboard/stores/${storeId}/reviews`, icon: Star },
-        { name: t('items.marketing'), href: `/dashboard/stores/${storeId}/marketing`, icon: Megaphone },
-        { name: 'Offers', href: `/dashboard/stores/${storeId}/offers`, icon: Zap, badge: 'PRO' },
-        { name: t('items.analytics'), href: `/dashboard/stores/${storeId}/analytics`, icon: BarChart2 },
+        ...(isManagerOrAbove ? [
+            { name: t('items.marketing'), href: `/dashboard/stores/${storeId}/marketing`, icon: Megaphone },
+            { name: 'Offers', href: `/dashboard/stores/${storeId}/offers`, icon: Zap, badge: 'PRO' },
+            { name: t('items.analytics'), href: `/dashboard/stores/${storeId}/analytics`, icon: BarChart2 },
+        ] : []),
     ];
 
-    const settingsLinks = [
+    const settingsLinks = canManageSettings ? [
         { name: t('items.general'), href: `/dashboard/stores/${storeId}/settings/general`, icon: Settings },
         { name: t('items.appearance'), href: `/dashboard/stores/${storeId}/settings/theme`, icon: Palette },
         { name: t('items.payments'), href: `/dashboard/stores/${storeId}/settings/payments`, icon: CreditCard },
@@ -90,7 +104,10 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
         { name: t('items.policies'), href: `/dashboard/stores/${storeId}/settings/policies`, icon: ShieldCheck },
         { name: t('items.emails'), href: `/dashboard/stores/${storeId}/settings/emails`, icon: Mail },
         { name: t('items.whatsapp'), href: `/dashboard/stores/${storeId}/settings/whatsapp`, icon: MessageCircle, badge: 'SOON' },
-    ];
+        // Team management is owner-only (see requireStoreRole(['owner']) on
+        // the backend's staff routes) — only ever shown to the owner.
+        ...(isOwner ? [{ name: 'Team', href: `/dashboard/stores/${storeId}/settings/staff`, icon: UsersRound }] : []),
+    ] : [];
 
     const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
@@ -181,6 +198,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                         ))}
                     </nav>
 
+                    {settingsLinks.length > 0 && (
                     <nav className="space-y-1">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">{t('storeSettings')}</p>
                         {settingsLinks.map((item) => (
@@ -209,6 +227,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                             </NavLink>
                         ))}
                     </nav>
+                    )}
                 </div>
 
                 <div className="p-4 border-t mt-auto space-y-2">

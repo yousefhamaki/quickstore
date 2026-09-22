@@ -4,7 +4,8 @@ import User from '../models/User';
 import Product from '../models/Product';
 import Order from '../models/Order';
 import Customer from '../models/Customer';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, findAccessibleStore } from '../middleware/authMiddleware';
+import StoreStaff from '../models/StoreStaff';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { IMPLEMENTED_PAYMENT_PROVIDERS } from '../constants/paymentProviders';
@@ -19,108 +20,144 @@ import { validateEmailBlocks } from '../utils/validateEmailBlocks';
 import { applyEmailSenderUpdate } from '../utils/applyEmailSenderUpdate';
 import nodemailer from 'nodemailer';
 
-// @desc    Get all stores for logged-in merchant
+// Shared stats-aggregation pipeline for the store-list endpoint, factored
+// out so it can be run once for owned stores (match on ownerId) and again
+// for staff-accessible stores (match on _id $in) without duplicating the
+// products/orders/customers lookups — see getStores below.
+const buildStoreListStatsPipeline = (matchStage: Record<string, any>): mongoose.PipelineStage[] => [
+    { $match: matchStage },
+    { $sort: { createdAt: -1 } },
+    // Look up products count
+    {
+        $lookup: {
+            from: 'products',
+            let: { storeId: '$_id' },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: {
+                            $and: [
+                                { $eq: ['$storeId', '$$storeId'] },
+                                { $eq: ['$status', 'active'] }
+                            ]
+                        }
+                    }
+                },
+                { $count: 'count' }
+            ],
+            as: 'productStats'
+        }
+    },
+    // Look up orders count and revenue
+    {
+        $lookup: {
+            from: 'orders',
+            let: { storeId: '$_id' },
+            pipeline: [
+                { $match: { $expr: { $eq: ['$storeId', '$$storeId'] } } },
+                {
+                    $group: {
+                        _id: null,
+                        totalOrders: { $sum: 1 },
+                        totalRevenue: {
+                            $sum: {
+                                $cond: [
+                                    { $not: [{ $in: ['$status', ['cancelled', 'refunded']] }] },
+                                    '$total',
+                                    0
+                                ]
+                            }
+                        },
+                        settledRevenue: {
+                            $sum: {
+                                $cond: [
+                                    {
+                                        $or: [
+                                            { $eq: ["$status", "delivered"] },
+                                            { $eq: ["$paymentStatus", "paid"] }
+                                        ]
+                                    },
+                                    "$total",
+                                    0
+                                ]
+                            }
+                        }
+                    }
+                }
+            ],
+            as: 'orderStats'
+        }
+    },
+    // Look up customers count
+    {
+        $lookup: {
+            from: 'customers',
+            let: { storeId: '$_id' },
+            pipeline: [
+                { $match: { $expr: { $eq: ['$storeId', '$$storeId'] } } },
+                { $count: 'count' }
+            ],
+            as: 'customerStats'
+        }
+    },
+    {
+        $addFields: {
+            stats: {
+                totalProducts: { $ifNull: [{ $arrayElemAt: ['$productStats.count', 0] }, 0] },
+                totalOrders: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalOrders', 0] }, 0] },
+                totalCustomers: { $ifNull: [{ $arrayElemAt: ['$customerStats.count', 0] }, 0] },
+                totalRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalRevenue', 0] }, 0] },
+                settledRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.settledRevenue', 0] }, 0] }
+            }
+        }
+    },
+    {
+        $project: {
+            productStats: 0,
+            orderStats: 0,
+            customerStats: 0
+        }
+    }
+];
+
+// @desc    Get all stores for logged-in merchant — both stores they OWN and
+//          stores they have active StoreStaff access to (invited as manager
+//          or staff on someone else's store). Previously this only matched
+//          ownerId, so a pure staff member (owns zero stores) got back an
+//          empty list and the dashboard treated them like a brand-new
+//          merchant with no stores — even though they had real, active
+//          access to a store via StoreStaff. getStore (singular) already
+//          handled this correctly via findAccessibleStore; this is the list
+//          counterpart.
 // @route   GET /api/stores
 // @access  Private/Merchant
 export const getStores = async (req: AuthRequest, res: Response) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user._id);
 
-        const storesWithStats = await Store.aggregate([
-            { $match: { ownerId: userId } },
-            { $sort: { createdAt: -1 } },
-            // Look up products count
-            {
-                $lookup: {
-                    from: 'products',
-                    let: { storeId: '$_id' },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $eq: ['$storeId', '$$storeId'] },
-                                        { $eq: ['$status', 'active'] }
-                                    ]
-                                }
-                            }
-                        },
-                        { $count: 'count' }
-                    ],
-                    as: 'productStats'
-                }
-            },
-            // Look up orders count and revenue
-            {
-                $lookup: {
-                    from: 'orders',
-                    let: { storeId: '$_id' },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ['$storeId', '$$storeId'] } } },
-                        {
-                            $group: {
-                                _id: null,
-                                totalOrders: { $sum: 1 },
-                                totalRevenue: {
-                                    $sum: {
-                                        $cond: [
-                                            { $not: [{ $in: ['$status', ['cancelled', 'refunded']] }] },
-                                            '$total',
-                                            0
-                                        ]
-                                    }
-                                },
-                                settledRevenue: {
-                                    $sum: {
-                                        $cond: [
-                                            {
-                                                $or: [
-                                                    { $eq: ["$status", "delivered"] },
-                                                    { $eq: ["$paymentStatus", "paid"] }
-                                                ]
-                                            },
-                                            "$total",
-                                            0
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    ],
-                    as: 'orderStats'
-                }
-            },
-            // Look up customers count
-            {
-                $lookup: {
-                    from: 'customers',
-                    let: { storeId: '$_id' },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ['$storeId', '$$storeId'] } } },
-                        { $count: 'count' }
-                    ],
-                    as: 'customerStats'
-                }
-            },
-            {
-                $addFields: {
-                    stats: {
-                        totalProducts: { $ifNull: [{ $arrayElemAt: ['$productStats.count', 0] }, 0] },
-                        totalOrders: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalOrders', 0] }, 0] },
-                        totalCustomers: { $ifNull: [{ $arrayElemAt: ['$customerStats.count', 0] }, 0] },
-                        totalRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.totalRevenue', 0] }, 0] },
-                        settledRevenue: { $ifNull: [{ $arrayElemAt: ['$orderStats.settledRevenue', 0] }, 0] }
-                    }
-                }
-            },
-            {
-                $project: {
-                    productStats: 0,
-                    orderStats: 0,
-                    customerStats: 0
-                }
-            }
-        ]);
+        const ownedStores = await Store.aggregate(buildStoreListStatsPipeline({ ownerId: userId }));
+        const ownedIds = new Set(ownedStores.map((s: any) => s._id.toString()));
+
+        const memberships = await StoreStaff.find({ userId: req.user._id, status: 'active' });
+        const roleByStoreId = new Map<string, 'manager' | 'staff'>();
+        const staffStoreIds: mongoose.Types.ObjectId[] = [];
+        for (const m of memberships) {
+            const idStr = m.storeId.toString();
+            // Defensive only — inviteStaff already blocks inviting the
+            // owner's own email, so this shouldn't happen in practice.
+            if (ownedIds.has(idStr)) continue;
+            roleByStoreId.set(idStr, m.role);
+            staffStoreIds.push(m.storeId as mongoose.Types.ObjectId);
+        }
+
+        const staffedStores = staffStoreIds.length > 0
+            ? await Store.aggregate(buildStoreListStatsPipeline({ _id: { $in: staffStoreIds } }))
+            : [];
+
+        const storesWithStats = [
+            ...ownedStores.map((s: any) => ({ ...s, myRole: 'owner' as const })),
+            ...staffedStores.map((s: any) => ({ ...s, myRole: roleByStoreId.get(s._id.toString()) || 'staff' })),
+        ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         res.json(storesWithStats);
     } catch (error) {
@@ -131,7 +168,17 @@ export const getStores = async (req: AuthRequest, res: Response) => {
 
 export const getStore = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = new mongoose.Types.ObjectId(req.user._id);
+        // Readable by the owner AND any active staff member (manager or
+        // staff) — the dashboard shell (frontend useStore hook) fetches this
+        // for every merchant-facing page, so a staff/manager account must be
+        // able to load it even though the aggregation below still matches on
+        // the real ownerId (a staff member's store IS owned by someone else).
+        const access = await findAccessibleStore(req.user._id, req.params.id);
+        if (!access) {
+            return res.status(404).json({ message: 'Store not found' });
+        }
+
+        const userId = access.store.ownerId;
         const storeId = new mongoose.Types.ObjectId(req.params.id as string);
 
         const storeWithStats = await Store.aggregate([
@@ -278,7 +325,10 @@ export const getStore = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Store not found' });
         }
 
-        res.json(storeWithStats[0]);
+        // Lets the frontend hide owner-only UI (billing, staff management,
+        // store deletion, ...) for a manager/staff account without having to
+        // guess — the backend is still the real enforcement either way.
+        res.json({ ...storeWithStats[0], currentUserRole: access.role });
     } catch (error) {
         console.error('Get Store Error:', error);
         res.status(500).json({ message: 'Server Error', error });
@@ -347,14 +397,17 @@ export const createStore = async (req: AuthRequest, res: Response) => {
 // @access  Private/Merchant
 export const updateStore = async (req: AuthRequest, res: Response) => {
     try {
-        const store = await Store.findOne({
-            _id: req.params.id,
-            ownerId: req.user._id
-        });
-
-        if (!store) {
+        // Store settings (payment, shipping, policies, branding, ...) are
+        // "everyday operations" a manager should be able to edit same as the
+        // owner — but not a 'staff' member (see StoreStaff's role doc-comment).
+        const access = await findAccessibleStore(req.user._id, req.params.id);
+        if (!access) {
             return res.status(404).json({ message: 'Store not found' });
         }
+        if (access.role === 'staff') {
+            return res.status(403).json({ message: 'Staff members cannot change store settings.' });
+        }
+        const store = access.store;
 
         // Whitelist updates to prevent mass assignment of status, plans, isVerified, or subdomains
         const updateData: any = {};

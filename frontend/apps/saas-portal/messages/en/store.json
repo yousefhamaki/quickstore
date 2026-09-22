@@ -74,7 +74,8 @@
             "error": "Failed to place order. Please try again.",
             "couponApplied": "Coupon applied!",
             "couponRemoved": "Coupon removed",
-            "minAmount": "This coupon requires a minimum order of EGP {amount}"
+            "minAmount": "This coupon requires a minimum order of EGP {amount}",
+            "cartRestored": "Your cart has been restored."
         }
     },
     "storeContact": {
