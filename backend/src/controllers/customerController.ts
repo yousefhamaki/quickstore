@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import Customer from '../models/Customer';
 import Store from '../models/Store';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, findAccessibleStore } from '../middleware/authMiddleware';
 
 // @desc    Get all customers for a store
 // @route   GET /api/customers
@@ -14,9 +14,10 @@ export const getCustomers = async (req: AuthRequest, res: Response) => {
         let query: any = {};
 
         if (storeId) {
-            // Verify store belongs to merchant
-            const store = await Store.findOne({ _id: storeId, ownerId: userId });
-            if (!store) {
+            // Customers are accessible to any active store member (owner,
+            // manager, or staff) — day-to-day customer support/lookup.
+            const access = await findAccessibleStore(userId, storeId as string);
+            if (!access) {
                 return res.status(404).json({ message: 'Store not found or unauthorized' });
             }
             query.storeId = storeId;
@@ -72,8 +73,13 @@ export const getCustomerById = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Customer not found' });
         }
 
-        // Verify store belongs to merchant
-        if (customer.storeId && (customer.storeId as any).ownerId.toString() !== userId.toString()) {
+        // Verify store belongs to merchant, or the user is an active staff
+        // member of it (customers are accessible to any store role).
+        if (!customer.storeId) {
+            return res.status(403).json({ message: 'Unauthorized access to customer data' });
+        }
+        const access = await findAccessibleStore(userId, (customer.storeId as any)._id || customer.storeId);
+        if (!access) {
             return res.status(403).json({ message: 'Unauthorized access to customer data' });
         }
 

@@ -123,6 +123,40 @@ export const sendBuyerVerificationEmail = async (
 };
 
 /**
+ * Sends a store-staff invite email — the same raw-token-in-URL pattern as
+ * sendBuyerVerificationEmail, used by staffController.inviteStaff.
+ */
+export const sendStaffInviteEmail = async (
+    inviteeEmail: string,
+    storeName: string,
+    inviterName: string,
+    role: string,
+    acceptUrl: string
+) => {
+    try {
+        console.log(`[EmailService] Sending staff invite email to ${inviteeEmail} for store: ${storeName}`);
+
+        const html = renderTemplate('staff_invite.html', {
+            storeName,
+            inviterName,
+            role,
+            acceptUrl
+        });
+
+        const response = await getResendClient().emails.send({
+            from: DEFAULT_FROM,
+            to: inviteeEmail,
+            subject: `You've been invited to join ${storeName} on Buildora`,
+            html
+        });
+        return response;
+    } catch (error) {
+        console.error('[EmailService] Error sending staff invite email:', error);
+        throw error;
+    }
+};
+
+/**
  * Sends a welcome email to a new merchant signing up to Buildora SaaS.
  */
 export const sendMerchantWelcomeEmail = async (
