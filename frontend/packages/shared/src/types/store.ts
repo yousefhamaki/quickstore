@@ -185,6 +185,9 @@ export interface Store {
                 apiSecret?: string;
                 publicKey?: string;
                 iframeId?: string;
+                // Kashier's merchant id (e.g. "MID-91-106") — plain account
+                // identifier, not a secret, so it's never masked like apiKey.
+                merchantId?: string;
             };
             methods: string[];
             bankDetails?: {
