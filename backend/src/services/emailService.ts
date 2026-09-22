@@ -302,6 +302,50 @@ export const sendOrderShippedEmail = async (
     }
 };
 
+export interface AbandonedCartRecoveryItem {
+    name: string;
+    quantity: number;
+    price: number;
+    image?: string;
+}
+
+/**
+ * Sends the abandoned-cart recovery reminder — fired once by the recovery
+ * sweep (see services/AbandonedCartRecoveryService.ts) for a cart that's sat
+ * `pending` past the sweep's age window. Routed through the store's own
+ * sender when configured, like the other store-to-customer transactional
+ * emails above (order shipped, password reset), since this is a
+ * customer-facing nudge from the store, not Buildora itself.
+ */
+export const sendAbandonedCartRecoveryEmail = async (
+    store: Pick<IStore, 'name' | 'settings'>,
+    email: string,
+    recoveryUrl: string,
+    items: AbandonedCartRecoveryItem[],
+    totalAmount: number,
+    currency: string = 'EGP'
+) => {
+    try {
+        const html = renderTemplate('abandoned_cart_recovery.html', {
+            storeName: store.name,
+            recoveryUrl,
+            items,
+            totalAmount: typeof totalAmount === 'number' ? totalAmount.toFixed(2) : totalAmount,
+            currency,
+        });
+        const result = await sendStoreEmail(store, {
+            to: email,
+            subject: `You left something behind at ${store.name}`,
+            html
+        });
+        if (!result.ok) throw new Error(result.error || 'Failed to send abandoned cart recovery email');
+        return result;
+    } catch (error) {
+        console.error('[EmailService] Error sending abandoned cart recovery email:', error);
+        throw error;
+    }
+};
+
 /**
  * Sends the automatically-issued post-purchase personal voucher — fired
  * once by orderController.updateOrderStatus the first time an order

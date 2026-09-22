@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useCart } from '@shared/context/CartContext';
 import { getPublicStore, validateCoupon, getAutoApplyCoupon, getShippingFeeEstimate } from '@shared/services/publicStoreService';
 import { createOrder } from '@shared/services/publicOrderService';
+import { captureAbandonedCart, getAbandonedCartByToken } from '@shared/services/abandonedCartService';
 import { ShoppingCart, Truck, CreditCard, ChevronRight, Package, Trash2, CheckCircle2, Ticket, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -50,7 +51,8 @@ export default function CheckoutPage() {
     const locale = useLocale();
     const { subdomain } = useParams();
     const router = useRouter();
-    const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart, addToCart } = useCart();
+    const searchParams = useSearchParams();
+    const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart, addToCart, loadCart } = useCart();
     // Declared early (moved up from below the coupon section) so its
     // `customer` binding is already initialized wherever the auto-apply
     // coupon effect and handleApplyCoupon reference it further down.
@@ -97,17 +99,25 @@ export default function CheckoutPage() {
 
     const { currentOffer, isProcessing, triggerEvaluation, handleAccept, handleDecline } = useOfferEngine(handleOfferAccept);
 
+    // Stable per-browser-session identity, reused everywhere this page needs
+    // one: offer-engine evaluations (below), abandoned-cart capture, and
+    // eventually order creation (see onSubmit) so a real order can be
+    // matched back to its abandoned-cart record (see
+    // publicOrderController.createPublicOrder).
+    const getOrCreateSessionId = (): string => {
+        if (typeof window === 'undefined') return '';
+        let sessionId = localStorage.getItem('storefront_session') || '';
+        if (!sessionId) {
+            sessionId = Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('storefront_session', sessionId);
+        }
+        return sessionId;
+    };
+
     useEffect(() => {
         if (!storeId || cart.length === 0) return;
-        
-        let sessionId = '';
-        if (typeof window !== 'undefined') {
-            sessionId = localStorage.getItem('storefront_session') || '';
-            if (!sessionId) {
-                sessionId = Math.random().toString(36).substring(2, 15);
-                localStorage.setItem('storefront_session', sessionId);
-            }
-        }
+
+        const sessionId = getOrCreateSessionId();
 
         const event = step === 1 ? 'cart_view' : 'checkout_start';
 
@@ -128,8 +138,8 @@ export default function CheckoutPage() {
 
     const handleExitIntent = () => {
         if (!storeId || cart.length === 0 || currentOffer) return;
-        
-        const sessionId = localStorage.getItem('storefront_session') || '';
+
+        const sessionId = getOrCreateSessionId();
         triggerEvaluation({
             storeId,
             event: 'checkout_abandon_intent',
@@ -230,6 +240,91 @@ export default function CheckoutPage() {
         resolver: zodResolver(createCheckoutSchema(useTranslations())),
     });
 
+    // ================================================================
+    // Abandoned-cart capture: the ONLY place that ever calls the
+    // capture-abandoned-cart endpoint. Fires once the shopper has typed a
+    // plausible email AND has >=1 cart item, debounced so it doesn't fire on
+    // every keystroke/quantity click. Triggered from two places below: the
+    // email field's onBlur, and a step>=2 effect that re-fires whenever the
+    // cart contents change (quantity/removal) while the email is already
+    // known. Entirely best-effort — a failure here must never interrupt or
+    // surface to the shopper mid-checkout.
+    // ================================================================
+    const captureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastCaptureSignatureRef = useRef<string>('');
+
+    const captureCartNow = () => {
+        if (!storeId || cart.length === 0) return;
+        const email = watch('email');
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+
+        const sessionId = getOrCreateSessionId();
+        if (!sessionId) return;
+
+        const signature = JSON.stringify({ email, cart: cart.map(i => `${i.cartItemId}:${i.quantity}`) });
+        if (signature === lastCaptureSignatureRef.current) return;
+        lastCaptureSignatureRef.current = signature;
+
+        const customerName = `${watch('firstName') || ''} ${watch('lastName') || ''}`.trim();
+        captureAbandonedCart(storeId, {
+            sessionId,
+            customerEmail: email,
+            customerName: customerName || undefined,
+            customerPhone: watch('phone') || undefined,
+            items: cart,
+            totalAmount: getCartTotal() + shippingFee,
+        }).catch(() => {
+            // Best-effort — the shopper's checkout flow must never be
+            // interrupted by a failure to save the abandoned-cart snapshot.
+        });
+    };
+
+    const scheduleCartCapture = () => {
+        if (captureTimeoutRef.current) clearTimeout(captureTimeoutRef.current);
+        captureTimeoutRef.current = setTimeout(captureCartNow, 1000);
+    };
+
+    useEffect(() => {
+        if (step < 2) return;
+        scheduleCartCapture();
+        return () => {
+            if (captureTimeoutRef.current) clearTimeout(captureTimeoutRef.current);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [step, cart, storeId]);
+
+    // ================================================================
+    // Abandoned-cart recovery: restores a cart from a recovery email's
+    // `?recover=<token>` link (see AbandonedCartRecoveryService.ts /
+    // abandonedCartController.getAbandonedCartByToken). The shopper's own
+    // browser localStorage cart may be long gone by the time they click an
+    // email days later, so this repopulates the cart context directly from
+    // the saved AbandonedCart record and jumps straight to the info step.
+    // ================================================================
+    const recoverAttemptedRef = useRef(false);
+    useEffect(() => {
+        if (!storeId || recoverAttemptedRef.current) return;
+        const token = searchParams.get('recover');
+        if (!token) return;
+        recoverAttemptedRef.current = true;
+
+        getAbandonedCartByToken(storeId, token)
+            .then((data) => {
+                if (data?.success && Array.isArray(data.items) && data.items.length > 0) {
+                    loadCart(data.items);
+                    if (data.customerEmail) setValue('email', data.customerEmail);
+                    if (data.customerPhone) setValue('phone', data.customerPhone);
+                    setStep(2);
+                    toast.success(t('messages.cartRestored'));
+                }
+            })
+            .catch(() => {
+                // Invalid/expired token — silently ignore, shopper just sees
+                // whatever (if anything) is already in their local cart.
+            });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [storeId]);
+
     // Live shipping-fee estimate, kept in sync with whichever governorate is
     // currently selected — shares resolveShippingFee with the real charge
     // server-side (see getShippingFeeEstimate/publicOrderController.ts) so
@@ -301,6 +396,12 @@ export default function CheckoutPage() {
 
             const orderData = {
                 storeId: store._id,
+                // Lets the backend match this real order back to the
+                // abandoned-cart record captured during this same browser
+                // session (see AbandonedCart.sessionId / captureCartNow
+                // above) and mark it 'recovered' instead of leaving it to
+                // linger as pending / get emailed about later.
+                sessionId: getOrCreateSessionId(),
                 items: cart.map(item => ({
                     ...item,
                     variantId: item.variantId
@@ -503,7 +604,7 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">{t('form.email')}</label>
-                                        <input {...register('email')} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
+                                        <input {...register('email', { onBlur: scheduleCartCapture })} className="w-full h-14 bg-gray-50 border rounded-full px-6 outline-none focus:ring-2 focus:ring-black/5" />
                                         {errors.email && <p className="text-red-500 text-[10px] font-bold ml-4 uppercase">{errors.email.message}</p>}
                                     </div>
                                     <div className="space-y-2">

@@ -3,6 +3,7 @@ import Order from '../models/Order';
 import Product from '../models/Product';
 import Store from '../models/Store';
 import Coupon from '../models/Coupon';
+import AbandonedCart from '../models/AbandonedCart';
 import mongoose from 'mongoose';
 import Customer from '../models/Customer';
 import OfferCampaign from '../models/OfferCampaign';
@@ -128,7 +129,13 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             shippingAddress,
             paymentMethod,
             couponCode,
-            discountAmount
+            discountAmount,
+            // Storefront's stable `storefront_session` id (see checkout/
+            // page.tsx and AbandonedCart.sessionId) — used below, once the
+            // order is safely created, to mark the matching abandoned-cart
+            // record (if any) as recovered. Entirely optional/best-effort:
+            // its absence never affects order creation itself.
+            sessionId
         } = req.body;
 
         let { items, totalAmount } = req.body;
@@ -911,6 +918,35 @@ export const createPublicOrder = async (req: Request, res: Response) => {
             }
 
             if (session) await session.commitTransaction();
+
+            // ================================================================
+            // Abandoned-cart recovery: a real order just completed, so if it
+            // came from a session we're tracking as an abandoned cart (or —
+            // lacking a session id — matches by storeId+email), flip that
+            // record to 'recovered' so it stops showing as lost and the
+            // sweep never emails about it again. Session id is the primary,
+            // authoritative match (one browser session = one cart); email is
+            // only a fallback for orders placed without ever going through
+            // this particular session's cart-capture. Best-effort — must
+            // never fail/delay the order response itself.
+            // ================================================================
+            try {
+                let recoveredCart = null;
+                if (sessionId) {
+                    recoveredCart = await AbandonedCart.findOneAndUpdate(
+                        { storeId: oidStoreId, sessionId, status: 'pending' },
+                        { $set: { status: 'recovered' } }
+                    );
+                }
+                if (!recoveredCart && customerData?.email) {
+                    await AbandonedCart.updateMany(
+                        { storeId: oidStoreId, customerEmail: customerData.email, status: 'pending' },
+                        { $set: { status: 'recovered' } }
+                    );
+                }
+            } catch (err) {
+                console.error('[publicOrderController] Failed to mark abandoned cart recovered:', err);
+            }
 
             createNotification({
                 userId: activeStore.ownerId.toString(),

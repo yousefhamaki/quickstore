@@ -49,6 +49,16 @@ interface CartContextType {
     clearCart: () => void;
     getCartTotal: () => number;
     getCartCount: () => number;
+    /**
+     * Replaces the cart wholesale with a previously-saved set of items — used
+     * by the checkout page's abandoned-cart recovery flow (`?recover=<token>`)
+     * to restore a cart the shopper's own browser localStorage may no longer
+     * have (they clicked a recovery email days later, possibly on a
+     * different device/browser). Items already carry the same CartItem shape
+     * since they're the exact items last captured from this same context —
+     * see services/abandonedCartService.ts.
+     */
+    loadCart: (items: CartItem[]) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -208,6 +218,10 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
         setCart([]);
     };
 
+    const loadCart = (items: CartItem[]) => {
+        setCart(items);
+    };
+
     const getCartTotal = () => {
         return cart.reduce((total, item) => {
             const extrasTotal = (item.selectedExtras || []).reduce((sum, ex) => sum + (Number(ex.price) || 0), 0);
@@ -227,7 +241,8 @@ export const CartProvider = ({ children, storeId }: { children: ReactNode; store
             updateQuantity,
             clearCart,
             getCartTotal,
-            getCartCount
+            getCartCount,
+            loadCart
         }}>
             {children}
         </CartContext.Provider>
