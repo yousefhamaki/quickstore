@@ -15,11 +15,35 @@ import { useStore } from '../../../lib/storeContext';
 import { getBillingOverview } from '../../../lib/services/billing';
 import { BillingOverview } from '../../../lib/types';
 
-const MANAGE_ROWS: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string; href: '/(tabs)/profile/analytics' | '/(tabs)/profile/store-settings' | '/(tabs)/profile/coupons' | '/(tabs)/profile/shipping' }[] = [
-  { icon: 'bar-chart-outline', title: 'Analytics', subtitle: 'Revenue trends, top products & customers', href: '/(tabs)/profile/analytics' },
-  { icon: 'storefront-outline', title: 'Store settings', subtitle: 'Branding, contact info & shipping zones', href: '/(tabs)/profile/store-settings' },
-  { icon: 'car-outline', title: 'Shipping', subtitle: 'Connect Bosta & manage waybills', href: '/(tabs)/profile/shipping' },
-  { icon: 'pricetags-outline', title: 'Coupons', subtitle: 'Discount codes & promotions', href: '/(tabs)/profile/coupons' },
+type ManageRowHref =
+  | '/(tabs)/profile/analytics'
+  | '/(tabs)/profile/store-settings'
+  | '/(tabs)/profile/coupons'
+  | '/(tabs)/profile/shipping'
+  | '/(tabs)/profile/team';
+
+interface ManageRow {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle: string;
+  href: ManageRowHref;
+  /** Omitted = visible to every role. Backend still re-checks every action
+   *  regardless of what this hides — see storeController.updateStore's
+   *  role check and analyticsRoutes.ts's requireStoreRole. */
+  minRole?: 'manager' | 'owner';
+}
+
+// Manager-level = everyday operations a manager should be able to do same as
+// the owner (matches the web dashboard's StoreLayout nav gate: settings,
+// shipping and analytics are hidden from a plain 'staff' account since the
+// backend 403s those for them). Team management is owner-only, same as the
+// web's Team nav entry.
+const MANAGE_ROWS: ManageRow[] = [
+  { icon: 'bar-chart-outline', title: 'Analytics', subtitle: 'Revenue trends, top products & customers', href: '/(tabs)/profile/analytics', minRole: 'manager' },
+  { icon: 'storefront-outline', title: 'Store settings', subtitle: 'Branding, contact info & shipping zones', href: '/(tabs)/profile/store-settings', minRole: 'manager' },
+  { icon: 'car-outline', title: 'Shipping', subtitle: 'Connect Bosta & manage waybills', href: '/(tabs)/profile/shipping', minRole: 'manager' },
+  { icon: 'pricetags-outline', title: 'Coupons', subtitle: 'Discount codes & promotions', href: '/(tabs)/profile/coupons', minRole: 'manager' },
+  { icon: 'people-outline', title: 'Team', subtitle: 'Invite managers & staff to this store', href: '/(tabs)/profile/team', minRole: 'owner' },
 ];
 
 export default function ProfileScreen() {
@@ -55,6 +79,15 @@ export default function ProfileScreen() {
   };
 
   const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
+
+  // Absent myRole (older cached store, or a single-store owner account)
+  // means "owner" — see lib/types.ts's Store.myRole doc-comment.
+  const myRole = store?.myRole || 'owner';
+  const visibleRows = MANAGE_ROWS.filter((row) => {
+    if (row.minRole === 'owner') return myRole === 'owner';
+    if (row.minRole === 'manager') return myRole !== 'staff';
+    return true;
+  });
 
   return (
     <View style={styles.screen}>
@@ -131,7 +164,7 @@ export default function ProfileScreen() {
             </Card>
           </PressableScale>
         ) : null}
-        {MANAGE_ROWS.map((row, idx) => (
+        {visibleRows.map((row, idx) => (
           <PressableScale key={row.href} onPress={() => router.push(row.href)}>
             <Card style={styles.manageRow} delay={motion.stagger * (5 + idx)}>
               <View style={styles.manageIconCircle}>
