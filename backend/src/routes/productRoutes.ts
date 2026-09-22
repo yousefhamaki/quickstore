@@ -9,9 +9,12 @@ import {
     deleteProductImage,
     getCategories,
     bulkUpdateStatus,
+    exportProducts,
+    importProducts,
 } from '../controllers/productController';
 import { protect, authorize } from '../middleware/authMiddleware';
 import { upload } from '../config/cloudinary';
+import { csvUpload } from '../config/csvUpload';
 import { billingContext, protectProductLimit } from '../middleware/billingMiddleware';
 
 const router = express.Router();
@@ -31,6 +34,8 @@ router.post(
 
 router.get('/categories', protect, authorize('merchant'), getCategories);
 router.post('/bulk-update', protect, authorize('merchant'), bulkUpdateStatus);
+router.get('/export', protect, authorize('merchant'), exportProducts);
+router.post('/import', protect, authorize('merchant'), csvUpload.single('file'), importProducts);
 
 router
     .route('/:id')

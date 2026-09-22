@@ -67,3 +67,38 @@ export const bulkUpdateStatus = async (productIds: string[], status: string) => 
     const response = await api.post('/products/bulk-update', { productIds, status });
     return response.data;
 };
+
+// Downloads the store's products as a CSV file (see the backend's
+// exportProducts). Returns the raw blob + the filename the server suggested
+// via Content-Disposition, so the caller can trigger a browser download.
+export const exportProductsCsv = async (storeId: string): Promise<{ blob: Blob; filename: string }> => {
+    const response = await api.get<Blob>('/products/export', {
+        params: { storeId },
+        responseType: 'blob',
+    });
+    const disposition: string = response.headers['content-disposition'] || '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : `products-${storeId}.csv`;
+    return { blob: response.data, filename };
+};
+
+export interface ImportRowResult {
+    row: number;
+    status: 'created' | 'updated' | 'error';
+    message: string;
+}
+
+export interface ImportProductsResponse {
+    summary: { total: number; created: number; updated: number; errors: number };
+    results: ImportRowResult[];
+}
+
+export const importProductsCsv = async (storeId: string, file: File): Promise<ImportProductsResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<ImportProductsResponse>('/products/import', formData, {
+        params: { storeId },
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+};

@@ -1,11 +1,12 @@
 'use client';
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader } from "@shared/components/ui/card";
 import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@shared/components/ui/dialog";
 import {
     Package,
     Plus,
@@ -14,10 +15,22 @@ import {
     Edit,
     Trash2,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Download,
+    Upload,
+    Loader2,
+    FileText,
+    CheckCircle2,
+    XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { getProducts, deleteProduct } from "@shared/services/productService";
+import {
+    getProducts,
+    deleteProduct,
+    exportProductsCsv,
+    importProductsCsv,
+    ImportProductsResponse,
+} from "@shared/services/productService";
 import { toast } from "react-hot-toast";
 import { cn } from "@shared/lib/utils";
 import { imagePreset } from "@shared/lib/cloudinaryImage";
@@ -31,6 +44,12 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
+    const [exporting, setExporting] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState<ImportProductsResponse | null>(null);
+    const importFileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchProducts = async () => {
         try {
@@ -79,6 +98,53 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
         }
     };
 
+    const handleExport = async () => {
+        try {
+            setExporting(true);
+            const { blob, filename } = await exportProductsCsv(storeId);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Failed to export products", error);
+            toast.error(t('exportError'));
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const openImportDialog = () => {
+        setImportFile(null);
+        setImportResult(null);
+        setImportDialogOpen(true);
+    };
+
+    const handleImportSubmit = async () => {
+        if (!importFile) {
+            toast.error(t('import.selectFileError'));
+            return;
+        }
+        try {
+            setImporting(true);
+            const result = await importProductsCsv(storeId, importFile);
+            setImportResult(result);
+            if (result.summary.created > 0 || result.summary.updated > 0) {
+                fetchProducts();
+                queryClient.invalidateQueries({ queryKey: ['store', storeId] });
+                queryClient.invalidateQueries({ queryKey: ['stores'] });
+            }
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || t('import.genericError'));
+        } finally {
+            setImporting(false);
+        }
+    };
+
     return (
         <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -86,11 +152,25 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
                     <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
                     <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
                 </div>
-                <Button asChild className="rounded-xl shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
-                    <Link href={`/dashboard/stores/${storeId}/products/new`}>
-                        <Plus className="w-4 h-4 mr-2" /> {t('addProduct')}
-                    </Link>
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={handleExport}
+                        disabled={exporting}
+                    >
+                        {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                        {t('exportCsv')}
+                    </Button>
+                    <Button variant="outline" className="rounded-xl" onClick={openImportDialog}>
+                        <Upload className="w-4 h-4 mr-2" /> {t('importCsv')}
+                    </Button>
+                    <Button asChild className="rounded-xl shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
+                        <Link href={`/dashboard/stores/${storeId}/products/new`}>
+                            <Plus className="w-4 h-4 mr-2" /> {t('addProduct')}
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
@@ -304,6 +384,84 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
                     </div>
                 )}
             </Card>
+
+            <Dialog open={importDialogOpen} onOpenChange={(open) => { if (!importing) setImportDialogOpen(open); }}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{t('import.title')}</DialogTitle>
+                        <DialogDescription>{t('import.description')}</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed cursor-pointer hover:bg-muted/50 hover:border-primary transition text-sm font-medium">
+                                <FileText className="w-4 h-4 text-muted-foreground" />
+                                {t('import.chooseFile')}
+                                <input
+                                    ref={importFileInputRef}
+                                    type="file"
+                                    accept=".csv,text/csv"
+                                    className="hidden"
+                                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                                    disabled={importing}
+                                />
+                            </label>
+                            <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                                {importFile ? importFile.name : t('import.noFileChosen')}
+                            </span>
+                        </div>
+
+                        {importResult && (
+                            <div className="space-y-2">
+                                <p className="text-sm font-bold">
+                                    {t('import.summary', {
+                                        created: importResult.summary.created,
+                                        updated: importResult.summary.updated,
+                                        errors: importResult.summary.errors,
+                                        total: importResult.summary.total,
+                                    })}
+                                </p>
+                                <div className="max-h-64 overflow-y-auto rounded-xl border divide-y">
+                                    {importResult.results.map((r) => (
+                                        <div key={r.row} className="flex items-start gap-2 px-3 py-2 text-xs">
+                                            {r.status === 'error' ? (
+                                                <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                                            ) : (
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                                            )}
+                                            <div className="min-w-0">
+                                                <span className="font-bold">{t('import.rowLabel', { row: r.row })}: </span>
+                                                <span className={cn(r.status === 'error' ? "text-rose-600" : "text-foreground")}>
+                                                    {r.message}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={() => setImportDialogOpen(false)}
+                            disabled={importing}
+                        >
+                            {t('import.close')}
+                        </Button>
+                        <Button
+                            className="rounded-xl"
+                            onClick={handleImportSubmit}
+                            disabled={importing || !importFile}
+                        >
+                            {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                            {importing ? t('import.importing') : t('import.submit')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
