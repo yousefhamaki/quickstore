@@ -185,6 +185,48 @@ export const removeStaff = async (req: AuthRequest, res: Response) => {
 //          If a User with that email already exists, `password` is ignored
 //          and the invite is simply linked to that existing account (the
 //          invitee logs in with their existing credentials afterward).
+// @desc    Look up a pending invite by token+email WITHOUT accepting it —
+//          lets the accept-invite page show the invitee what they're
+//          actually agreeing to (store name, role, who invited them)
+//          before they commit, instead of a blind "Accept Invite" button.
+// @route   GET /api/staff/invite-preview?token=&email=
+// @access  Public (authenticated by the invite token itself, same as accept)
+export const getInvitePreview = async (req: Request, res: Response) => {
+    try {
+        const token = String(req.query.token || '');
+        const email = normalizeEmail(String(req.query.email || ''));
+
+        if (!token || !email) {
+            return res.status(400).json({ message: 'token and email are required.' });
+        }
+
+        const inviteTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const staff = await StoreStaff.findOne({
+            email,
+            inviteTokenHash,
+            status: 'pending',
+            inviteTokenExpiresAt: { $gt: new Date() },
+        }).populate('invitedBy', 'name');
+
+        if (!staff) {
+            return res.status(400).json({ message: 'Invalid or expired invite.' });
+        }
+
+        const store = await Store.findById(staff.storeId).select('name');
+        const userExists = !!(await User.findOne({ email }).select('_id'));
+
+        res.json({
+            storeName: store?.name || 'this store',
+            role: staff.role,
+            inviterName: (staff.invitedBy as any)?.name || 'The store owner',
+            requiresPassword: !userExists,
+        });
+    } catch (error) {
+        console.error('[StaffController] getInvitePreview failed:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // @route   POST /api/staff/accept-invite
 // @access  Public (authenticated by the invite token itself)
 export const acceptInvite = async (req: Request, res: Response) => {

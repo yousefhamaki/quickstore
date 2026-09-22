@@ -10,7 +10,12 @@ import { PasswordInput } from '@shared/components/ui/password-input';
 import Link from 'next/link';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@shared/context/AuthContext';
-import { acceptStaffInvite } from '@shared/lib/api/staff';
+import { acceptStaffInvite, getStaffInvitePreview, InvitePreview } from '@shared/lib/api/staff';
+
+const ROLE_LABEL: Record<string, string> = {
+    manager: 'Manager — full access except billing and team management',
+    staff: 'Staff — products, orders, and customers only',
+};
 
 function AcceptInviteContent() {
     const searchParams = useSearchParams();
@@ -23,12 +28,23 @@ function AcceptInviteContent() {
     const [needsPassword, setNeedsPassword] = useState(false);
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
+    const [preview, setPreview] = useState<InvitePreview | null>(null);
 
     useEffect(() => {
         if (!token || !email) {
             setStatus('error');
             setMessage('This invite link is missing its token or email.');
+            return;
         }
+        getStaffInvitePreview(token, email)
+            .then((data) => {
+                setPreview(data);
+                setNeedsPassword(data.requiresPassword);
+            })
+            .catch((err) => {
+                setStatus('error');
+                setMessage(err.response?.data?.message || 'This invite is invalid or has expired.');
+            });
     }, [token, email]);
 
     const submit = async (e?: React.FormEvent) => {
@@ -93,6 +109,19 @@ function AcceptInviteContent() {
                     {needsPassword && message ? <div className="mt-2 text-amber-600">{message}</div> : null}
                 </CardDescription>
             </CardHeader>
+            {preview && (
+                <CardContent className="pt-0 pb-2">
+                    <div className="rounded-xl border bg-gray-50 p-4 text-sm space-y-1.5">
+                        <p>
+                            <strong>{preview.inviterName}</strong> invited you to help manage{' '}
+                            <strong>{preview.storeName}</strong>.
+                        </p>
+                        <p className="text-gray-600">
+                            Your role will be: <strong className="text-gray-900">{ROLE_LABEL[preview.role] || preview.role}</strong>
+                        </p>
+                    </div>
+                </CardContent>
+            )}
             <form onSubmit={submit}>
                 <CardContent className="space-y-4">
                     {needsPassword && (

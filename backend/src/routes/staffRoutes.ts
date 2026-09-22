@@ -1,5 +1,5 @@
 import express from 'express';
-import { inviteStaff, listStaff, removeStaff, acceptInvite } from '../controllers/staffController';
+import { inviteStaff, listStaff, removeStaff, acceptInvite, getInvitePreview } from '../controllers/staffController';
 import { protect, authorize, requireStoreRole } from '../middleware/authMiddleware';
 import rateLimit from 'express-rate-limit';
 
@@ -31,6 +31,7 @@ const acceptLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
+acceptRouter.get('/invite-preview', acceptLimiter, getInvitePreview);
 // @ts-ignore
 acceptRouter.post('/accept-invite', acceptLimiter, acceptInvite);
 export { acceptRouter };

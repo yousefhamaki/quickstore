@@ -58,3 +58,18 @@ export const acceptStaffInvite = async (payload: AcceptInvitePayload): Promise<A
     const { data } = await api.post<AcceptInviteResponse>('/staff/accept-invite', payload);
     return data;
 };
+
+export interface InvitePreview {
+    storeName: string;
+    role: StoreStaffRole;
+    inviterName: string;
+    requiresPassword: boolean;
+}
+
+// Lets the accept-invite page show what the invitee is actually agreeing
+// to (store, role, who invited them) before they commit — read-only, does
+// not accept/consume the invite.
+export const getStaffInvitePreview = async (token: string, email: string): Promise<InvitePreview> => {
+    const { data } = await api.get<InvitePreview>('/staff/invite-preview', { params: { token, email } });
+    return data;
+};
