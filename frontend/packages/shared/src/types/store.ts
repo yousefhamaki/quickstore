@@ -264,6 +264,13 @@ export interface Store {
     stats: StoreStats;
     createdAt: string;
     updatedAt: string;
+    // Set by GET /api/stores (list) — same idea as currentUserRole above
+    // (the field storeController.getStore/the store dashboard sidebar
+    // already use), but for the list endpoint: 'owner' for a store this
+    // user owns, or the StoreStaff role ('manager' | 'staff') for a store
+    // they were invited to help manage. Absent on older cached responses;
+    // treat as 'owner' if missing.
+    myRole?: 'owner' | 'manager' | 'staff';
 }
 
 export interface CreateStoreData {

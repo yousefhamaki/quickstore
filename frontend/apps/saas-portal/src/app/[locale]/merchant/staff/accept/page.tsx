@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -19,6 +19,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 function AcceptInviteContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const token = searchParams.get('token') || '';
     const email = searchParams.get('email') || '';
     const { login } = useAuth();
@@ -55,6 +56,14 @@ function AcceptInviteContent() {
             setStatus('success');
             setMessage(`You now have ${data.storeRole} access to ${data.store?.name || 'the store'}.`);
             login(data.token, data.user as any);
+            // login() above defaults to redirecting to /merchant (or a
+            // 'redirect' query param this URL never carries) — that dumps a
+            // freshly-invited staff member on the generic store-list page
+            // instead of the specific store they just joined. Send them
+            // straight into it instead.
+            if (data.store?._id) {
+                router.push(`/dashboard/stores/${data.store._id}`);
+            }
         } catch (err: any) {
             if (err.response?.data?.requiresPassword) {
                 setNeedsPassword(true);

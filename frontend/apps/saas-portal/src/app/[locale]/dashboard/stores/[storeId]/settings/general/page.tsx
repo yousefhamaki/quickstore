@@ -348,7 +348,12 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                 </div>
             </form>
 
-            {/* Danger Zone */}
+            {/* Danger Zone — pause/resume and delete are owner-only on the
+                backend (storeController.pauseStore/resumeStore/deleteStore
+                all match on ownerId, not findAccessibleStore), so hide this
+                whole section for a manager who can otherwise reach this page. */}
+            {(!store.currentUserRole || store.currentUserRole === 'owner') && (
+            <>
             <Separator className="my-10" />
             <div className="space-y-4">
                 <h3 className="text-xl font-bold text-red-600">Danger Zone</h3>
@@ -405,6 +410,8 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                     </Card>
                 </div>
             </div>
+            </>
+            )}
 
             {/* Delete Confirmation Modal */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {

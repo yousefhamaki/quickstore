@@ -8,6 +8,7 @@ import Store from '../models/Store';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { createSessionAndToken } from '../services/sessionService';
 import { sendStaffInviteEmail } from '../services/emailService';
+import { markSignupGiftNotApplicable } from '../services/platformConfigService';
 
 const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -267,6 +268,18 @@ export const acceptInvite = async (req: Request, res: Response) => {
                 authProvider: 'local',
                 isVerified: true, // the invite link itself proves inbox control
             });
+
+            // This account exists purely to accept a staff invite, not
+            // because someone signed up to launch their own store — it must
+            // never receive the 500 EGP signup gift authController.loginUser
+            // would otherwise silently grant on this account's very next
+            // ordinary login. Best-effort: a failure here must not block the
+            // invite itself from being accepted.
+            try {
+                await markSignupGiftNotApplicable((user._id as any).toString());
+            } catch (err) {
+                console.error('[StaffController] Failed to mark signup gift as not applicable for invited user:', err);
+            }
         }
 
         staff.userId = user._id as mongoose.Types.ObjectId;

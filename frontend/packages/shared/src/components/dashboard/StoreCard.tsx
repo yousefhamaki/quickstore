@@ -23,6 +23,11 @@ export function StoreCard({ store }: StoreCardProps) {
     const pauseMutation = usePauseStore(store._id);
     const resumeMutation = useResumeStore(store._id);
     const storeUrl = `https://${store.domain.subdomain}.quickstore.live`;
+    // Pause/resume (like store deletion) is owner-only on the backend
+    // (storeController.pauseStore/resumeStore match on ownerId, not
+    // findAccessibleStore) — hide it for a manager/staff-accessed store so
+    // it doesn't show a control that would just 403.
+    const isOwner = !store.myRole || store.myRole === 'owner';
 
     return (
         <Card className="overflow-hidden transition duration-300 hover:shadow-lg border-2 hover:border-primary/20 group">
@@ -35,6 +40,11 @@ export function StoreCard({ store }: StoreCardProps) {
                         <p className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
                             {store.domain.subdomain}.quickstore.live
                         </p>
+                        {!isOwner && (
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-primary/70">
+                                {store.myRole === 'manager' ? 'Manager access' : 'Staff access'}
+                            </p>
+                        )}
                     </div>
                     <StatusBadge status={store.status} />
                 </div>
@@ -90,7 +100,7 @@ export function StoreCard({ store }: StoreCardProps) {
                     </Button>
                 )}
 
-                {store.status === 'live' && (
+                {isOwner && store.status === 'live' && (
                     <Button
                         variant="outline"
                         size="sm"
@@ -102,7 +112,7 @@ export function StoreCard({ store }: StoreCardProps) {
                     </Button>
                 )}
 
-                {store.status === 'paused' && (
+                {isOwner && store.status === 'paused' && (
                     <Button
                         variant="default"
                         size="sm"
