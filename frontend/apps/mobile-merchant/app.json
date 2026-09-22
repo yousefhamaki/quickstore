@@ -62,7 +62,7 @@
       ]
     ],
     "extra": {
-      "apiUrl": "http://localhost:5000/api",
+      "apiUrl": "https://quickstore-he8n.onrender.com/api",
       "router": {},
       "eas": {
         "projectId": "91118569-c7b9-4951-b46b-8c3650c4bed5"
