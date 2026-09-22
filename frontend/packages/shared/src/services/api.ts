@@ -42,11 +42,17 @@ api.interceptors.response.use(
                 window.location.port === '3002' ||
                 window.location.hostname.startsWith('admin.')
             );
+            // A brand-new invitee visiting the staff accept-invite page has
+            // no token yet by design — any 401 from an unrelated call on
+            // that page (e.g. a dashboard-chrome component that shouldn't
+            // even be rendering there, see merchant/layout.tsx) must not
+            // yank them to login before they've had a chance to accept.
+            const isStaffAcceptPage = typeof window !== 'undefined' && window.location.pathname.includes('/merchant/staff/accept');
 
             if (typeof window !== 'undefined') {
                 if (isAdminApp) {
                     window.location.href = '/';
-                } else if (!isAuthPage && !isStorePage) {
+                } else if (!isAuthPage && !isStorePage && !isStaffAcceptPage) {
                     const pathname = window.location.pathname;
                     const segments = pathname.split('/');
                     const locale = ['en', 'ar'].includes(segments[1]) ? segments[1] : 'en';

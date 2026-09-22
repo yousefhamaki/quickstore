@@ -38,8 +38,16 @@ SidebarSkeleton.displayName = 'SidebarSkeleton';
 // Memoized layout content to prevent unnecessary re-renders
 const MerchantLayoutContent = memo(({ children, pathname }: { children: React.ReactNode; pathname: string }) => {
     const isSetupPage = pathname === '/merchant/setup';
+    // The staff accept-invite page must render for a visitor who has no
+    // account/token yet (see proxy.ts's isStaffAcceptPath — the middleware
+    // already lets them through). Wrapping it in the authenticated
+    // dashboard chrome anyway made Sidebar/BillingBanner/WelcomeGiftModal
+    // fire their normal authenticated API calls, which 401'd and tripped
+    // api.ts's global interceptor into a hard redirect to /auth/login
+    // before the invitee ever saw the accept form.
+    const isStaffAcceptPage = pathname.startsWith('/merchant/staff/accept');
 
-    if (isSetupPage) {
+    if (isSetupPage || isStaffAcceptPage) {
         return <>{children}</>;
     }
 

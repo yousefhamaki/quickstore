@@ -18,12 +18,20 @@ export const getStoreStaff = async (storeId: string): Promise<StoreStaffMember[]
     return data.staff;
 };
 
+export interface InviteStoreStaffResponse {
+    message: string;
+    emailSent: boolean;
+    emailError?: string;
+    acceptUrl: string;
+    staff: StoreStaffMember;
+}
+
 export const inviteStoreStaff = async (
     storeId: string,
     payload: { email: string; role: StoreStaffRole }
-): Promise<StoreStaffMember> => {
-    const { data } = await api.post<{ staff: StoreStaffMember }>(`/stores/${storeId}/staff/invite`, payload);
-    return data.staff;
+): Promise<InviteStoreStaffResponse> => {
+    const { data } = await api.post<InviteStoreStaffResponse>(`/stores/${storeId}/staff/invite`, payload);
+    return data;
 };
 
 export const removeStoreStaff = async (storeId: string, staffId: string): Promise<void> => {

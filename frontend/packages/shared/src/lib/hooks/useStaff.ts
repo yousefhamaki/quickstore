@@ -15,9 +15,20 @@ export const useInviteStoreStaff = (storeId: string) => {
 
     return useMutation({
         mutationFn: (payload: { email: string; role: StoreStaffRole }) => inviteStoreStaff(storeId, payload),
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['store-staff', storeId] });
-            toast.success('Invitation sent');
+            // The invite is always created even if the email fails to send
+            // (e.g. the sending account hit its provider quota) — surface
+            // that distinction instead of always claiming success, and give
+            // the owner the raw link to share manually as a fallback.
+            if (data.emailSent) {
+                toast.success('Invitation sent');
+            } else {
+                toast.error(
+                    `Invite created, but the email failed to send${data.emailError ? `: ${data.emailError}` : '.'} Share this link with them directly: ${data.acceptUrl}`,
+                    { duration: 15000 }
+                );
+            }
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to send invite');

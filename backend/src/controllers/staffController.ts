@@ -77,12 +77,32 @@ export const inviteStaff = async (req: AuthRequest, res: Response) => {
         }
 
         const acceptUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/merchant/staff/accept?token=${rawToken}&email=${encodeURIComponent(email)}`;
-        sendStaffInviteEmail(email, store.name, ownerUser?.name || 'The store owner', role, acceptUrl).catch((err) => {
+
+        // Awaited (not fire-and-forget) so a real send failure — e.g. the
+        // sender's Resend account hitting its daily/monthly quota, which
+        // silently dropped every invite email before sendViaResend existed
+        // (see emailService.ts) — is reflected in this response instead of
+        // the owner being told "Invitation sent" while nothing arrived. The
+        // invite/accept-link itself is still valid either way, so this
+        // never blocks creating the invite — only what the owner is told
+        // about the email.
+        let emailSent = true;
+        let emailError: string | undefined;
+        try {
+            await sendStaffInviteEmail(email, store.name, ownerUser?.name || 'The store owner', role, acceptUrl);
+        } catch (err: any) {
             console.error('[StaffController] Failed to send staff invite email:', err);
-        });
+            emailSent = false;
+            emailError = err?.message || 'Failed to send the invite email.';
+        }
 
         res.status(201).json({
-            message: 'Invitation sent.',
+            message: emailSent
+                ? 'Invitation sent.'
+                : 'Invite created, but the email could not be sent. Share this link with them directly.',
+            emailSent,
+            emailError,
+            acceptUrl,
             staff: {
                 _id: staff._id,
                 email: staff.email,
