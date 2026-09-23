@@ -167,9 +167,11 @@ export default function SocialSharingPage({ params }: { params: Promise<{ storeI
     }
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-5xl space-y-8 pb-20">
+        <div className="container mx-auto py-8 px-4 max-w-5xl space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-pink-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     <Button
                         variant="ghost"
@@ -193,7 +195,7 @@ export default function SocialSharingPage({ params }: { params: Promise<{ storeI
                 <Button
                     onClick={handleSubmit}
                     disabled={saving}
-                    className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+                    className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-pink-500/20 bg-pink-600 hover:bg-pink-700"
                 >
                     {saving ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -229,7 +231,7 @@ export default function SocialSharingPage({ params }: { params: Promise<{ storeI
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Settings Card */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="border-2 rounded-[2.5rem] overflow-hidden shadow-sm">
+                    <Card className="border shadow-md hover:shadow-xl rounded-[2.5rem] overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b p-8">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -257,7 +259,7 @@ export default function SocialSharingPage({ params }: { params: Promise<{ storeI
                                                     key={id}
                                                     onClick={() => handleTogglePlatform(id)}
                                                     className={`flex items-center justify-between p-4 rounded-2xl border-2 transition cursor-pointer select-none ${isChecked
-                                                            ? 'border-primary bg-primary/[0.02]'
+                                                            ? 'border-pink-300 bg-pink-50/40'
                                                             : 'border-muted hover:border-muted-foreground/30 bg-muted/20'
                                                         } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
@@ -309,9 +311,9 @@ export default function SocialSharingPage({ params }: { params: Promise<{ storeI
 
                 {/* Right Side Guide */}
                 <div className="space-y-6">
-                    <Card className="border-2 rounded-[2.5rem] bg-gradient-to-br from-primary/[0.03] to-primary/[0.08] border-primary/10 overflow-hidden shadow-inner h-full flex flex-col justify-between">
+                    <Card className="border-2 rounded-[2.5rem] bg-gradient-to-br from-pink-50 to-pink-100/50 border-pink-100 overflow-hidden shadow-inner h-full flex flex-col justify-between">
                         <CardHeader className="p-8 pb-4">
-                            <div className="w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary mb-6">
+                            <div className="w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-pink-600 mb-6">
                                 <CheckCircle2 className="w-6 h-6" />
                             </div>
                             <CardTitle className="text-xl font-black uppercase italic tracking-tighter mb-2">How it works</CardTitle>

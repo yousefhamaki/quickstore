@@ -39,9 +39,11 @@ export default function StoreAnalyticsPage({ params }: { params: Promise<{ store
     );
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-teal-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-black uppercase tracking-tight italic">Analytics</h1>
                     <p className="text-muted-foreground font-medium">Deep dive into your store performance.</p>
@@ -70,7 +72,7 @@ export default function StoreAnalyticsPage({ params }: { params: Promise<{ store
                             </p>
                             <Button
                                 size="sm"
-                                className="rounded-xl font-bold uppercase text-[10px] tracking-widest"
+                                className="rounded-xl font-bold uppercase text-[10px] tracking-widest bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-500/20"
                                 onClick={() => window.location.href = `/dashboard/stores/${storeId}/marketing/pixels`}
                             >
                                 Configure Pixels
@@ -88,6 +90,7 @@ export default function StoreAnalyticsPage({ params }: { params: Promise<{ store
                     icon={TrendingUp}
                     trend={{ value: 12, isUp: true }}
                     isLoading={isLoading}
+                    accent="green"
                 />
                 <StatsCard
                     title="Total Orders"
@@ -95,6 +98,7 @@ export default function StoreAnalyticsPage({ params }: { params: Promise<{ store
                     icon={BarChart2}
                     trend={{ value: 8, isUp: true }}
                     isLoading={isLoading}
+                    accent="violet"
                 />
                 <StatsCard
                     title="Conversion Rate"
@@ -102,6 +106,7 @@ export default function StoreAnalyticsPage({ params }: { params: Promise<{ store
                     icon={TrendingUp}
                     trend={{ value: 24, isUp: true }}
                     isLoading={isLoading}
+                    accent="teal"
                 />
                 <StatsCard
                     title="Store Visitors"
@@ -109,11 +114,12 @@ export default function StoreAnalyticsPage({ params }: { params: Promise<{ store
                     icon={Users}
                     trend={{ value: 3, isUp: false }}
                     isLoading={isLoading}
+                    accent="blue"
                 />
             </div>
 
             {/* Conversion Funnel */}
-            <Card className="border-2 shadow-sm rounded-3xl overflow-hidden">
+            <Card className="border shadow-md hover:shadow-xl rounded-3xl overflow-hidden transition-shadow duration-300">
                 <CardHeader className="bg-muted/30 border-b p-6">
                     <CardTitle className="text-xl font-black uppercase italic tracking-tight">Conversion Funnel</CardTitle>
                     <CardDescription className="font-medium">Track how visitors move through your store</CardDescription>
@@ -191,7 +197,7 @@ export default function StoreAnalyticsPage({ params }: { params: Promise<{ store
 
             {/* External Analytics Links */}
             {hasPixels && (
-                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-xl rounded-3xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <CardTitle className="text-xl font-black uppercase italic tracking-tight">Advanced Analytics</CardTitle>
                         <CardDescription className="font-medium">View detailed insights in your ad platforms</CardDescription>
@@ -283,7 +289,7 @@ export default function StoreAnalyticsPage({ params }: { params: Promise<{ store
             )}
 
             {/* Revenue Chart Placeholder */}
-            <Card className="border-2 shadow-sm rounded-3xl overflow-hidden">
+            <Card className="border shadow-md hover:shadow-xl rounded-3xl overflow-hidden transition-shadow duration-300">
                 <CardHeader className="bg-muted/30 border-b p-6">
                     <CardTitle className="text-xl font-black uppercase italic tracking-tight">Revenue Over Time</CardTitle>
                     <CardDescription className="font-medium">Visual representation of your daily sales</CardDescription>

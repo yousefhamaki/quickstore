@@ -146,8 +146,10 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
                     <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
@@ -165,7 +167,7 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
                     <Button variant="outline" className="rounded-xl" onClick={openImportDialog}>
                         <Upload className="w-4 h-4 mr-2" /> {t('importCsv')}
                     </Button>
-                    <Button asChild className="rounded-xl shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
+                    <Button asChild className="rounded-xl shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700">
                         <Link href={`/dashboard/stores/${storeId}/products/new`}>
                             <Plus className="w-4 h-4 mr-2" /> {t('addProduct')}
                         </Link>
@@ -173,7 +175,7 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
                 </div>
             </div>
 
-            <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border shadow-md hover:shadow-xl rounded-2xl overflow-hidden transition-shadow duration-300">
                 <CardHeader className="bg-muted/30 border-b space-y-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <form onSubmit={handleSearch} className="relative flex-1">
@@ -249,7 +251,7 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
                         </div>
                     ) : products.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-20 text-center space-y-4">
-                            <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary">
+                            <div className="w-16 h-16 rounded-3xl bg-blue-50 flex items-center justify-center text-blue-600">
                                 <Package className="w-8 h-8" />
                             </div>
                             <div className="space-y-1">
@@ -282,7 +284,7 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
                                 </thead>
                                 <tbody className="divide-y">
                                     {products.map((product) => (
-                                        <tr key={product._id} className="group hover:bg-muted/50 transition-colors">
+                                        <tr key={product._id} className="group hover:bg-blue-50/40 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden flex-shrink-0 border">
@@ -295,7 +297,7 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-foreground group-hover:text-primary transition-colors">{product.name}</p>
+                                                        <p className="font-bold text-foreground group-hover:text-blue-600 transition-colors">{product.name}</p>
                                                         <p className="text-[10px] text-muted-foreground font-mono">{product.sku || 'NO-SKU'}</p>
                                                     </div>
                                                 </div>
@@ -328,7 +330,7 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary">
+                                                    <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 hover:text-blue-600">
                                                         <Link href={`/dashboard/stores/${storeId}/products/${product._id}`}>
                                                             <Edit className="w-4 h-4" />
                                                         </Link>
@@ -394,7 +396,7 @@ export default function StoreProductsPage({ params }: { params: Promise<{ storeI
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed cursor-pointer hover:bg-muted/50 hover:border-primary transition text-sm font-medium">
+                            <label className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed cursor-pointer hover:bg-blue-50/40 hover:border-blue-400 transition text-sm font-medium">
                                 <FileText className="w-4 h-4 text-muted-foreground" />
                                 {t('import.chooseFile')}
                                 <input

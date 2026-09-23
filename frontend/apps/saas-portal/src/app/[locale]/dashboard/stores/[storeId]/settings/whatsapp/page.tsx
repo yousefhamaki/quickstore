@@ -164,12 +164,14 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
 
     if (!WHATSAPP_FEATURE_LAUNCHED) {
         return (
-            <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-                <div className="space-y-1">
+            <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 relative">
+                <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+                <div className="space-y-1 relative">
                     <h1 className="text-3xl font-bold tracking-tight">WhatsApp</h1>
                     <p className="text-muted-foreground">Send order updates to your customers on WhatsApp — connect your number, then customize what gets sent.</p>
                 </div>
-                <Card className="border-2 border-dashed shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border-2 border-dashed shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardContent className="py-16 flex flex-col items-center text-center gap-4">
                         <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center relative">
                             <MessageCircle className="w-7 h-7 text-muted-foreground" />
@@ -204,8 +206,10 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight">WhatsApp</h1>
                 <p className="text-muted-foreground">Send order updates to your customers on WhatsApp — connect your number, then customize what gets sent.</p>
             </div>
@@ -218,7 +222,7 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
             />
 
             {/* Connection */}
-            <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                 <CardHeader className="bg-muted/30 border-b">
                     <CardTitle className="text-lg flex items-center gap-2">
                         <MessageCircle className="w-5 h-5 text-emerald-600" />
@@ -274,7 +278,7 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
                             <p className="text-sm text-muted-foreground max-w-sm">
                                 {connStatus === 'logged_out' ? 'Your WhatsApp was unlinked from this store — connect again to resume sending.' : 'Not connected yet — connect your WhatsApp number to start sending order updates.'}
                             </p>
-                            <Button type="button" className="rounded-xl gap-2" disabled={connecting} onClick={handleConnect}>
+                            <Button type="button" className="rounded-xl gap-2 bg-emerald-600 hover:bg-emerald-700" disabled={connecting} onClick={handleConnect}>
                                 {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
                                 Connect WhatsApp
                             </Button>
@@ -285,7 +289,7 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
 
             <form onSubmit={onSubmit} className="space-y-8">
                 {/* Toggles */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
                             <MessageCircle className="w-5 h-5 text-emerald-600" />
@@ -333,7 +337,7 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
                 </Card>
 
                 {/* Message templates */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
                             <Megaphone className="w-5 h-5 text-emerald-600" />
@@ -384,7 +388,7 @@ export default function WhatsAppSettings({ params }: { params: Promise<{ storeId
                 </Card>
 
                 <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-background/80 backdrop-blur-md border-t p-4 z-50 flex items-center justify-end">
-                    <Button type="submit" disabled={!isDirty || updateMutation.isPending} className="rounded-full px-10 shadow-lg shadow-primary/20">
+                    <Button type="submit" disabled={!isDirty || updateMutation.isPending} className="rounded-full px-10 shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700">
                         {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save WhatsApp Settings</>}
                     </Button>
                 </div>

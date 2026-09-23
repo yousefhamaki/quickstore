@@ -273,25 +273,27 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
     if (loading) {
         return (
             <div className="p-8 space-y-8 flex flex-col items-center justify-center min-h-[400px]">
-                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
                 <p className="text-xs uppercase font-black tracking-widest text-muted-foreground animate-pulse">Loading Campaigns workspace...</p>
             </div>
         );
     }
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black tracking-tighter uppercase italic text-primary flex items-center gap-3">
+                    <h1 className="text-3xl font-black tracking-tighter uppercase italic text-indigo-600 flex items-center gap-3">
                         <Mail className="w-8 h-8 not-italic text-indigo-600" /> Email Campaigns
                     </h1>
                     <p className="text-muted-foreground text-sm font-medium">Create targeted campaigns, monitor delivery logs, and audit limits.</p>
                 </div>
                 <Button
                     onClick={handleOpenCreateDialog}
-                    className="rounded-2xl font-black uppercase tracking-widest text-xs h-12 shadow-xl shadow-primary/10 gap-2"
+                    className="rounded-2xl font-black uppercase tracking-widest text-xs h-12 shadow-xl shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700 gap-2"
                 >
                     <Plus className="w-4 h-4 stroke-[3px]" /> New Campaign
                 </Button>
@@ -324,14 +326,14 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                                 <h3 className="font-black uppercase tracking-tight text-md">No Campaigns Created Yet</h3>
                                 <p className="text-xs text-muted-foreground font-medium">Create your first newsletter or promotional email template to grow your sales.</p>
                             </div>
-                            <Button onClick={handleOpenCreateDialog} className="rounded-xl font-bold uppercase tracking-wider text-[10px] h-10">
+                            <Button onClick={handleOpenCreateDialog} className="rounded-xl font-bold uppercase tracking-wider text-[10px] h-10 bg-indigo-600 hover:bg-indigo-700">
                                 Create Draft Template
                             </Button>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {campaigns.map((camp) => (
-                                <Card key={camp._id} className="border-2 shadow-sm rounded-3xl overflow-hidden hover:border-primary transition duration-300 flex flex-col">
+                                <Card key={camp._id} className="border shadow-md hover:shadow-xl rounded-3xl overflow-hidden hover:border-indigo-300 transition-all duration-300 flex flex-col">
                                     <CardHeader className="bg-muted/20 border-b p-5 space-y-3">
                                         <div className="flex justify-between items-start">
                                             {getStatusBadge(camp.status)}
@@ -373,7 +375,7 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
 
                 {/* Ledger Audit History Tab */}
                 <TabsContent value="ledger" className="space-y-6">
-                    <Card className="border-2 shadow-sm rounded-3xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-3xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/20 border-b p-6">
                             <CardTitle className="text-lg font-black uppercase tracking-tight">Ledger Audit History</CardTitle>
                             <CardDescription className="font-medium text-xs">Immutable billing transactions for full financial audit compliance.</CardDescription>
@@ -635,7 +637,7 @@ export default function CampaignsPage({ params }: { params: Promise<{ storeId: s
                             { count: 250, price: 250, tag: "Best Value" },
                             { count: 500, price: 400, tag: "Bulk Pack" }
                         ].map((pkg) => (
-                            <Card key={pkg.count} className="border-2 rounded-2xl p-4 hover:border-primary transition duration-300 flex flex-col justify-between items-stretch bg-muted/10 relative overflow-hidden group">
+                            <Card key={pkg.count} className="border-2 rounded-2xl p-4 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 flex flex-col justify-between items-stretch bg-muted/10 relative overflow-hidden group">
                                 {pkg.count === 250 && (
                                     <span className="absolute top-0 right-0 bg-indigo-600 text-white font-black text-[7px] uppercase tracking-widest py-0.5 px-3 rounded-bl-lg">
                                         Popular

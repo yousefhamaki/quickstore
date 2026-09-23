@@ -90,8 +90,11 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
     );
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-orange-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+            <div className="absolute -top-24 right-0 w-96 h-96 bg-indigo-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-black tracking-tighter uppercase italic text-primary">Marketing Hub</h1>
                     <p className="text-muted-foreground text-sm font-medium">Power up your store with advanced growth tools.</p>
@@ -100,7 +103,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {/* Discount Coupons */}
-                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative">
+                <Card className="border shadow-md hover:shadow-2xl rounded-3xl overflow-hidden group hover:border-primary/40 transition-all duration-300 relative">
                     {!hasCouponsAccess && <FeatureLock feature="Coupons" requiredPlan={getRequiredPlan('coupons')} />}
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <div className="flex items-center justify-between mb-4">
@@ -148,7 +151,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                 </Card>
 
                 {/* Storewide Sale & Thank-You Voucher */}
-                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative">
+                <Card className="border shadow-md hover:shadow-2xl rounded-3xl overflow-hidden group hover:border-primary/40 transition-all duration-300 relative">
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-4">
                             <Tag className="w-6 h-6" />
@@ -168,7 +171,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                 </Card>
 
                 {/* Email Campaigns */}
-                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative">
+                <Card className="border shadow-md hover:shadow-2xl rounded-3xl overflow-hidden group hover:border-primary/40 transition-all duration-300 relative">
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
@@ -193,7 +196,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                 </Card>
 
                 {/* Tracking Pixels */}
-                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative">
+                <Card className="border shadow-md hover:shadow-2xl rounded-3xl overflow-hidden group hover:border-primary/40 transition-all duration-300 relative">
                     {!hasPixelsAccess && <FeatureLock feature="Pixels" requiredPlan={getRequiredPlan('pixels')} />}
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
@@ -214,7 +217,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                 </Card>
 
                 {/* SEO Management */}
-                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative">
+                <Card className="border shadow-md hover:shadow-2xl rounded-3xl overflow-hidden group hover:border-primary/40 transition-all duration-300 relative">
                     {!hasSEOAccess && <FeatureLock feature="SEO" requiredPlan={getRequiredPlan('seo')} />}
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
@@ -235,7 +238,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                 </Card>
 
                 {/* Abandoned Cart Recovery */}
-                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative">
+                <Card className="border shadow-md hover:shadow-2xl rounded-3xl overflow-hidden group hover:border-primary/40 transition-all duration-300 relative">
                     {!hasAbandonedCartAccess && <FeatureLock feature="Cart Recovery" requiredPlan={getRequiredPlan('abandoned_cart')} />}
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
@@ -256,7 +259,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
                 </Card>
 
                 {/* Social Sharing */}
-                <Card className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative">
+                <Card className="border shadow-md hover:shadow-2xl rounded-3xl overflow-hidden group hover:border-primary/40 transition-all duration-300 relative">
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <div className="w-12 h-12 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center mb-4">
                             <Share2 className="w-6 h-6" />
@@ -277,7 +280,7 @@ export default function MarketingPage({ params }: { params: Promise<{ storeId: s
             </div>
 
             {/* AI Marketing Assistant */}
-            <Card className="border-2 border-dashed shadow-sm rounded-[40px] overflow-hidden bg-primary/[0.02] relative group hover:border-primary/40 transition">
+            <Card className="border-2 border-dashed shadow-md hover:shadow-2xl rounded-[40px] overflow-hidden bg-primary/[0.02] relative group hover:border-primary/40 transition-all duration-300">
                 {!hasAIMarketingAccess && <FeatureLock feature="AI Assistant" requiredPlan={getRequiredPlan('ai_marketing')} />}
                 <CardContent className="p-12 text-center space-y-6">
                     <div className="w-24 h-24 rounded-[32px] bg-primary/10 flex items-center justify-center mx-auto text-primary group-hover:scale-110 transition-transform duration-500">

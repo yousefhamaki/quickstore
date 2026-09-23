@@ -42,8 +42,10 @@ export default function PolicySettings({ params }: { params: Promise<{ storeId: 
     if (isLoading) return <div className="p-8"><Loader2 className="animate-spin text-primary" /></div>;
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-slate-200/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight">Legal & Policies</h1>
                 <p className="text-muted-foreground">Define your store's rules and build trust with customers.</p>
             </div>
@@ -51,10 +53,10 @@ export default function PolicySettings({ params }: { params: Promise<{ storeId: 
             <form onSubmit={onSubmit} className="space-y-8">
                 <div className="grid grid-cols-1 gap-8">
                     {/* Return Policy */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-primary" />
+                                <FileText className="w-5 h-5 text-slate-600" />
                                 Refund & Return Policy
                             </CardTitle>
                             <CardDescription>How do you handle returns and refunds?</CardDescription>
@@ -70,10 +72,10 @@ export default function PolicySettings({ params }: { params: Promise<{ storeId: 
                     </Card>
 
                     {/* Shipping Policy */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-primary" />
+                                <FileText className="w-5 h-5 text-slate-600" />
                                 Shipping Policy
                             </CardTitle>
                             <CardDescription>Delivery times, international shipping, etc.</CardDescription>
@@ -89,10 +91,10 @@ export default function PolicySettings({ params }: { params: Promise<{ storeId: 
                     </Card>
 
                     {/* Terms of Service */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <ShieldCheck className="w-5 h-5 text-primary" />
+                                <ShieldCheck className="w-5 h-5 text-slate-600" />
                                 Terms of Service
                             </CardTitle>
                             <CardDescription>The legal agreement between you and the customer.</CardDescription>
@@ -113,7 +115,7 @@ export default function PolicySettings({ params }: { params: Promise<{ storeId: 
                     <Button
                         type="submit"
                         disabled={!isDirty || updateMutation.isPending}
-                        className="rounded-full px-10 shadow-lg shadow-primary/20"
+                        className="rounded-full px-10 shadow-lg shadow-slate-500/20 bg-slate-700 hover:bg-slate-800"
                     >
                         {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Policies</>}
                     </Button>

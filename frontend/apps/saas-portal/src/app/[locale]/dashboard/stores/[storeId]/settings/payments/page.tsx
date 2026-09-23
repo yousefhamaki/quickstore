@@ -76,8 +76,10 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
     if (isLoading) return <div className="p-8"><Loader2 className="animate-spin text-primary" /></div>;
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight">Payment Methods</h1>
                 <p className="text-muted-foreground">Configure how you receive payments from customers.</p>
             </div>
@@ -85,12 +87,12 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
             <form onSubmit={onSubmit} className="space-y-8">
                 {/* Gateway Provider Selection */}
                 <Card className={cn(
-                    "border-2 shadow-sm rounded-2xl overflow-hidden transition",
+                    "border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300",
                     watch("payment.provider") !== 'manual' ? 'border-primary/20 bg-primary/5' : ''
                 )}>
                     <CardHeader className="bg-background/50 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <CreditCard className="w-5 h-5 text-primary" />
+                            <CreditCard className="w-5 h-5 text-emerald-600" />
                             Checkout Gateway
                         </CardTitle>
                         <CardDescription>Select the core engine powering automated checkout sessions for your buyers.</CardDescription>
@@ -226,10 +228,10 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
                 </Card>
 
                 {/* Methods Selection */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-primary" />
+                            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                             Fallback Methods
                         </CardTitle>
                         <CardDescription>Select which offline payment methods are enabled as fallback alternatives.</CardDescription>
@@ -303,12 +305,12 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
 
                 {/* Peer-to-Peer Payments */}
                 <Card className={cn(
-                    "border-2 shadow-sm rounded-2xl overflow-hidden transition",
+                    "border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300",
                     (!activeMethods.includes('instapay') && !activeMethods.includes('vodafone_cash')) && "opacity-50 grayscale pointer-events-none"
                 )}>
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Wallet className="w-5 h-5 text-primary" />
+                            <Wallet className="w-5 h-5 text-emerald-600" />
                             Direct Wallets Info
                         </CardTitle>
                         <CardDescription>Numbers for customers to transfer to.</CardDescription>
@@ -329,12 +331,12 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
 
                 {/* Bank Transfer */}
                 <Card className={cn(
-                    "border-2 shadow-sm rounded-2xl overflow-hidden transition",
+                    "border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300",
                     !activeMethods.includes('bank_transfer') && "opacity-50 grayscale pointer-events-none"
                 )}>
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Building className="w-5 h-5 text-primary" />
+                            <Building className="w-5 h-5 text-emerald-600" />
                             Bank Transfer Details
                         </CardTitle>
                         <CardDescription>Provide your bank account for wire transfers.</CardDescription>
@@ -360,9 +362,9 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
                 </Card>
 
                 {/* Info Card */}
-                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-start gap-3">
-                    <Info className="w-5 h-5 text-primary mt-0.5" />
-                    <p className="text-sm text-primary/80 leading-relaxed">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-start gap-3">
+                    <Info className="w-5 h-5 text-emerald-600 mt-0.5" />
+                    <p className="text-sm text-emerald-700/80 leading-relaxed">
                         Currently, Buildora supports offline payment methods where you verify receipts manually.
                         Enable the methods you want to offer, and fill in the details so customers can pay you.
                     </p>
@@ -373,7 +375,7 @@ export default function PaymentSettings({ params }: { params: Promise<{ storeId:
                     <Button
                         type="submit"
                         disabled={!isDirty || updateMutation.isPending}
-                        className="rounded-full px-10 shadow-lg shadow-primary/20"
+                        className="rounded-full px-10 shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700"
                     >
                         {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Payments</>}
                     </Button>

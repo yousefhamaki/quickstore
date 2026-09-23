@@ -162,13 +162,15 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
     if (isLoading) return <div className="p-8"><Loader2 className="animate-spin text-primary" /></div>;
 
     return (
-        <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8 pb-20">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-fuchsia-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight">Storefront Theme</h1>
                     <p className="text-muted-foreground">Customize your store's colors, fonts, layout, and messaging.</p>
                 </div>
-                <Button variant="outline" className="rounded-xl" asChild>
+                <Button variant="outline" className="rounded-xl hover:border-fuchsia-300 hover:text-fuchsia-600" asChild>
                     <a href={`/preview/${storeId}`} target="_blank" rel="noopener noreferrer">
                         <Eye className="w-4 h-4 mr-2" /> Live Preview
                     </a>
@@ -179,10 +181,10 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                 <div className="lg:col-span-2 space-y-8">
 
                     {/* Presets */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-primary" /> Quick Start Presets
+                                <Sparkles className="w-5 h-5 text-fuchsia-600" /> Quick Start Presets
                             </CardTitle>
                             <CardDescription>One click sets colors, font, buttons, and layout together.</CardDescription>
                         </CardHeader>
@@ -210,10 +212,10 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                     </Card>
 
                     {/* Brand Colors */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <Palette className="w-5 h-5 text-primary" />
+                                <Palette className="w-5 h-5 text-fuchsia-600" />
                                 Brand Colors
                             </CardTitle>
                             <CardDescription>Select your brand's primary and secondary colors.</CardDescription>
@@ -285,10 +287,10 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                     </Card>
 
                     {/* Typography */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <Layout className="w-5 h-5 text-primary" />
+                                <Layout className="w-5 h-5 text-fuchsia-600" />
                                 Typography
                             </CardTitle>
                             <CardDescription>Choose the font family for your store.</CardDescription>
@@ -315,10 +317,10 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                     </Card>
 
                     {/* Button Style */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <Square className="w-5 h-5 text-primary" /> Button Style
+                                <Square className="w-5 h-5 text-fuchsia-600" /> Button Style
                             </CardTitle>
                             <CardDescription>Corner style for "Add to Cart" and other buttons storewide.</CardDescription>
                         </CardHeader>
@@ -348,10 +350,10 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                     </Card>
 
                     {/* Product Grid */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <Grid3x3 className="w-5 h-5 text-primary" /> Product Grid
+                                <Grid3x3 className="w-5 h-5 text-fuchsia-600" /> Product Grid
                             </CardTitle>
                             <CardDescription>How products are laid out on your homepage.</CardDescription>
                         </CardHeader>
@@ -393,10 +395,10 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                     </Card>
 
                     {/* Announcement Bar */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <Megaphone className="w-5 h-5 text-primary" /> Announcement Bar
+                                <Megaphone className="w-5 h-5 text-fuchsia-600" /> Announcement Bar
                             </CardTitle>
                             <CardDescription>A thin banner above your header — great for promos or shipping info.</CardDescription>
                         </CardHeader>
@@ -446,10 +448,10 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                     </Card>
 
                     {/* Hero Section */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <ImageIcon className="w-5 h-5 text-primary" /> Homepage Hero
+                                <ImageIcon className="w-5 h-5 text-fuchsia-600" /> Homepage Hero
                             </CardTitle>
                             <CardDescription>Leave blank to use your store name and description automatically.</CardDescription>
                         </CardHeader>
@@ -476,10 +478,10 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                     <HeroSliderEditor storeId={storeId} />
 
                     {/* Footer */}
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <PanelBottom className="w-5 h-5 text-primary" /> Footer
+                                <PanelBottom className="w-5 h-5 text-fuchsia-600" /> Footer
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-6">
@@ -497,7 +499,7 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
 
                 {/* Preview Sidebar */}
                 <div className="space-y-8">
-                    <Card className="border-2 shadow-sm rounded-2xl overflow-hidden sticky top-8">
+                    <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden sticky top-8 transition-shadow duration-300">
                         <CardHeader className="bg-muted/30 border-b">
                             <CardTitle className="text-sm uppercase tracking-widest font-black text-muted-foreground">Store Preview</CardTitle>
                         </CardHeader>
@@ -551,7 +553,7 @@ export default function ThemeSettings({ params }: { params: Promise<{ storeId: s
                             <Button
                                 type="submit"
                                 disabled={!isDirty || updateMutation.isPending}
-                                className="w-full rounded-xl"
+                                className="w-full rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 shadow-lg shadow-fuchsia-500/20"
                             >
                                 {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Theme</>}
                             </Button>

@@ -141,18 +141,20 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
     if (!store) return <div className="p-8">Store not found</div>;
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight">General Settings</h1>
                 <p className="text-muted-foreground">Manage your store core information and brand experience.</p>
             </div>
 
             <form onSubmit={onSubmit} className="space-y-8">
                 {/* Core Info */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Info className="w-5 h-5 text-primary" />
+                            <Info className="w-5 h-5 text-blue-600" />
                             Store Information
                         </CardTitle>
                         <CardDescription>Common details about your online business.</CardDescription>
@@ -187,10 +189,10 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                 </Card>
 
                 {/* Branding */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Palette className="w-5 h-5 text-primary" />
+                            <Palette className="w-5 h-5 text-violet-600" />
                             Brand Identity
                         </CardTitle>
                         <CardDescription>Colors and typography that define your store.</CardDescription>
@@ -284,10 +286,10 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                 </Card>
 
                 {/* Contact Info */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Mail className="w-5 h-5 text-primary" />
+                            <Mail className="w-5 h-5 text-teal-600" />
                             Contact Details
                         </CardTitle>
                         <CardDescription>How customers can reach you.</CardDescription>
@@ -313,10 +315,10 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                 </Card>
 
                 {/* Domain Info Area (Read Only) */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden bg-muted/5 border-dashed">
+                <Card className="border-2 border-dashed shadow-md hover:shadow-lg rounded-2xl overflow-hidden bg-muted/5 transition-shadow duration-300">
                     <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Globe className="w-5 h-5 text-primary" />
+                            <Globe className="w-5 h-5 text-indigo-600" />
                             Store Domain
                         </CardTitle>
                     </CardHeader>
@@ -341,7 +343,7 @@ export default function GeneralSettings({ params }: { params: Promise<{ storeId:
                     <Button
                         type="submit"
                         disabled={!isDirty || updateMutation.isPending}
-                        className="rounded-full px-10 shadow-lg shadow-primary/20"
+                        className="rounded-full px-10 shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700"
                     >
                         {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
                     </Button>
