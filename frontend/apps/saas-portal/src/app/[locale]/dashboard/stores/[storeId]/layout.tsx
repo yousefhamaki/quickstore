@@ -129,7 +129,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="w-full h-14 justify-start px-2.5 hover:bg-muted/60 transition-all duration-300 rounded-2xl border border-transparent hover:border-border hover:shadow-sm">
-                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold text-sm mr-3 shadow-md shadow-primary/20">
+                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm mr-3 shadow-md shadow-blue-500/20">
                                     {store?.name?.charAt(0).toUpperCase() || "S"}
                                 </div>
                                 <div className="flex-1 text-left overflow-hidden">
@@ -191,7 +191,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                 className={cn(
                                     "flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-300 group font-medium text-sm",
                                     isActive(item.href)
-                                        ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
+                                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
                                         : "text-muted-foreground hover:bg-muted/70 hover:text-foreground hover:translate-x-0.5"
                                 )}
                             >
@@ -202,7 +202,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                     )}>
                                         <item.icon className={cn(
                                             "w-4 h-4",
-                                            isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                            isActive(item.href) ? "text-white" : "text-muted-foreground group-hover:text-foreground"
                                         )} />
                                     </div>
                                     {item.name}
@@ -229,7 +229,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                 className={cn(
                                     "flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-300 group font-medium text-sm",
                                     isActive(item.href)
-                                        ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
+                                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
                                         : "text-muted-foreground hover:bg-muted/70 hover:text-foreground hover:translate-x-0.5"
                                 )}
                             >
@@ -240,7 +240,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                                     )}>
                                         <item.icon className={cn(
                                             "w-4 h-4",
-                                            isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                            isActive(item.href) ? "text-white" : "text-muted-foreground group-hover:text-foreground"
                                         )} />
                                     </div>
                                     {item.name}
