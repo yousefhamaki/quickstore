@@ -109,17 +109,27 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
         ...(isOwner ? [{ name: 'Team', href: `/dashboard/stores/${storeId}/settings/staff`, icon: UsersRound }] : []),
     ] : [];
 
-    const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
+    // `pathname` (from next/navigation) still carries the /en or /ar locale
+    // prefix that these hrefs never include, so strip it before comparing —
+    // otherwise every nav item always reads as inactive.
+    const normalizedPathname = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, '');
+    // The store-root Dashboard href is a path prefix of every other nav item
+    // here, so it needs an exact match — otherwise it'd stay highlighted
+    // alongside whichever sub-page is actually active.
+    const storeRootHref = `/dashboard/stores/${storeId}`;
+    const isActive = (href: string) => href === storeRootHref
+        ? normalizedPathname === href
+        : normalizedPathname === href || normalizedPathname.startsWith(href + '/');
 
     return (
         <div className="flex min-h-screen bg-background">
             {/* Sidebar */}
-            <aside className="w-64 border-r hidden md:flex flex-col bg-muted/20 sticky top-0 h-screen overflow-y-auto">
-                <div className="p-4 border-b">
+            <aside className="w-64 border-r hidden md:flex flex-col bg-gradient-to-b from-muted/30 via-muted/10 to-muted/30 sticky top-0 h-screen overflow-y-auto">
+                <div className="p-4 border-b bg-gradient-to-br from-primary/[0.03] to-transparent">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="w-full h-12 justify-start px-2 hover:bg-muted/50 transition rounded-xl border border-transparent hover:border-border">
-                                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm mr-3">
+                            <Button variant="ghost" className="w-full h-14 justify-start px-2.5 hover:bg-muted/60 transition-all duration-300 rounded-2xl border border-transparent hover:border-border hover:shadow-sm">
+                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold text-sm mr-3 shadow-md shadow-primary/20">
                                     {store?.name?.charAt(0).toUpperCase() || "S"}
                                 </div>
                                 <div className="flex-1 text-left overflow-hidden">
@@ -170,23 +180,31 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
 
                 <div className="flex-1 p-4 space-y-8">
                     <nav className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">{t('mainMenu')}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-3 ml-3 flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                            {t('mainMenu')}
+                        </p>
                         {navigation.map((item) => (
                             <NavLink
                                 key={item.name}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center justify-between px-3 py-2.5 rounded-xl transition duration-300 group font-medium text-sm",
+                                    "flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-300 group font-medium text-sm",
                                     isActive(item.href)
-                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
+                                        : "text-muted-foreground hover:bg-muted/70 hover:text-foreground hover:translate-x-0.5"
                                 )}
                             >
                                 <div className="flex items-center gap-3">
-                                    <item.icon className={cn(
-                                        "w-4 h-4",
-                                        isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
-                                    )} />
+                                    <div className={cn(
+                                        "w-7 h-7 rounded-lg flex items-center justify-center transition-colors duration-300",
+                                        isActive(item.href) ? "bg-white/20" : "group-hover:bg-muted"
+                                    )}>
+                                        <item.icon className={cn(
+                                            "w-4 h-4",
+                                            isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                        )} />
+                                    </div>
                                     {item.name}
                                 </div>
                                 {item.badge && (
@@ -200,23 +218,31 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
 
                     {settingsLinks.length > 0 && (
                     <nav className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-2">{t('storeSettings')}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-3 ml-3 flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                            {t('storeSettings')}
+                        </p>
                         {settingsLinks.map((item) => (
                             <NavLink
                                 key={item.name}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center justify-between px-3 py-2.5 rounded-xl transition duration-300 group font-medium text-sm",
+                                    "flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-300 group font-medium text-sm",
                                     isActive(item.href)
-                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
+                                        : "text-muted-foreground hover:bg-muted/70 hover:text-foreground hover:translate-x-0.5"
                                 )}
                             >
                                 <div className="flex items-center gap-3">
-                                    <item.icon className={cn(
-                                        "w-4 h-4",
-                                        isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
-                                    )} />
+                                    <div className={cn(
+                                        "w-7 h-7 rounded-lg flex items-center justify-center transition-colors duration-300",
+                                        isActive(item.href) ? "bg-white/20" : "group-hover:bg-muted"
+                                    )}>
+                                        <item.icon className={cn(
+                                            "w-4 h-4",
+                                            isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                        )} />
+                                    </div>
                                     {item.name}
                                 </div>
                                 {item.badge && (
@@ -230,8 +256,8 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                     )}
                 </div>
 
-                <div className="p-4 border-t mt-auto space-y-2">
-                    <Button variant="outline" className="w-full justify-start rounded-xl h-12" asChild>
+                <div className="p-4 border-t mt-auto space-y-2 bg-gradient-to-t from-muted/30 to-transparent">
+                    <Button variant="outline" className="w-full justify-start rounded-2xl h-12 hover:shadow-sm transition-all duration-300" asChild>
                         <NavLink href="/dashboard">
                             <StoreIcon className="w-4 h-4 mr-2" />
                             {t('storeManager')}
@@ -239,7 +265,7 @@ export default function StoreLayout({ children, params }: StoreLayoutProps) {
                     </Button>
                     <Button
                         variant="ghost"
-                        className="w-full justify-start rounded-xl h-12 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="w-full justify-start rounded-2xl h-12 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
                         onClick={() => {
                             if (confirm(t('logoutConfirm'))) {
                                 logout();
