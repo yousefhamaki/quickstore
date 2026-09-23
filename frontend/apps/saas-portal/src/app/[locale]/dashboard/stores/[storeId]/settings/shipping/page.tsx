@@ -142,18 +142,20 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-cyan-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
                 <p className="text-muted-foreground">{t('subtitle')}</p>
             </div>
 
             <form onSubmit={onSubmit} className="space-y-8">
                 {/* Master Toggle */}
-                <Card className={`border-2 shadow-sm rounded-2xl overflow-hidden transition ${isEnabled ? 'border-primary/20 bg-primary/5' : 'border-dashed'}`}>
+                <Card className={`border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300 ${isEnabled ? 'border-cyan-200 bg-cyan-50' : 'border-dashed'}`}>
                     <CardContent className="p-6 flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-xl transition-colors ${isEnabled ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                            <div className={`p-3 rounded-xl transition-colors ${isEnabled ? 'bg-cyan-600 text-white' : 'bg-muted text-muted-foreground'}`}>
                                 <Truck className="w-6 h-6" />
                             </div>
                             <div>
@@ -173,10 +175,10 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
                         {/* Standard Shipping Fee */}
                         <div className="space-y-4">
                             <h2 className="text-xl font-bold flex items-center gap-2">
-                                <Banknote className="w-5 h-5 text-primary" />
+                                <Banknote className="w-5 h-5 text-cyan-600" />
                                 {t('standardRate.heading')}
                             </h2>
-                            <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                            <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                                 <CardContent className="p-6">
                                     <div className="space-y-2 max-w-xs">
                                         <Label>{t('standardRate.label')}</Label>
@@ -193,10 +195,10 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
                         {/* Provider Settings */}
                         <div className="space-y-4">
                             <h2 className="text-xl font-bold flex items-center gap-2">
-                                <Truck className="w-5 h-5 text-primary" />
+                                <Truck className="w-5 h-5 text-cyan-600" />
                                 {t('provider.heading')}
                             </h2>
-                            <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                            <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                                 <CardContent className="p-6">
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                                         {SHIPPING_PROVIDER_IDS.map((id) => {
@@ -367,7 +369,7 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
                         <div className="space-y-4">
                             <div className="flex items-center justify-between gap-4 flex-wrap">
                                 <h2 className="text-xl font-bold flex items-center gap-2">
-                                    <MapPin className="w-5 h-5 text-primary" />
+                                    <MapPin className="w-5 h-5 text-cyan-600" />
                                     {t('zones.heading')}
                                 </h2>
                                 {availableGovernorates.length > 0 ? (
@@ -396,10 +398,10 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
                                     </div>
                                 ) : (
                                     governorateZoneIndexes.map(({ field, index }) => (
-                                        <Card key={field.id} className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                                        <Card key={field.id} className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                                             <CardContent className="p-4 md:p-5 flex items-center gap-4">
                                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                    <MapPin className="w-4 h-4 text-primary shrink-0" />
+                                                    <MapPin className="w-4 h-4 text-cyan-600 shrink-0" />
                                                     <span className="font-bold truncate">{govName((field as any).governorate)}</span>
                                                 </div>
                                                 <div className="w-32 space-y-1">
@@ -436,7 +438,7 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
 
                                 <div className="grid grid-cols-1 gap-4">
                                     {customZoneIndexes.map(({ field, index }) => (
-                                        <Card key={field.id} className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                                        <Card key={field.id} className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                                             <CardContent className="p-6 space-y-6">
                                                 <div className="flex flex-col md:flex-row gap-6">
                                                     <div className="flex-1 space-y-2">
@@ -478,7 +480,7 @@ export default function ShippingSettings({ params }: { params: Promise<{ storeId
                     <Button
                         type="submit"
                         disabled={!isDirty || updateMutation.isPending}
-                        className="rounded-full px-10 shadow-lg shadow-primary/20"
+                        className="rounded-full px-10 shadow-lg shadow-cyan-500/20 bg-cyan-600 hover:bg-cyan-700"
                     >
                         {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> {t('save')}</>}
                     </Button>

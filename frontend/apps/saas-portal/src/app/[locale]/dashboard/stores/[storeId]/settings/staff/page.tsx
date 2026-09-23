@@ -68,10 +68,12 @@ export default function StaffSettings({ params }: { params: Promise<{ storeId: s
     }
 
     return (
-        <div className="p-6 max-w-3xl mx-auto space-y-6">
-            <div>
+        <div className="p-6 max-w-3xl mx-auto space-y-6 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="relative">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Users className="w-6 h-6" />
+                    <Users className="w-6 h-6 text-teal-600" />
                     Team
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -81,7 +83,7 @@ export default function StaffSettings({ params }: { params: Promise<{ storeId: s
                 </p>
             </div>
 
-            <Card>
+            <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
                 <CardHeader>
                     <CardTitle className="text-base">Invite a teammate</CardTitle>
                     <CardDescription>They&apos;ll get an email with a link to accept.</CardDescription>
@@ -111,7 +113,7 @@ export default function StaffSettings({ params }: { params: Promise<{ storeId: s
                                 <option value="manager">Manager</option>
                             </select>
                         </div>
-                        <Button type="submit" disabled={inviteMutation.isPending}>
+                        <Button type="submit" disabled={inviteMutation.isPending} className="bg-teal-600 hover:bg-teal-700 shadow-lg shadow-teal-500/20">
                             {inviteMutation.isPending ? (
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             ) : (
@@ -123,7 +125,7 @@ export default function StaffSettings({ params }: { params: Promise<{ storeId: s
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
                 <CardHeader>
                     <CardTitle className="text-base">Current team</CardTitle>
                 </CardHeader>
@@ -152,7 +154,7 @@ export default function StaffSettings({ params }: { params: Promise<{ storeId: s
                                         <TableCell className="font-medium">{member.email}</TableCell>
                                         <TableCell className="capitalize">{member.role}</TableCell>
                                         <TableCell>
-                                            <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
+                                            <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={member.status === 'active' ? 'bg-teal-600 hover:bg-teal-600' : ''}>
                                                 {member.status === 'active' ? 'Active' : 'Pending'}
                                             </Badge>
                                         </TableCell>
