@@ -82,20 +82,22 @@ export default function DomainSettings({ params }: { params: Promise<{ storeId: 
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight">Domain Settings</h1>
                 <p className="text-muted-foreground">Manage your store's web address and custom domains.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-8">
                 {/* Primary Domain (Subdomain) */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <div className="flex items-center justify-between">
                             <div className="space-y-1">
                                 <CardTitle className="text-lg flex items-center gap-2">
-                                    <Globe className="w-5 h-5 text-primary" />
+                                    <Globe className="w-5 h-5 text-indigo-600" />
                                     Active Domain
                                 </CardTitle>
                                 <CardDescription>Your current primary store address.</CardDescription>
@@ -113,18 +115,18 @@ export default function DomainSettings({ params }: { params: Promise<{ storeId: 
                                     <Copy className="w-4 h-4" />
                                 </Button>
                             </div>
-                            <Button asChild className="rounded-xl shadow-lg shadow-primary/20">
+                            <Button asChild className="rounded-xl shadow-lg shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700">
                                 <a href={`https://${fullDomain}`} target="_blank" rel="noopener noreferrer">
                                     <ExternalLink className="w-4 h-4 mr-2" /> Visit Store
                                 </a>
                             </Button>
                         </div>
 
-                        <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                            <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
+                        <div className="flex items-start gap-3 p-4 rounded-xl bg-indigo-50 border border-indigo-100">
+                            <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0" />
                             <div className="space-y-1">
-                                <p className="text-sm font-bold text-primary">SSL Certificate Included</p>
-                                <p className="text-xs text-primary/70 leading-relaxed">
+                                <p className="text-sm font-bold text-indigo-700">SSL Certificate Included</p>
+                                <p className="text-xs text-indigo-700/70 leading-relaxed">
                                     All Buildora subdomains come with automatic HTTPS/SSL protection to keep your customers' data safe.
                                 </p>
                             </div>
@@ -133,10 +135,10 @@ export default function DomainSettings({ params }: { params: Promise<{ storeId: 
                 </Card>
 
                 {/* Custom Domain */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/10 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Globe className="w-5 h-5 text-primary" />
+                            <Globe className="w-5 h-5 text-indigo-600" />
                             Custom Domain
                         </CardTitle>
                         <CardDescription>Connect your own domain (e.g. www.yourshop.com)</CardDescription>

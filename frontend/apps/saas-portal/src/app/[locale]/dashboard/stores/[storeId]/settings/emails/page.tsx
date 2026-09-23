@@ -154,8 +154,10 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-sky-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight">Emails</h1>
                 <p className="text-muted-foreground">Design your emails with no code, choose who they're sent from, and control which ones your customers receive.</p>
             </div>
@@ -169,10 +171,10 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
 
             <form onSubmit={onSubmit} className="space-y-8">
                 {/* Sender */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Send className="w-5 h-5 text-primary" />
+                            <Send className="w-5 h-5 text-sky-600" />
                             Sender
                         </CardTitle>
                         <CardDescription>Send your emails from Buildora, or from your own email address (Gmail, Outlook, or any mail provider — no domain setup needed).</CardDescription>
@@ -182,7 +184,7 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                             <button
                                 type="button"
                                 onClick={() => setValue('emailSender.mode', 'buildora', { shouldDirty: true })}
-                                className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors ${senderMode === 'buildora' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/30 hover:bg-muted'}`}
+                                className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors ${senderMode === 'buildora' ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-transparent bg-muted/30 hover:bg-muted'}`}
                             >
                                 <Cloud className="w-5 h-5" />
                                 <span className="text-xs font-bold">Send from Buildora</span>
@@ -190,7 +192,7 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                             <button
                                 type="button"
                                 onClick={() => setValue('emailSender.mode', 'custom', { shouldDirty: true })}
-                                className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors ${senderMode === 'custom' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/30 hover:bg-muted'}`}
+                                className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors ${senderMode === 'custom' ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-transparent bg-muted/30 hover:bg-muted'}`}
                             >
                                 <Send className="w-5 h-5" />
                                 <span className="text-xs font-bold">Send from my own email</span>
@@ -256,10 +258,10 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                 </Card>
 
                 {/* Toggles */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Mail className="w-5 h-5 text-primary" />
+                            <Mail className="w-5 h-5 text-sky-600" />
                             Customer Email Notifications
                         </CardTitle>
                         <CardDescription>Turn automatic customer emails on or off. These only send while your store has email credits available.</CardDescription>
@@ -267,7 +269,7 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                     <CardContent className="pt-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${sendOrderConfirmation ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                                <div className={`p-2.5 rounded-xl ${sendOrderConfirmation ? 'bg-sky-600 text-white' : 'bg-muted text-muted-foreground'}`}>
                                     <PackageCheck className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -283,7 +285,7 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                         </div>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${sendStatusUpdates ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                                <div className={`p-2.5 rounded-xl ${sendStatusUpdates ? 'bg-sky-600 text-white' : 'bg-muted text-muted-foreground'}`}>
                                     <Truck className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -304,10 +306,10 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                 </Card>
 
                 {/* Template editors */}
-                <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+                <Card className="border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300">
                     <CardHeader className="bg-muted/30 border-b">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Megaphone className="w-5 h-5 text-primary" />
+                            <Megaphone className="w-5 h-5 text-sky-600" />
                             Email Design
                         </CardTitle>
                         <CardDescription>Build each email's content with no code — add and arrange blocks, no HTML required.</CardDescription>
@@ -354,7 +356,7 @@ export default function EmailSettings({ params }: { params: Promise<{ storeId: s
                     <Button
                         type="submit"
                         disabled={!isDirty || updateMutation.isPending}
-                        className="rounded-full px-10 shadow-lg shadow-primary/20"
+                        className="rounded-full px-10 shadow-lg shadow-sky-500/20 bg-sky-600 hover:bg-sky-700"
                     >
                         {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Emails Settings</>}
                     </Button>
