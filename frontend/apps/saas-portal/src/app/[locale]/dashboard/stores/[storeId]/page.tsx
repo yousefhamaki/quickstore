@@ -45,9 +45,13 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
         : [];
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            {/* Soft ambient glow behind the header — matches the merchant
+                dashboard's premium-polish pass so both feel like one system. */}
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
             {/* Page Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     {isLoading ? (
                         <>
@@ -126,6 +130,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                     icon={DollarSign}
                     trend={{ value: 12, isUp: true }}
                     isLoading={isLoading}
+                    accent="green"
                 />
                 <StatsCard
                     title={t('stats.orders')}
@@ -133,12 +138,14 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                     icon={ShoppingCart}
                     trend={{ value: 8, isUp: true }}
                     isLoading={isLoading}
+                    accent="violet"
                 />
                 <StatsCard
                     title={t('stats.activeProducts')}
                     value={store ? store.stats.totalProducts : 0}
                     icon={Package}
                     isLoading={isLoading}
+                    accent="blue"
                 />
                 <StatsCard
                     title={t('stats.customers')}
@@ -146,6 +153,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                     icon={Users}
                     trend={{ value: 24, isUp: true }}
                     isLoading={isLoading}
+                    accent="amber"
                 />
             </div>
 
@@ -158,17 +166,17 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                     )}
 
                     {/* Quick Actions / Recent Activity Placeholder */}
-                    <div className="bg-background border rounded-2xl overflow-hidden">
+                    <div className="bg-background border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300">
                         <div className="p-6 border-b flex items-center justify-between">
                             <h3 className="font-bold text-lg">{t('quickActions.title')}</h3>
                         </div>
                         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Link
                                 href={`/dashboard/stores/${storeId}/products/new`}
-                                className="p-4 rounded-xl border-2 border-dashed hover:border-primary/50 hover:bg-muted/30 transition flex items-center justify-between group"
+                                className="p-4 rounded-xl border-2 border-dashed hover:border-blue-300 hover:bg-blue-50/40 transition flex items-center justify-between group"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <div className="bg-blue-50 text-blue-600 p-3 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                         <Package className="w-5 h-5" />
                                     </div>
                                     <div className="text-left">
@@ -180,10 +188,10 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                             </Link>
                             <Link
                                 href={`/dashboard/stores/${storeId}/marketing`}
-                                className="p-4 rounded-xl border-2 border-dashed hover:border-primary/50 hover:bg-muted/30 transition flex items-center justify-between group"
+                                className="p-4 rounded-xl border-2 border-dashed hover:border-violet-300 hover:bg-violet-50/40 transition flex items-center justify-between group"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <div className="bg-violet-50 text-violet-600 p-3 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition-colors">
                                         <Rocket className="w-5 h-5" />
                                     </div>
                                     <div className="text-left">
@@ -196,10 +204,10 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
 
                             <Link
                                 href={`/dashboard/stores/${storeId}/settings/policies`}
-                                className="p-4 rounded-xl border-2 border-dashed hover:border-primary/50 hover:bg-muted/30 transition flex items-center justify-between group"
+                                className="p-4 rounded-xl border-2 border-dashed hover:border-teal-300 hover:bg-teal-50/40 transition flex items-center justify-between group"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <div className="bg-teal-50 text-teal-600 p-3 rounded-xl group-hover:bg-teal-600 group-hover:text-white transition-colors">
                                         <ShieldCheck className="w-5 h-5" />
                                     </div>
                                     <div className="text-left">
@@ -215,7 +223,7 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
 
                 {/* Right Column: Recent Orders snippet / Store Info */}
                 <div className="space-y-6">
-                    <div className="bg-background border rounded-2xl p-6 space-y-4">
+                    <div className="bg-background border rounded-2xl p-6 space-y-4 shadow-sm hover:shadow-lg transition-shadow duration-300">
                         <h3 className="font-bold">{t('details.title')}</h3>
                         <div className="space-y-4">
                             <div className="flex justify-between text-sm">
@@ -238,15 +246,15 @@ export default function StoreDashboard({ params }: { params: Promise<{ storeId: 
                         </Button>
                     </div>
 
-                    <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center space-y-3">
-                        <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto">
-                            <Sparkles className="w-6 h-6 text-primary" />
+                    <div className="bg-gradient-to-br from-blue-50 to-violet-50 border border-blue-100 rounded-2xl p-6 text-center space-y-3 shadow-sm hover:shadow-lg transition-shadow duration-300">
+                        <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                            <Sparkles className="w-6 h-6 text-blue-600" />
                         </div>
-                        <h4 className="font-bold text-primary">{t('help.title')}</h4>
+                        <h4 className="font-bold text-blue-700">{t('help.title')}</h4>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                             {t('help.description')}
                         </p>
-                        <Button size="sm" variant="link" className="font-bold text-primary">
+                        <Button size="sm" variant="link" className="font-bold text-blue-600">
                             {t('help.guideBtn')}
                         </Button>
                     </div>

@@ -96,8 +96,10 @@ export default function StoreOrdersPage({ params }: { params: Promise<{ storeId:
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-violet-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
                     <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
@@ -109,7 +111,7 @@ export default function StoreOrdersPage({ params }: { params: Promise<{ storeId:
                 </div>
             </div>
 
-            <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border shadow-md hover:shadow-xl rounded-2xl overflow-hidden transition-shadow duration-300">
                 <CardHeader className="bg-muted/30 border-b space-y-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <form onSubmit={handleSearch} className="relative flex-1">
@@ -179,7 +181,7 @@ export default function StoreOrdersPage({ params }: { params: Promise<{ storeId:
                         </div>
                     ) : orders.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-20 text-center space-y-4">
-                            <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary">
+                            <div className="w-16 h-16 rounded-3xl bg-violet-50 flex items-center justify-center text-violet-600">
                                 <ShoppingCart className="w-8 h-8" />
                             </div>
                             <div className="space-y-1">
@@ -204,7 +206,7 @@ export default function StoreOrdersPage({ params }: { params: Promise<{ storeId:
                                 </thead>
                                 <tbody className="divide-y">
                                     {orders.map((order) => (
-                                        <tr key={order._id} className="hover:bg-muted/10 transition-colors group">
+                                        <tr key={order._id} className="hover:bg-violet-50/40 transition-colors group">
                                             <td className="px-6 py-4 font-black">
                                                 {order.orderNumber}
                                             </td>
@@ -226,7 +228,7 @@ export default function StoreOrdersPage({ params }: { params: Promise<{ storeId:
                                                 {getStatusBadge(order.status)}
                                             </td>
                                             <td className={`px-6 py-4 ${localeString === 'ar' ? 'text-left' : 'text-right'}`}>
-                                                <Button variant="ghost" size="sm" asChild className="rounded-lg hover:bg-muted font-bold h-8">
+                                                <Button variant="ghost" size="sm" asChild className="rounded-lg hover:bg-violet-50 hover:text-violet-600 font-bold h-8">
                                                     <Link href={`/dashboard/stores/${storeId}/orders/${order._id}`}>
                                                         <Eye className={`w-4 h-4 ${localeString === 'ar' ? 'ml-2' : 'mr-2'}`} /> {t('table.view')}
                                                     </Link>

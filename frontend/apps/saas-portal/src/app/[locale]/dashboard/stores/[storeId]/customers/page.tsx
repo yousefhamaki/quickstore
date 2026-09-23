@@ -57,18 +57,20 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
     }, [searchTerm, storeId, activeTab]);
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
-            <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 ${localeString === 'ar' ? 'text-right' : 'text-left'}`}>
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-amber-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 relative ${localeString === 'ar' ? 'text-right' : 'text-left'}`}>
                 <div className="space-y-1">
                     <h1 className="text-3xl font-black tracking-tight uppercase">{t('title')}</h1>
                     <p className="text-muted-foreground text-sm font-medium">{t('subtitle')}</p>
                 </div>
-                <Button className="rounded-2xl shadow-lg shadow-primary/20 h-12 px-6 font-bold uppercase tracking-widest text-xs">
+                <Button className="rounded-2xl shadow-lg shadow-amber-500/20 bg-amber-500 hover:bg-amber-600 h-12 px-6 font-bold uppercase tracking-widest text-xs">
                     <UserPlus className={`w-4 h-4 ${localeString === 'ar' ? 'ml-2' : 'mr-2'}`} /> {t('addCustomer')}
                 </Button>
             </div>
 
-            <Card className="border-2 shadow-sm rounded-[32px] overflow-hidden">
+            <Card className="border shadow-md hover:shadow-xl rounded-[32px] overflow-hidden transition-shadow duration-300">
                 <CardHeader className="bg-muted/30 border-b p-6 space-y-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1">
@@ -95,7 +97,7 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
                             }}
                             className={`pb-4 px-4 font-bold text-xs uppercase tracking-widest transition border-b-2 cursor-pointer outline-none ${
                                 activeTab === 'customers'
-                                    ? 'border-primary text-primary font-black'
+                                    ? 'border-amber-500 text-amber-600 font-black'
                                     : 'border-transparent text-muted-foreground hover:text-foreground'
                             }`}
                         >
@@ -108,7 +110,7 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
                             }}
                             className={`pb-4 px-4 font-bold text-xs uppercase tracking-widest transition border-b-2 cursor-pointer outline-none ${
                                 activeTab === 'subscribers'
-                                    ? 'border-primary text-primary font-black'
+                                    ? 'border-amber-500 text-amber-600 font-black'
                                     : 'border-transparent text-muted-foreground hover:text-foreground'
                             }`}
                         >
@@ -156,7 +158,7 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
                         </div>
                     ) : customers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-20 text-center space-y-6">
-                            <div className="w-20 h-20 rounded-[32px] bg-primary/10 flex items-center justify-center text-primary">
+                            <div className="w-20 h-20 rounded-[32px] bg-amber-50 flex items-center justify-center text-amber-600">
                                 <Users className="w-10 h-10" />
                             </div>
                             <div className="space-y-2">
@@ -187,7 +189,7 @@ export default function StoreCustomersPage({ params }: { params: Promise<{ store
                                             : (customer.firstName ? customer.firstName[0] : (customer.lastName ? customer.lastName[0] : customer.email[0])).toUpperCase();
 
                                         return (
-                                            <tr key={customer._id} className="hover:bg-muted/10 transition-colors group">
+                                            <tr key={customer._id} className="hover:bg-amber-50/30 transition-colors group">
                                                 <td className="px-6 py-5">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-black text-xs">
