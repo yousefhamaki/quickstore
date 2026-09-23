@@ -93,13 +93,15 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
     }
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-violet-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-black tracking-tighter">{t("title")}</h1>
                     <p className="text-muted-foreground font-medium">{t("subtitle")}</p>
                 </div>
-                <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/20">
+                <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-purple-500/20 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
                     <Link href={`/dashboard/stores/${storeId}/offers/new`}>
                         <Plus className="mr-2 rtl:ml-2 rtl:mr-0 w-5 h-5" /> {t("create")}
                     </Link>
@@ -108,7 +110,7 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
 
             {campaigns.length === 0 ? (
                 <div className="bg-muted/30 border-2 border-dashed rounded-[32px] p-16 text-center space-y-6">
-                    <div className="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center shadow-sm text-gray-400">
+                    <div className="w-20 h-20 bg-violet-50 rounded-full mx-auto flex items-center justify-center shadow-sm text-violet-600">
                         <Target size={32} />
                     </div>
                     <div className="space-y-2">
@@ -119,7 +121,7 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                     </div>
                 </div>
             ) : (
-                <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
+                <div className="bg-card border rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
@@ -135,9 +137,9 @@ export default function OffersCampaignsPage({ params }: { params: Promise<{ stor
                             </thead>
                             <tbody className="divide-y">
                                 {campaigns.map((camp) => (
-                                    <tr key={camp._id} className="hover:bg-muted/30 transition-colors group">
+                                    <tr key={camp._id} className="hover:bg-violet-50/30 transition-colors group">
                                         <td className="p-6">
-                                            <div className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
+                                            <div className="font-bold text-base text-foreground group-hover:text-violet-600 transition-colors">
                                                 {camp.name}
                                             </div>
                                             <div className="text-xs text-muted-foreground mt-1 uppercase font-semibold tracking-wider">
