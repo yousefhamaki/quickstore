@@ -105,7 +105,7 @@ export default function PixelsPage({ params }: { params: Promise<{ storeId: stri
 
     if (!hasPixelsAccess) {
         return (
-            <div className="container mx-auto py-10 px-4">
+            <div className="container mx-auto py-10 px-4 relative">
                 <FeatureLock
                     feature="Tracking Pixels"
                     requiredPlan={getRequiredPlan('pixels')}
@@ -115,9 +115,11 @@ export default function PixelsPage({ params }: { params: Promise<{ storeId: stri
     }
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-5xl space-y-8 pb-20">
+        <div className="container mx-auto py-8 px-4 max-w-5xl space-y-8 pb-20 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     <Button
                         variant="ghost"
@@ -141,7 +143,7 @@ export default function PixelsPage({ params }: { params: Promise<{ storeId: stri
                 <Button
                     onClick={handleSubmit}
                     disabled={saving}
-                    className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+                    className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700"
                 >
                     {saving ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -154,7 +156,7 @@ export default function PixelsPage({ params }: { params: Promise<{ storeId: stri
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Facebook Pixel */}
-                <Card className="border-2 rounded-3xl overflow-hidden shadow-sm hover:border-blue-200 transition">
+                <Card className="border-2 rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:border-blue-200 transition">
                     <CardHeader className="bg-blue-50/50 border-b p-6">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">
@@ -183,7 +185,7 @@ export default function PixelsPage({ params }: { params: Promise<{ storeId: stri
                 </Card>
 
                 {/* Google Analytics */}
-                <Card className="border-2 rounded-3xl overflow-hidden shadow-sm hover:border-orange-200 transition">
+                <Card className="border-2 rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:border-orange-200 transition">
                     <CardHeader className="bg-orange-50/50 border-b p-6">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center">
@@ -212,7 +214,7 @@ export default function PixelsPage({ params }: { params: Promise<{ storeId: stri
                 </Card>
 
                 {/* TikTok Pixel */}
-                <Card className="border-2 rounded-3xl overflow-hidden shadow-sm hover:border-black transition">
+                <Card className="border-2 rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:border-black transition">
                     <CardHeader className="bg-muted/30 border-b p-6">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center">
@@ -241,7 +243,7 @@ export default function PixelsPage({ params }: { params: Promise<{ storeId: stri
                 </Card>
 
                 {/* Snapchat Pixel */}
-                <Card className="border-2 rounded-3xl overflow-hidden shadow-sm hover:border-yellow-400 transition">
+                <Card className="border-2 rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:border-yellow-400 transition">
                     <CardHeader className="bg-yellow-50/50 border-b p-6">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-yellow-400 text-black flex items-center justify-center">
@@ -271,8 +273,8 @@ export default function PixelsPage({ params }: { params: Promise<{ storeId: stri
             </div>
 
             {/* Help Info */}
-            <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/10 flex flex-col md:flex-row items-center gap-8 shadow-inner">
-                <div className="w-16 h-16 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary flex-shrink-0">
+            <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-blue-50 to-blue-100/60 border-2 border-blue-100 flex flex-col md:flex-row items-center gap-8 shadow-inner">
+                <div className="w-16 h-16 rounded-2xl bg-white shadow-xl flex items-center justify-center text-blue-600 flex-shrink-0">
                     <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <div className="space-y-2 text-center md:text-left">

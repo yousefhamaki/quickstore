@@ -137,19 +137,21 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-orange-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
                     <div className="space-y-1">
-                        <h1 className="text-3xl font-black tracking-tighter uppercase italic text-primary">{t("title")}</h1>
+                        <h1 className="text-3xl font-black tracking-tighter uppercase italic text-orange-600">{t("title")}</h1>
                         <p className="text-muted-foreground text-sm font-medium">{t("subtitle")}</p>
                     </div>
                 </div>
                 <Button
-                    className="rounded-2xl px-6 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+                    className="rounded-2xl px-6 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700"
                     onClick={() => handleOpenModal()}
                 >
                     <Plus className="w-4 h-4 mr-2" />
@@ -159,13 +161,13 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 animate-pulse">
-                    <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+                    <Loader2 className="w-12 h-12 animate-spin text-orange-500 mb-4" />
                     <p className="font-bold uppercase tracking-widest text-xs text-muted-foreground">{t("syncing")}</p>
                 </div>
             ) : coupons.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {coupons.map((coupon) => (
-                        <Card key={coupon._id} className="border-2 shadow-sm rounded-3xl overflow-hidden group hover:border-primary transition relative glass">
+                        <Card key={coupon._id} className="border shadow-md hover:shadow-2xl rounded-3xl overflow-hidden group hover:border-orange-300 transition-all duration-300 relative glass">
                             <CardHeader className="bg-muted/30 border-b p-6 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-1.5">
@@ -189,7 +191,7 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
                                     </div>
                                 </div>
                                 <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenModal(coupon)}>
+                                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-orange-50 hover:text-orange-600" onClick={() => handleOpenModal(coupon)}>
                                         <Edit className="w-4 h-4" />
                                     </Button>
                                     <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500" onClick={() => handleDelete(coupon._id)}>
@@ -248,7 +250,7 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
                     </div>
                     <Button
                         size="lg"
-                        className="rounded-2xl px-12 h-14 font-black uppercase tracking-widest text-xs"
+                        className="rounded-2xl px-12 h-14 font-black uppercase tracking-widest text-xs bg-orange-600 hover:bg-orange-700"
                         onClick={() => handleOpenModal()}
                     >
                         {t("create")}
@@ -258,7 +260,7 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
 
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
                 <DialogContent className="sm:max-w-[500px] rounded-[32px] p-0 border-0 overflow-hidden glass">
-                    <div className="bg-primary/5 p-8 border-b">
+                    <div className="bg-orange-50 p-8 border-b">
                         <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">
                             {editingCoupon ? t("edit") : t("create")}
                         </DialogTitle>
@@ -366,7 +368,7 @@ export default function CouponsPage({ params }: { params: Promise<{ storeId: str
                             <Button type="button" variant="outline" className="rounded-2xl h-14 font-black uppercase tracking-widest text-[10px] border-2" onClick={() => setModalOpen(false)}>
                                 {t("cancel")}
                             </Button>
-                            <Button type="submit" className="rounded-2xl h-14 px-8 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20" disabled={submitting}>
+                            <Button type="submit" className="rounded-2xl h-14 px-8 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-orange-500/20 bg-orange-600 hover:bg-orange-700" disabled={submitting}>
                                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingCoupon ? t("update") : t("create"))}
                             </Button>
                         </DialogFooter>

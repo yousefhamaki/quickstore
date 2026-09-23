@@ -113,8 +113,10 @@ export default function StoreSaleSettingsPage({ params }: { params: Promise<{ st
     if (isLoading) return <div className="p-8"><Loader2 className="animate-spin text-primary" /></div>;
 
     return (
-        <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8 pb-24">
-            <div className="flex items-center gap-4">
+        <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8 pb-24 relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-red-100/30 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="flex items-center gap-4 relative">
                 <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
@@ -127,10 +129,10 @@ export default function StoreSaleSettingsPage({ params }: { params: Promise<{ st
             {/* Storewide Sale */}
             <div className="space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-primary" />
+                    <Tag className="w-5 h-5 text-red-600" />
                     Storewide Sale
                 </h2>
-                <Card className={`border-2 shadow-sm rounded-2xl overflow-hidden transition ${sale.enabled ? 'border-primary/20 bg-primary/5' : ''}`}>
+                <Card className={`border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300 ${sale.enabled ? 'border-red-200 bg-red-50/50' : ''}`}>
                     <CardContent className="p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -201,7 +203,7 @@ export default function StoreSaleSettingsPage({ params }: { params: Promise<{ st
                                                         key={cat._id}
                                                         type="button"
                                                         onClick={() => toggleExcludedCategory(cat._id)}
-                                                        className={`px-4 py-2 rounded-xl border-2 text-xs font-bold transition ${isExcluded ? 'bg-red-50 border-red-300 text-red-600' : 'bg-background border-border text-muted-foreground hover:border-primary/40'}`}
+                                                        className={`px-4 py-2 rounded-xl border-2 text-xs font-bold transition ${isExcluded ? 'bg-red-50 border-red-300 text-red-600' : 'bg-background border-border text-muted-foreground hover:border-red-300'}`}
                                                     >
                                                         {isExcluded ? 'Excluded: ' : ''}{cat.name}
                                                     </button>
@@ -219,10 +221,10 @@ export default function StoreSaleSettingsPage({ params }: { params: Promise<{ st
             {/* Post-Purchase Voucher */}
             <div className="space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Gift className="w-5 h-5 text-primary" />
+                    <Gift className="w-5 h-5 text-purple-600" />
                     Post-Delivery Thank-You Voucher
                 </h2>
-                <Card className={`border-2 shadow-sm rounded-2xl overflow-hidden transition ${voucher.enabled ? 'border-primary/20 bg-primary/5' : ''}`}>
+                <Card className={`border shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-shadow duration-300 ${voucher.enabled ? 'border-purple-200 bg-purple-50/50' : ''}`}>
                     <CardContent className="p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -286,7 +288,7 @@ export default function StoreSaleSettingsPage({ params }: { params: Promise<{ st
                 <Button
                     onClick={handleSave}
                     disabled={updateMutation.isPending}
-                    className="rounded-full px-10 shadow-lg shadow-primary/20"
+                    className="rounded-full px-10 shadow-lg shadow-red-500/20 bg-red-600 hover:bg-red-700"
                 >
                     {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Settings</>}
                 </Button>
