@@ -437,7 +437,7 @@ export default function CheckoutPage() {
             if (response.success) {
                 clearCart();
                 toast.success(t('messages.success'));
-                router.push(`/order/success/${response.orderNumber}`);
+                router.push(`/store/${subdomain}/order/success/${response.orderNumber}`);
             } else {
                 toast.error(response.message || t('messages.error'));
             }

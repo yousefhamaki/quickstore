@@ -294,7 +294,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                             {relatedProducts.map((p: any) => (
                                 <Link
                                     key={p._id}
-                                    href={`/products/${p._id}`}
+                                    href={`/store/${subdomain}/products/${p._id}`}
                                     className="group cursor-pointer space-y-4"
                                 >
                                     <div className="aspect-[4/5] bg-gray-100 rounded-3xl overflow-hidden relative border shadow-sm group-hover:shadow-xl transition duration-500">

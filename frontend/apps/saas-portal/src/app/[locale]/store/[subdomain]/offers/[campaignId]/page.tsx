@@ -307,7 +307,7 @@ export default function OfferPageCheckout() {
             const response = await createOrder(orderPayload) as any;
             if (response.success) {
                 toast.success(isAr ? 'تم تسجيل طلبك بنجاح!' : 'Order confirmed successfully!');
-                router.push(`/order/success/${response.orderNumber}`);
+                router.push(`/store/${subdomain}/order/success/${response.orderNumber}`);
             } else {
                 toast.error(response.message || 'Failed to place order.');
             }

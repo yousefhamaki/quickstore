@@ -15,6 +15,8 @@ interface ProductCatalogProps {
     /** From store.theme.customizations.productGrid — merchant-configurable, see settings/theme. */
     columns?: 2 | 3 | 4;
     showRatings?: boolean;
+    /** Store subdomain, so product cards link into this storefront's own product page. */
+    subdomain: string;
 }
 
 const GRID_COLS_CLASS: Record<number, string> = {
@@ -23,7 +25,7 @@ const GRID_COLS_CLASS: Record<number, string> = {
     4: 'md:grid-cols-2 lg:grid-cols-4',
 };
 
-export default function ProductCatalog({ products, categories: realCategories, columns = 4, showRatings = true }: ProductCatalogProps) {
+export default function ProductCatalog({ products, categories: realCategories, columns = 4, showRatings = true, subdomain }: ProductCatalogProps) {
     const t = useTranslations('store.home');
     const tProduct = useTranslations('store.product');
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -95,7 +97,7 @@ export default function ProductCatalog({ products, categories: realCategories, c
                                 key={product._id}
                             >
                                 <Link
-                                    href={`/products/${product._id}`}
+                                    href={`/store/${subdomain}/products/${product._id}`}
                                     className="group cursor-pointer space-y-4 block"
                                 >
                                     <div className="aspect-[4/5] bg-gray-100 rounded-3xl overflow-hidden relative border shadow-sm group-hover:shadow-xl transition duration-500">

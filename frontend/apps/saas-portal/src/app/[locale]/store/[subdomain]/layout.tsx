@@ -216,7 +216,7 @@ async function StoreLayoutContent({ children, subdomain, locale }: { children: R
                         </nav>
                         <div className="flex items-center gap-1">
                             <HeaderAccount />
-                            <HeaderCart />
+                            <HeaderCart subdomain={subdomain} />
                         </div>
                     </div>
                 </header>

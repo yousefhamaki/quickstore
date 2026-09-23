@@ -132,6 +132,7 @@ async function StoreContent({ subdomain, locale }: { subdomain: string; locale: 
                 categories={categories}
                 columns={store.theme?.customizations?.productGrid?.columns}
                 showRatings={store.theme?.customizations?.productGrid?.showRatings}
+                subdomain={subdomain}
             />
 
             {/* Newsletter Section */}

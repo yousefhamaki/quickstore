@@ -1077,7 +1077,11 @@ export const trackOrder = async (req: Request, res: Response) => {
 
 export const getPublicOrderDetails = async (req: Request, res: Response) => {
     try {
-        const order = await Order.findById(req.params.orderId)
+        // Despite the :orderId param name, every real caller (the post-checkout
+        // success page, the offers/campaign checkout) passes the human-readable
+        // orderNumber (e.g. "QS-260923-7089"), not a Mongo _id — findById() cast
+        // that string to ObjectId and threw, 500-ing on every completed order.
+        const order = await Order.findOne({ orderNumber: req.params.orderId })
             .populate('items.productId', 'name images');
 
         if (!order) {

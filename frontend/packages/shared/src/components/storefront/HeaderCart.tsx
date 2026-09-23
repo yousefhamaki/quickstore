@@ -7,7 +7,7 @@ import Link from "next/link";
 import { cn } from "@shared/lib/utils";
 import { CART_ICON_ELEMENT_ID, CART_FLY_LANDED_EVENT } from "@shared/lib/flyToCart";
 
-export function HeaderCart() {
+export function HeaderCart({ subdomain }: { subdomain: string }) {
     const { getCartCount } = useCart();
     const count = getCartCount();
     // Bumps the icon the instant a flyToCart() clone lands on it (see
@@ -27,7 +27,7 @@ export function HeaderCart() {
     return (
         <Link
             id={CART_ICON_ELEMENT_ID}
-            href="/checkout"
+            href={`/store/${subdomain}/checkout`}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
         >
             <ShoppingCart
