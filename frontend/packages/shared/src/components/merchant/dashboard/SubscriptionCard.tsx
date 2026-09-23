@@ -38,7 +38,7 @@ const SubscriptionCard = memo(() => {
     };
 
     return (
-        <Card className="shadow-xl border-0 overflow-hidden glass">
+        <Card className="shadow-md hover:shadow-2xl border-0 overflow-hidden glass transition-shadow duration-300">
             <CardHeader className="bg-white/50 border-b">
                 <CardTitle>{t('subscriptionInfo')}</CardTitle>
             </CardHeader>

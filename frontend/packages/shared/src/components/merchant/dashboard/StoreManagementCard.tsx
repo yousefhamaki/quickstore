@@ -11,7 +11,7 @@ const StoreManagementCard = memo(({ storeCount }: { storeCount: number }) => {
     const t = useTranslations('dashboard.home');
 
     return (
-        <Card className="lg:col-span-2 shadow-xl border-0 overflow-hidden glass">
+        <Card className="lg:col-span-2 shadow-md hover:shadow-2xl border-0 overflow-hidden glass transition-shadow duration-300">
             <CardHeader className="bg-white/50 border-b flex flex-row items-center justify-between">
                 <div>
                     <CardTitle>{t('manageStores')}</CardTitle>
