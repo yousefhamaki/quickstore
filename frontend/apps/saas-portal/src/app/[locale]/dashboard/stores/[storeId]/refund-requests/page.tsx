@@ -94,23 +94,25 @@ export default function RefundRequestsPage({ params }: { params: Promise<{ store
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-rose-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                    <HandCoins className="w-7 h-7 text-primary" /> Refund Requests
+                    <HandCoins className="w-7 h-7 text-rose-500" /> Refund Requests
                 </h1>
                 <p className="text-muted-foreground text-sm">
                     Customer-initiated refund asks. Approving one adjusts the final amount if needed and applies the same refund engine as a direct refund.
                 </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 relative">
                 {TABS.map((t) => (
                     <Button
                         key={t}
                         variant={tab === t ? 'default' : 'outline'}
                         size="sm"
-                        className="rounded-xl capitalize"
+                        className={`rounded-xl capitalize ${tab === t ? 'bg-rose-500 hover:bg-rose-600 text-white' : ''}`}
                         onClick={() => setTab(t)}
                     >
                         {t}
@@ -118,15 +120,17 @@ export default function RefundRequestsPage({ params }: { params: Promise<{ store
                 ))}
             </div>
 
-            <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border shadow-md hover:shadow-xl rounded-2xl overflow-hidden transition-shadow duration-300">
                 <CardContent className="p-0">
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
-                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                            <Loader2 className="w-6 h-6 animate-spin text-rose-500" />
                         </div>
                     ) : requests.length === 0 ? (
-                        <div className="text-center py-16 space-y-2">
-                            <HandCoins className="w-10 h-10 text-muted-foreground mx-auto" />
+                        <div className="text-center py-16 space-y-3">
+                            <div className="w-16 h-16 rounded-3xl bg-rose-50 flex items-center justify-center text-rose-600 mx-auto">
+                                <HandCoins className="w-8 h-8" />
+                            </div>
                             <p className="font-bold">No {tab} refund requests</p>
                         </div>
                     ) : (

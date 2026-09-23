@@ -88,23 +88,25 @@ export default function ReviewsPage({ params }: { params: Promise<{ storeId: str
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
-            <div className="space-y-1">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-yellow-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="space-y-1 relative">
                 <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                    <Star className="w-7 h-7 text-primary" /> Reviews
+                    <Star className="w-7 h-7 text-yellow-500" /> Reviews
                 </h1>
                 <p className="text-muted-foreground text-sm">
                     Moderate customer reviews — only approved reviews (and your replies) are shown on your storefront.
                 </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 relative">
                 {TABS.map((t) => (
                     <Button
                         key={t}
                         variant={tab === t ? 'default' : 'outline'}
                         size="sm"
-                        className="rounded-xl capitalize"
+                        className={`rounded-xl capitalize ${tab === t ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : ''}`}
                         onClick={() => setTab(t)}
                     >
                         {t}
@@ -112,15 +114,17 @@ export default function ReviewsPage({ params }: { params: Promise<{ storeId: str
                 ))}
             </div>
 
-            <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border shadow-md hover:shadow-xl rounded-2xl overflow-hidden transition-shadow duration-300">
                 <CardContent className="p-0">
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
-                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                            <Loader2 className="w-6 h-6 animate-spin text-yellow-500" />
                         </div>
                     ) : reviews.length === 0 ? (
-                        <div className="text-center py-16 space-y-2">
-                            <MessageSquareText className="w-10 h-10 text-muted-foreground mx-auto" />
+                        <div className="text-center py-16 space-y-3">
+                            <div className="w-16 h-16 rounded-3xl bg-yellow-50 flex items-center justify-center text-yellow-600 mx-auto">
+                                <MessageSquareText className="w-8 h-8" />
+                            </div>
                             <p className="font-bold">No {tab} reviews</p>
                         </div>
                     ) : (

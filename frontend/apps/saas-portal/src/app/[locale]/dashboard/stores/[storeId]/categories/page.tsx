@@ -99,37 +99,41 @@ export default function CategoriesPage({ params }: { params: Promise<{ storeId: 
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto relative">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-100/40 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                        <Tags className="w-7 h-7 text-primary" /> Categories
+                        <Tags className="w-7 h-7 text-indigo-600" /> Categories
                     </h1>
                     <p className="text-muted-foreground text-sm">
                         Organize your products into real categories your customers can browse — no more free-text typos.
                     </p>
                 </div>
-                <Button onClick={openCreate} className="rounded-xl shadow-lg shadow-primary/20">
+                <Button onClick={openCreate} className="rounded-xl shadow-lg shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700">
                     <Plus className="w-4 h-4 mr-2" /> New Category
                 </Button>
             </div>
 
-            <Card className="border-2 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border shadow-md hover:shadow-xl rounded-2xl overflow-hidden transition-shadow duration-300">
                 <CardContent className="p-0">
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
-                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                            <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
                         </div>
                     ) : categories.length === 0 ? (
-                        <div className="text-center py-16 space-y-2">
-                            <Tags className="w-10 h-10 text-muted-foreground mx-auto" />
+                        <div className="text-center py-16 space-y-3">
+                            <div className="w-16 h-16 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-600 mx-auto">
+                                <Tags className="w-8 h-8" />
+                            </div>
                             <p className="font-bold">No categories yet</p>
                             <p className="text-sm text-muted-foreground">Create your first category to start organizing products.</p>
                         </div>
                     ) : (
                         <div className="divide-y">
                             {categories.map((category) => (
-                                <div key={category._id} className="p-5 flex items-center justify-between gap-4">
+                                <div key={category._id} className="p-5 flex items-center justify-between gap-4 hover:bg-indigo-50/30 transition-colors">
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2">
                                             <p className="font-bold truncate">{category.name}</p>
